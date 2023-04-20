@@ -2,15 +2,33 @@
 import argparse
 import sys
 
-ASCII_ART = r"""
 
-                                          /
- .-.     )  (   .-.   .  .-.    .-.   ---/---
-(   )   (    ) (  |    )/   )  (  |     /
- `-(     `--':  `-'-' '/   (    `-'-'  /
-    `-'                     `-
+ASCII_ART_alt = r"""
+      ___           ___           ___           ___           ___
+     /\  \         /\  \         /\__\         /\  \         /\  \
+    /::\  \       /::\  \       /::|  |       /::\  \        \:\  \
+   /:/\:\  \     /:/\:\  \     /:|:|  |      /:/\:\  \        \:\  \
+   \:\~\:\  \   /::\~\:\  \   /:/|:|  |__   /::\~\:\  \       /::\  \
+    \:\ \:\__\ /:/\:\ \:\__\ /:/ |:| /\__\ /:/\:\ \:\__\     /:/\:\__\
+     \:\/:/  / \/__\:\/:/  / \/__|:|/:/  / \/__\:\/:/  /    /:/  \/__/
+      \::/  /       \::/  /      |:/:/  /       \::/  /    /:/  /
+      /:/  /        /:/  /       |::/  /        /:/  /     \/__/
+     /:/  /        /:/  /        /:/  /        /:/  /
+     \/__/         \/__/         \/__/         \/__/
 
 """
+
+ASCII_ART_use = r"""
+
+                        .
+                       _|_
+ .-.,  .-.  .--.  .-.   |
+(   | (   ) |  | (   )  |
+ `-'|  `-'`-'  `- `-'`- `-'
+   -|-
+    '
+"""
+
 
 class QanatCli:
     """Qanat Command Line Tools Interface class to handle several
@@ -21,7 +39,7 @@ class QanatCli:
     def __init__(self):
         self.main_parser = argparse.ArgumentParser(
                 prog='qanat',
-                description= ASCII_ART +
+                description=ASCII_ART_use +
                 'Qanat cli interface for experiment tracking.\n',
                 formatter_class=argparse.RawDescriptionHelpFormatter
         )
