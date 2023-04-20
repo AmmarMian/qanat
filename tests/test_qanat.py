@@ -5,7 +5,7 @@
 import pytest
 
 
-from qanat import qanat
+# from qanat import qanat
 
 
 @pytest.fixture

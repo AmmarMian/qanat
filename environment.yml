@@ -1,0 +1,39 @@
+# ========================================
+# FileName: environment.yml
+# Date: 19 avril 2023 - 15:11
+# Author: Ammar Mian
+# Email: ammar.mian@univ-smb.fr
+# GitHub: https://github.com/ammarmian
+# Brief: Conda environment file for project
+# =========================================
+
+
+name: qanat-dev
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - pip
+  - joblib
+  - tqdm
+  - ipython
+  - pyyaml
+  - wget
+  - sphinx
+  - pip:
+      - mkdocs
+      - doit
+      - simple-term-menu
+      - rich
+      - tinydb
+      - Django
+      - GitPython
+      - django-tables2
+      - django-filter
+      - python-decouple
+      - black
+      - flake8
+      - tox
+      - pytest
+      - art
