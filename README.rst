@@ -15,8 +15,16 @@ Qanat
 
 
 
+                        .
+                       _|_
+ .-.,  .-.  .--.  .-.   |
+(   | (   ) |  | (   )  |
+ `-'|  `-'`-'  `- `-'`- `-'
+   -|-
+    '
 
-Minimal package to manage and reproduce research experiments.
+
+Qanat is a Minimal package to manage and reproduce research experiments.
 
 
 * Free software: GNU General Public License v3
