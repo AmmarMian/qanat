@@ -2,6 +2,15 @@
 import argparse
 import sys
 
+ASCII_ART = r"""
+
+                                          /
+ .-.     )  (   .-.   .  .-.    .-.   ---/---
+(   )   (    ) (  |    )/   )  (  |     /
+ `-(     `--':  `-'-' '/   (    `-'-'  /
+    `-'                     `-
+
+"""
 
 class QanatCli:
     """Qanat Command Line Tools Interface class to handle several
@@ -12,7 +21,9 @@ class QanatCli:
     def __init__(self):
         self.main_parser = argparse.ArgumentParser(
                 prog='qanat',
-                description='Qanat cli interface for experiment tracking.',
+                description= ASCII_ART +
+                'Qanat cli interface for experiment tracking.\n',
+                formatter_class=argparse.RawDescriptionHelpFormatter
         )
         self.main_parser.add_argument(
                 '--version', action='version', version='%(prog)s 0.1.0',

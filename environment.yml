@@ -35,5 +35,5 @@ dependencies:
       - black
       - flake8
       - tox
+      - tox-conda
       - pytest
-      - art
