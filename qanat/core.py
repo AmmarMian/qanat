@@ -20,7 +20,7 @@ from sqlalchemy import (
         create_engine
 )
 from sqlalchemy.ext.declarative import declarative_base
-
+from sqlalchemy.orm import sessionmaker
 from .utils import setup_logger
 
 # ------------------------------------------------------------
@@ -140,188 +140,205 @@ class DatasetsTags(Base):
 # ------------------------------------------------------------
 
 
-# TODO: Add tests for this function
-# Tests:
-# - Test that the database is created
-# - Test that the database is created in the right place
-# - Test that the database is created with the right tables
-# - Test that the database is created with the right columns
 def init_database(path):
     """Initialize a new database for qanat.
 
     :param path: The path to the database.
     :type path: str
+
+    :return: The engine of the database.
+    :rtype: sqlalchemy.engine.base.Engine
     """
 
     # Create the database
-    conn = sqlite3.connect(path)
-    c = conn.cursor()
+    engine = create_engine(f"sqlite:///{path}")
+    Base.metadata.create_all(engine)
 
-    # Create the tables
-    # ------------------------------------------------------------
+    return engine, Base
 
-    # Experiments : Table containing info on available experiments
-    # in the project.
-    # id : Unique identifier of the experiment.
-    # path : Path to the experiment.
-    # name : Name of the experiment.
-    # description : Description of the experiment.
-    # created : Date of creation of the experiment.
-    # executable : Path to the executable of the experiment.
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS Experiments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        path TEXT NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        created DATETIME DEFAULT CURRENT_TIMESTAMP,
-        executable TEXT
-    );"""
-    )
 
-    # Actions : Table containing info on the different
-    # actions performed on the experiments beside the main execution.
-    # id : Unique identifier of the action.
-    # experiment_id : Unique identifier of the experiment.
-    # action : Name of the action.
-    # executable : Path to the executable of the action.
-    # description : Description of the action.
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS Actions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        experiment_id INTEGER NOT NULL,
-        action TEXT NOT NULL,
-        executable TEXT,
-        description TEXT,
-        FOREIGN KEY (experiment_id) REFERENCES Experiments(id)
-    );"""
-    )
+# # TODO: Add tests for this function
+# # Tests:
+# # - Test that the database is created
+# # - Test that the database is created in the right place
+# # - Test that the database is created with the right tables
+# # - Test that the database is created with the right columns
+# def init_database(path):
+    # """Initialize a new database for qanat.
 
-    # Runs : Table containing info on the different runs of the
-    # experiments.
-    # id : Unique identifier of the run.
-    # experiment_id : Unique identifier of the experiment.
-    # run_date : Date of the run.
-    # run_duration : Duration of the run.
-    # run_status : Status of the run.
-    # run_dir : Path to the directory of the run.
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS Runs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        experiment_id INTEGER NOT NULL,
-        run_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-        run_duration FLOAT,
-        run_status TEXT,
-        run_dir TEXT,
-        FOREIGN KEY (experiment_id) REFERENCES Experiments(id)
-    );"""
-    )
+    # :param path: The path to the database.
+    # :type path: str
+    # """
 
-    # GroupOfParameters : Table containing info on one group of parameter
-    # used in the run an experiments. (A single run can have multiple groups).
-    # id : Unique identifier of the parameters group.
-    # run_id : Unique identifier of the run.
-    # name : Name of the group of parameters.
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS GroupOfParameters (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        run_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        FOREIGN KEY (run_id) REFERENCES Runs(id)
-    );"""
-    )
+    # # Create the database
+    # conn = sqlite3.connect(path)
+    # c = conn.cursor()
 
-    # Parameters : Table containing info one parameter used in one
-    # group of parameters in the run of an experiment.
-    # id : Unique identifier of the parameter.
-    # group_id : Unique identifier of the group of parameters.
-    # name : Name of the parameter.
-    # value : Value of the parameter.
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS Parameters (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        group_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        value TEXT NOT NULL,
-        FOREIGN KEY (group_id) REFERENCES GroupOfParameters(id)
-    );"""
-    )
+    # # Create the tables
+    # # ------------------------------------------------------------
 
-    # Datasets : Table containing info on potential datasets
-    # in the project.
-    # id : Unique identifier of the dataset.
-    # path : Path to the dataset.
-    # name : Name of the dataset.
-    # description : Description of the dataset.
-    # version : Version of the dataset.
-    # url : URL of the dataset.
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS Datasets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        path TEXT NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        version TEXT,
-        url TEXT
-        );"""
-    )
+    # # Experiments : Table containing info on available experiments
+    # # in the project.
+    # # id : Unique identifier of the experiment.
+    # # path : Path to the experiment.
+    # # name : Name of the experiment.
+    # # description : Description of the experiment.
+    # # created : Date of creation of the experiment.
+    # # executable : Path to the executable of the experiment.
+    # c.execute(
+        # """CREATE TABLE IF NOT EXISTS Experiments (
+        # id INTEGER PRIMARY KEY AUTOINCREMENT,
+        # path TEXT NOT NULL,
+        # name TEXT NOT NULL,
+        # description TEXT,
+        # created DATETIME DEFAULT CURRENT_TIMESTAMP,
+        # executable TEXT
+    # );"""
+    # )
 
-    # Experiment_datasets : Table containing info on which datasets
-    # are used by which experiments.
-    # experiment_id : Unique identifier of the experiment.
-    # dataset_id : Unique identifier of the dataset.
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS Experiment_datasets (
-        experiment_id INTEGER,
-        dataset_id INTEGER,
-        PRIMARY KEY (experiment_id, dataset_id),
-        FOREIGN KEY (experiment_id) REFERENCES Experiments(id),
-        FOREIGN KEY (dataset_id) REFERENCES Datasets(id)
-    );"""
-    )
+    # # Actions : Table containing info on the different
+    # # actions performed on the experiments beside the main execution.
+    # # id : Unique identifier of the action.
+    # # experiment_id : Unique identifier of the experiment.
+    # # action : Name of the action.
+    # # executable : Path to the executable of the action.
+    # # description : Description of the action.
+    # c.execute(
+        # """CREATE TABLE IF NOT EXISTS Actions (
+        # id INTEGER PRIMARY KEY AUTOINCREMENT,
+        # experiment_id INTEGER NOT NULL,
+        # action TEXT NOT NULL,
+        # executable TEXT,
+        # description TEXT,
+        # FOREIGN KEY (experiment_id) REFERENCES Experiments(id)
+    # );"""
+    # )
 
-    # Tags : Table containing tags used for both experiments
-    # and datasets.
-    # id : Unique identifier of the tag.
-    # name : Name of the tag.
-    # description : Description of the tag.
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS Tags (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        description TEXT
-    );"""
-    )
+    # # Runs : Table containing info on the different runs of the
+    # # experiments.
+    # # id : Unique identifier of the run.
+    # # experiment_id : Unique identifier of the experiment.
+    # # run_date : Date of the run.
+    # # run_duration : Duration of the run.
+    # # run_status : Status of the run.
+    # # run_dir : Path to the directory of the run.
+    # c.execute(
+        # """CREATE TABLE IF NOT EXISTS Runs (
+        # id INTEGER PRIMARY KEY AUTOINCREMENT,
+        # experiment_id INTEGER NOT NULL,
+        # run_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        # run_duration FLOAT,
+        # run_status TEXT,
+        # run_dir TEXT,
+        # FOREIGN KEY (experiment_id) REFERENCES Experiments(id)
+    # );"""
+    # )
 
-    # ExperimentsTags : Table containing the relation between
-    # experiments and tags.
-    # tag_id : Unique identifier of the tag.
-    # experiment_id : Unique identifier of the experiment.
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS ExperimentsTags (
-        tag_id INTEGER,
-        experiment_id INTEGER,
-        PRIMARY KEY (tag_id, experiment_id),
-        FOREIGN KEY (experiment_id) REFERENCES Experiments(id),
-        FOREIGN KEY (tag_id) REFERENCES Tags(id)
-    );"""
-    )
+    # # GroupOfParameters : Table containing info on one group of parameter
+    # # used in the run an experiments. (A single run can have multiple groups).
+    # # id : Unique identifier of the parameters group.
+    # # run_id : Unique identifier of the run.
+    # # name : Name of the group of parameters.
+    # c.execute(
+        # """CREATE TABLE IF NOT EXISTS GroupOfParameters (
+        # id INTEGER PRIMARY KEY AUTOINCREMENT,
+        # run_id INTEGER NOT NULL,
+        # name TEXT NOT NULL,
+        # FOREIGN KEY (run_id) REFERENCES Runs(id)
+    # );"""
+    # )
 
-    # DatasetsTags : Table containing the relation between
-    # datasets and tags.
-    # tag_id : Unique identifier of the tag.
-    # dataset_id : Unique identifier of the dataset.
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS DatasetsTags (
-        tag_id INTEGER,
-        dataset_id INTEGER,
-        PRIMARY KEY (tag_id, dataset_id),
-        FOREIGN KEY (dataset_id) REFERENCES Datasets(id),
-        FOREIGN KEY (tag_id) REFERENCES Tags(id)
-    );"""
-    )
-    conn.commit()
-    conn.close()
+    # # Parameters : Table containing info one parameter used in one
+    # # group of parameters in the run of an experiment.
+    # # id : Unique identifier of the parameter.
+    # # group_id : Unique identifier of the group of parameters.
+    # # name : Name of the parameter.
+    # # value : Value of the parameter.
+    # c.execute(
+        # """CREATE TABLE IF NOT EXISTS Parameters (
+        # id INTEGER PRIMARY KEY AUTOINCREMENT,
+        # group_id INTEGER NOT NULL,
+        # name TEXT NOT NULL,
+        # value TEXT NOT NULL,
+        # FOREIGN KEY (group_id) REFERENCES GroupOfParameters(id)
+    # );"""
+    # )
+
+    # # Datasets : Table containing info on potential datasets
+    # # in the project.
+    # # id : Unique identifier of the dataset.
+    # # path : Path to the dataset.
+    # # name : Name of the dataset.
+    # # description : Description of the dataset.
+    # # version : Version of the dataset.
+    # # url : URL of the dataset.
+    # c.execute(
+        # """CREATE TABLE IF NOT EXISTS Datasets (
+        # id INTEGER PRIMARY KEY AUTOINCREMENT,
+        # path TEXT NOT NULL,
+        # name TEXT NOT NULL,
+        # description TEXT,
+        # version TEXT,
+        # url TEXT
+        # );"""
+    # )
+
+    # # Experiment_datasets : Table containing info on which datasets
+    # # are used by which experiments.
+    # # experiment_id : Unique identifie/home/ammarmian/test/.qanat/qanat.dbr of the experiment.
+    # # dataset_id : Unique identifier of the dataset.
+    # c.execute(
+        # """CREATE TABLE IF NOT EXISTS Experiment_datasets (
+        # experiment_id INTEGER,
+        # dataset_id INTEGER,
+        # PRIMARY KEY (experiment_id, dataset_id),
+        # FOREIGN KEY (experiment_id) REFERENCES Experiments(id),
+        # FOREIGN KEY (dataset_id) REFERENCES Datasets(id)
+    # );"""
+    # )
+
+    # # Tags : Table containing tags used for both experiments
+    # # and datasets.
+    # # id : Unique identifier of the tag.
+    # # name : Name of the tag.
+    # # description : Description of the tag.
+    # c.execute(
+        # """CREATE TABLE IF NOT EXISTS Tags (
+        # id INTEGER PRIMARY KEY AUTOINCREMENT,
+        # name TEXT NOT NULL,
+        # description TEXT
+    # );"""
+    # )
+
+    # # ExperimentsTags : Table containing the relation between
+    # # experiments and tags.
+    # # tag_id : Unique identifier of the tag.
+    # # experiment_id : Unique identifier of the experiment.
+    # c.execute(
+        # """CREATE TABLE IF NOT EXISTS ExperimentsTags (
+        # tag_id INTEGER,
+        # experiment_id INTEGER,
+        # PRIMARY KEY (tag_id, experiment_id),
+        # FOREIGN KEY (experiment_id) REFERENCES Experiments(id),
+        # FOREIGN KEY (tag_id) REFERENCES Tags(id)
+    # );"""
+    # )
+
+    # # DatasetsTags : Table containing the relation between
+    # # datasets and tags.
+    # # tag_id : Unique identifier of the tag.
+    # # dataset_id : Unique identifier of the dataset.
+    # c.execute(
+        # """CREATE TABLE IF NOT EXISTS DatasetsTags (
+        # tag_id INTEGER,
+        # dataset_id INTEGER,
+        # PRIMARY KEY (tag_id, dataset_id),
+        # FOREIGN KEY (dataset_id) REFERENCES Datasets(id),
+        # FOREIGN KEY (tag_id) REFERENCES Tags(id)
+    # );"""
+    # )
+    # conn.commit()
+    # conn.close()
 
 
 # TODO: Add tests for this function
@@ -352,5 +369,8 @@ def init_qanatdir(path, logger=None):
     os.mkdir(os.path.join(path, ".qanat"))
 
     # Create the database
-    logger.info("Creating the dB: {os.path.join(path, '.qanat', 'qanat.db')}")
-    init_database(os.path.join(path, ".qanat", "qanat.db"))
+    logger.info(f"Creating the dB: {os.path.join(path, '.qanat', 'qanat.db')}")
+    engine, Base = init_database(os.path.join(path, ".qanat", "qanat.db"))
+
+    return engine, Base
+
