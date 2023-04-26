@@ -1,10 +1,10 @@
 # ========================================
-# FileName: utils.py
+# FileName: logging.py
 # Date: 20 avril 2023 - 17:32
 # Author: Ammar Mian
 # Email: ammar.mian@univ-smb.fr
 # GitHub: https://github.com/ammarmian
-# Brief: Utility functions for Qanat.
+# Brief: Logging tools.
 # =========================================
 
 import logging
@@ -30,7 +30,8 @@ def setup_logger(name=""):
     logger = logging.getLogger(f"qanat-{name}")
     logger.setLevel(LOGGING_LEVEL)
 
-    handler = RichHandler(rich_tracebacks=True, tracebacks_suppress=[sqlite3, argparse])
+    handler = RichHandler(rich_tracebacks=True,
+                          tracebacks_suppress=[sqlite3, argparse])
     handler.setLevel(LOGGING_LEVEL)
 
     formatter = logging.Formatter(f"{custom_format} %(message)s")
