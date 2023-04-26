@@ -3,6 +3,7 @@ import sys
 import rich_click as click
 import rich
 
+from .cli_commands.init import init_qanat
 
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.SHOW_ARGUMENTS = True
@@ -37,7 +38,7 @@ def status():
 @click.argument("directory", type=click.Path(exists=True), required=True)
 def init(directory):
     """Initialize experiment directory."""
-    click.echo("TODO")
+    init_qanat(directory)
 
 
 @main.group()
