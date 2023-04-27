@@ -15,7 +15,7 @@
 from dataclasses import dataclass
 from sqlalchemy import (
         Column, Integer, String, ForeignKey, DateTime,
-        Text, create_engine
+        create_engine
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.automap import automap_base
@@ -68,6 +68,7 @@ class Experiment(Base):
     created = Column(DateTime, server_default=func.now())
     updated = Column(DateTime, server_default=func.now(), onupdate=func.now())
     executable = Column(String)
+    executable_command = Column(String)
 
 
 @dataclass
@@ -125,6 +126,7 @@ class RunOfAnExperiment(Base):
     description = Column(String)
     metric = Column(String)
     parameters = Column(JSONEncodedDict)
+    commit_sha = Column(String)
 
 
 @dataclass
@@ -324,6 +326,7 @@ def find_action_id(session: Session, action_name: str) -> int:
 
 def add_experiment(session: Session,
                    path: str, name: str, description: str, executable: str,
+                   executable_command: str = "/usr/bin/bash",
                    tags: list = [], datasets: list = []) -> Experiment:
     """Add an experiment to the database.
 
@@ -341,6 +344,10 @@ def add_experiment(session: Session,
 
     :param executable: The path to the executable of the experiment.
     :type executable: str
+
+    :param executable_command: The progrma to use to execute executable.
+                               Default is "/usr/bin/bash".
+    :type executable_command: str.
 
     :param tags: The tags (names) of the experiment. Default is [].
     :type tags: list
@@ -360,7 +367,8 @@ def add_experiment(session: Session,
 
     # Create the experiment
     experiment = Experiment(path=path, name=name, description=description,
-                            executable=executable)
+                            executable=executable,
+                            executable_command=executable_command)
 
     # Add the experiment to the database
     session.add(experiment)
@@ -540,6 +548,7 @@ def add_action(session: Session, name: str, description: str,
 
 def add_run(session: Session,
             experiment_path: str, storage_path: str,
+            commit_sha: str,
             parameters_groups: list = [],
             description: str = "",
             tags: list = []) -> RunOfAnExperiment:
@@ -553,6 +562,9 @@ def add_run(session: Session,
 
     :param storage_path: The path to the storage of the run.
     :type storage_path: str
+
+    :param commit_sha: The commit sha of the repo when running.
+    :type commit_sha: str
 
     :param parameters_groups: The parameters groups (as dict) of the run.
                               Default is [].
@@ -572,7 +584,8 @@ def add_run(session: Session,
     experiment_id = find_experiment_id(session, experiment_path)
 
     # Create the run
-    run = RunOfAnExperiment(experiment_id=experiment_id, description=description,
+    run = RunOfAnExperiment(experiment_id=experiment_id,
+                            description=description, commit_sha=commit_sha,
                             storage_path=storage_path)
     session.add(run)
 

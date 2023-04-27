@@ -1,3 +1,4 @@
 Finish database structure in link with dataclass for easy management
 Click autocompletion on all shell
-qanat init
+qanat experiment prompt
+How to launch groups of parameters most simply from CLI ?

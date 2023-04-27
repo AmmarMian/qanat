@@ -4,6 +4,8 @@ import rich_click as click
 import rich
 
 from .cli_commands.init import init_qanat
+from .cli_commands.experiment import (
+        command_add_prompt, command_list)
 
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.SHOW_ARGUMENTS = True
@@ -63,14 +65,13 @@ def config():
 @experiment.command(name="list")
 def experiment_list():
     """Show list of experiments in this repertory."""
-    click.echo("TODO")
+    command_list()
 
 
 @experiment.command(name="new")
 def experiment_new():
     """Create new experiment."""
-    click.echo("TODO")
-
+    command_add_prompt()
 
 @experiment.command(name="show")
 @click.argument("name", type=click.STRING, required=True)
@@ -142,7 +143,6 @@ def dataset_list():
 @dataset.command(name="new")
 def dataset_new():
     """Create new dataset."""
-    click.echo("TODO")
 
 
 @dataset.command(name="delete")
