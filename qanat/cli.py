@@ -4,8 +4,9 @@ import rich_click as click
 import rich
 
 from .cli_commands.init import init_qanat
-from .cli_commands.experiment import (
-        command_add_prompt, command_list)
+from .cli_commands import (
+        experiment, dataset
+)
 
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.SHOW_ARGUMENTS = True
@@ -43,14 +44,14 @@ def init(directory):
     init_qanat(directory)
 
 
-@main.group()
-def experiment():
+@main.group(name="experiment")
+def experiment_main():
     """Experiment-level utility"""
     return 0
 
 
-@main.group()
-def dataset():
+@main.group(name="dataset")
+def dataset_main():
     """Dataset-level utility"""
     return 0
 
@@ -62,38 +63,38 @@ def config():
 
 
 # Subcommands: experiment
-@experiment.command(name="list")
+@experiment_main.command(name="list")
 def experiment_list():
     """Show list of experiments in this repertory."""
-    command_list()
+    experiment.command_list()
 
 
-@experiment.command(name="new")
+@experiment_main.command(name="new")
 def experiment_new():
     """Create new experiment."""
-    command_add_prompt()
+    experiment.command_add_prompt()
 
-@experiment.command(name="show")
+@experiment_main.command(name="show")
 @click.argument("name", type=click.STRING, required=True)
 def experiment_show():
     """Show runs of experiment."""
     click.echo("TODO")
 
 
-@experiment.command(name="delete")
+@experiment_main.command(name="delete")
 @click.argument("name", type=click.STRING, required=True)
 def experiment_delete():
     """Delete experiment."""
     click.echo("TODO")
 
 
-@experiment.command(name="update")
+@experiment_main.command(name="update")
 def experiment_update():
     """Update experiment."""
     click.echo("TODO")
 
 
-@experiment.command(
+@experiment_main.command(
     name="run",
     context_settings=dict(
         ignore_unknown_options=True,
@@ -115,7 +116,7 @@ def experiment_run(ctx, name):
     # )
 
 
-@experiment.command(
+@experiment_main.command(
     name="action",
     context_settings=dict(
         ignore_unknown_options=True,
@@ -134,24 +135,25 @@ def experiment_action(ctx, experiment_name, action_name):
 
 
 # Subcommands: dataset
-@dataset.command(name="list")
+@dataset_main.command(name="list")
 def dataset_list():
     """Show list of datasets in this repertory."""
-    click.echo("TODO")
+    dataset.command_list()
 
 
-@dataset.command(name="new")
+@dataset_main.command(name="new")
 def dataset_new():
     """Create new dataset."""
+    dataset.command_add_prompt()
 
 
-@dataset.command(name="delete")
+@dataset_main.command(name="delete")
 def dataset_delete():
     """Delete dataset."""
     click.echo("TODO")
 
 
-@dataset.command(name="update")
+@dataset_main.command(name="update")
 def dataset_update():
     """Update dataset."""
     click.echo("TODO")

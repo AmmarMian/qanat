@@ -3,3 +3,4 @@ Click autocompletion on all shell
 qanat experiment prompt
 How to launch groups of parameters most simply from CLI ?
 Parsing config.yaml and update database of experiments
+Git Annex handling

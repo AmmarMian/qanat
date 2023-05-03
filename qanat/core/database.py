@@ -235,95 +235,6 @@ def open_database(path: str):
 # ------------------------------------------------------------
 # Database filling and updating functions
 # ------------------------------------------------------------
-def find_tag_id(session: Session, tag_name: str) -> int:
-    """Find the id of a tag in the database.
-
-    :param session: The session of the database.
-    :type session: sqlalchemy.orm.session.Session
-
-    :param tag_name: The name of the tag.
-    :type tag_name: str
-
-    :return: The id of the tag.
-    :rtype: int
-    """
-
-    # Query the database for the tag
-    tag = session.query(Tags).filter(Tags.name == tag_name).first()
-
-    # If the tag does not exist, return -1
-    if tag is None:
-        tag_id = -1
-    else:
-        tag_id = tag.id
-    return tag_id
-
-
-def find_experiment_id(session: Session, experiment_path: str) -> int:
-    """Find the id of an experiment in the database.
-
-    :param session: The session of the database.
-    :type session: sqlalchemy.orm.session.Session
-
-    :param experiment_path: The path to the experiment.
-    :type experiment_path: str
-
-    :return: The id of the experiment.
-    :rtype: int
-    """
-
-    # Query the database for the experiment
-    experiment = session.query(Experiment).filter(
-            Experiment.path == experiment_path).first()
-
-    # If the experiment does not exist, return -1
-    if experiment is None:
-        experiment_id = -1
-    else:
-        experiment_id = experiment.id
-    return experiment_id
-
-
-def find_dataset_id(session: Session, dataset_path: str) -> int:
-    """Find the id of a dataset in the database.
-
-    :param session: The session of the database.
-    :type session: sqlalchemy.orm.session.Session
-
-    :param dataset_path: The path to the dataset.
-    :type dataset_path: str
-
-    :return: The id of the dataset.
-    :rtype: int
-    """
-
-    # Query the database for the dataset
-    dataset = session.query(Dataset).filter(
-            Dataset.path == dataset_path).first()
-
-    # If the dataset does not exist, return -1
-    if dataset is None:
-        dataset_id = -1
-    else:
-        dataset_id = dataset.id
-    return dataset_id
-
-
-def find_action_id(session: Session, action_name: str) -> int:
-    """Find the id of an action in the database."""
-
-    # Query the database for the action
-    action = session.query(Action).filter(
-            Action.name == action_name).first()
-
-    # If the action does not exist, return -1
-    if action is None:
-        action_id = -1
-    else:
-        action_id = action.id
-    return action_id
-
-
 def add_experiment(session: Session,
                    path: str, name: str, description: str, executable: str,
                    executable_command: str = "/usr/bin/bash",
@@ -360,9 +271,9 @@ def add_experiment(session: Session,
     """
 
     # Check if the experiment already exists
-    experiment_id = find_experiment_id(session, path)
+    experiment_id = find_experiment_id(session, name)
     if experiment_id != -1:
-        logger.warning(f"Experiment {path} already exists in the database.")
+        logger.warning(f"Experiment {name} already exists in the database.")
         return
 
     # Create the experiment
@@ -428,11 +339,11 @@ def add_dataset(session: Session,
     """
 
     # Check if the dataset already exists in the database
-    dataset_id = find_dataset_id(session, path)
+    dataset_id = find_dataset_id(session, name)
 
     # If the dataset does not exist, add it to the database
     if dataset_id != -1:
-        logger.warning(f"Dataset {path} already exists in the database.")
+        logger.warning(f"Dataset {name} already exists in the database.")
         return
 
     # Create the dataset
@@ -447,6 +358,7 @@ def add_dataset(session: Session,
         if tag_id == -1:
             tag = Tags(name=tag)
             session.add(tag)
+            session.commit()
             tag_id = tag.id
         dataset_tag = DatasetsTags(dataset_id=dataset.id, tag_id=tag_id)
         session.add(dataset_tag)
@@ -502,7 +414,7 @@ def add_tag(session: Session, name: str, description: str) -> Tags:
 
 
 def add_action(session: Session, name: str, description: str,
-               executable: str, experiment_path: str) -> Action:
+               executable: str, experiment_name: str) -> Action:
     """Add an action to the database.
 
     :param session: The session of the database.
@@ -517,7 +429,7 @@ def add_action(session: Session, name: str, description: str,
     :param executable: The path to the executable of the action.
     :type executable: str
 
-    :param experiment_path: The path to the experiment of the action.
+    :param experiment_name: The name of the experiment of the action.
     :type experiment_path: str
 
     :return: The action object.
@@ -533,7 +445,7 @@ def add_action(session: Session, name: str, description: str,
         return
 
     # Find experiment_id through path
-    experiment_id = find_experiment_id(session, experiment_path)
+    experiment_id = find_experiment_id(session, experiment_name)
 
     # Create the action
     action = Action(name=name, description=description, executable=executable,
@@ -547,7 +459,7 @@ def add_action(session: Session, name: str, description: str,
 
 
 def add_run(session: Session,
-            experiment_path: str, storage_path: str,
+            experiment_name: str, storage_path: str,
             commit_sha: str,
             parameters_groups: list = [],
             description: str = "",
@@ -557,7 +469,7 @@ def add_run(session: Session,
     :param session: The session of the database.
     :type session: sqlalchemy.orm.session.Session
 
-    :param experiment_path: The path to the experiment.
+    :param experiment_name: The naf of the experiment.
     :type experiment_path: str
 
     :param storage_path: The path to the storage of the run.
@@ -581,7 +493,7 @@ def add_run(session: Session,
     """
 
     # Find experiment_id through path
-    experiment_id = find_experiment_id(session, experiment_path)
+    experiment_id = find_experiment_id(session, experiment_name)
 
     # Create the run
     run = RunOfAnExperiment(experiment_id=experiment_id,
@@ -607,3 +519,190 @@ def add_run(session: Session,
     session.commit()
 
     return run
+
+
+# ------------------------------------------------------------
+# Useful lookup functions
+# ------------------------------------------------------------
+def find_tag_id(session: Session, tag_name: str) -> int:
+    """Find the id of a tag in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param tag_name: The name of the tag.
+    :type tag_name: str
+
+    :return: The id of the tag.
+    :rtype: int
+    """
+
+    # Query the database for the tag
+    tag = session.query(Tags).filter(Tags.name == tag_name).first()
+
+    # If the tag does not exist, return -1
+    if tag is None:
+        tag_id = -1
+    else:
+        tag_id = tag.id
+    return tag_id
+
+
+def find_experiment_id(session: Session, experiment_name: str) -> int:
+    """Find the id of an experiment in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :return: The id of the experiment.
+    :rtype: int
+    """
+
+    # Query the database for the experiment
+    experiment = session.query(Experiment).filter(
+            Experiment.name == experiment_name).first()
+
+    # If the experiment does not exist, return -1
+    if experiment is None:
+        experiment_id = -1
+    else:
+        experiment_id = experiment.id
+    return experiment_id
+
+
+def find_dataset_id(session: Session, dataset_name: str) -> int:
+    """Find the id of a dataset in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param dataset_name: The name of the dataset.
+    :type dataset_path: str
+
+    :return: The id of the dataset.
+    :rtype: int
+    """
+
+    # Query the database for the dataset
+    dataset = session.query(Dataset).filter(
+            Dataset.name == dataset_name).first()
+
+    # If the dataset does not exist, return -1
+    if dataset is None:
+        dataset_id = -1
+    else:
+        dataset_id = dataset.id
+    return dataset_id
+
+
+def find_action_id(session: Session, action_name: str) -> int:
+    """Find the id of an action in the database."""
+
+    # Query the database for the action
+    action = session.query(Action).filter(
+            Action.name == action_name).first()
+
+    # If the action does not exist, return -1
+    if action is None:
+        action_id = -1
+    else:
+        action_id = action.id
+    return action_id
+
+
+def count_number_runs_experiment(session: Session,
+                                 experiment_name: str) -> int:
+    """Count the number of runs of an experiment in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_path: str
+
+    :return: The number of runs of the experiment.
+    :rtype: int
+    """
+
+    # Find experiment_id through path
+    experiment_id = find_experiment_id(session, experiment_name)
+
+    # Query the database for the number of runs
+    number_runs = session.query(RunOfAnExperiment).filter(
+            RunOfAnExperiment.experiment_id == experiment_id).count()
+
+    return number_runs
+
+
+def fetch_tags_of_experiment(Session: Session,
+                             experiment_name: str) -> list:
+    """Fetch the tags of an experiment in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_path: str
+
+    :return: The tags of the experiment.
+    :rtype: list
+    """
+
+    # Find experiment_id through path
+    experiment_id = find_experiment_id(Session, experiment_name)
+
+    # Query the database for the tags
+    tags = [tag.name for tag in
+            Session.query(Tags).join(ExperimentsTags).filter(
+                ExperimentsTags.experiment_id == experiment_id).distinct()]
+    return tags
+
+
+def fetch_tags_of_dataset(Session: Session,
+                          dataset_name: str) -> list:
+    """Fetch the tags of a dataset in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param dataset_name: The name of the dataset.
+    :type dataset_path: str
+
+    :return: The tags of the dataset.
+    :rtype: list
+    """
+
+    # Find dataset_id through path
+    dataset_id = find_dataset_id(Session, dataset_name)
+
+    # Query the database for the tags
+    tags = [tag.name for tag in
+            Session.query(Tags).join(DatasetsTags).filter(
+                DatasetsTags.dataset_id == dataset_id).distinct()]
+    return tags
+
+
+def fetch_datasets_experiment(Session: Session,
+                              experiment_name: str) -> list:
+    """Fetch the datasets of an experiment in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_path: str
+
+    :return: The datasets of the experiment.
+    :rtype: list
+    """
+
+    # Find experiment_id through path
+    experiment_id = find_experiment_id(Session, experiment_name)
+
+    # Query the database for the datasets
+    datasets = Session.query(Dataset).join(DatasetExperiment).filter(
+            DatasetExperiment.experiment_id == experiment_id).distinct()
+    return datasets
