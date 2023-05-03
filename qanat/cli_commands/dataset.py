@@ -100,4 +100,3 @@ def command_list():
                      f"{DATASET_PATH} {dataset.path}",
                      f"{tags}")
     rich.print(grid)
-

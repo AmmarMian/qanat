@@ -10,7 +10,9 @@
 import os
 import git
 from rich.prompt import Confirm
+from rich import prompt
 from pathlib import Path
+import yaml
 
 from ..utils.logging import setup_logger
 from ..core.database import init_database
@@ -40,6 +42,12 @@ class QanatRepertory:
 
         self.path = path
         self.logger = setup_logger()
+
+        # Asking about result directory
+        Prompt = prompt.Prompt()
+        self.result_dir_path = Prompt.ask(
+                "Where do you want to store the results?",
+                default=os.path.join(self.path, "results"))
 
     def check_exists_qanat(self):
         """Check if the Qanat repertory exists.
@@ -93,15 +101,58 @@ class QanatRepertory:
             if Confirm.ask("Do you want to create a git repository?"):
                 self.logger.info("Creating git repository.")
                 git.Repo.init(self.path)
-                sould_gitignore = True
+                should_gitignore = True
             else:
-                sould_gitignore = False
+                should_gitignore = False
         else:
             self.logger.info("Repertory is a git repository.")
-            sould_gitignore = True
+            should_gitignore = True
+
+        # Create results directory if needed
+        if not os.path.exists(self.result_dir_path):
+            self.logger.info("Creating results directory.")
+            os.mkdir(self.result_dir_path)
+
+        # Creating .qanat/config.yaml
+        # Check whether resutls directory is inside path
+        # TODO: Make it more robust to really check the
+        #       contents of current directory recursively
+        if self.result_dir_path.startswith(self.path):
+            result_path = os.path.relpath(self.result_dir_path, self.path)
+            should_add_results = True
+        else:
+            result_path = self.result_dir_path
+        if not os.path.exists(
+                os.path.join(self.qanat_dir_path, "config.yaml")):
+            self.logger.info("Creating .qanat/config.yaml.")
+            with open(
+                    os.path.join(self.qanat_dir_path, "config.yaml"),
+                    "w") as f:
+                yaml.dump(
+                        {"result_dir": result_path},
+                        f,
+                        default_flow_style=False)
+        else:
+            # Add result_dir to .qanat/config.yaml if not already there
+            with open(
+                    os.path.join(self.qanat_dir_path, "config.yaml"),
+                    "r") as f:
+                config = yaml.safe_load(f)
+                if config["result_dir"] != result_path:
+                    self.logger.info(
+                            "Adding result_dir to .qanat/config.yaml.")
+                    config["result_dir"] = result_path
+                    should_commit = True
+
+                    with open(os.path.join(self.qanat_dir_path, "config.yaml"),
+                              "w") as f:
+                        yaml.dump(config, f, default_flow_style=False)
+
+        if self.result_dir_path.startswith(self.path):
+            should_add_results = True
 
         # Add .qanat/ to .gitignore except .qanat/config.yaml
-        if sould_gitignore:
+        if should_gitignore:
             self.logger.info("Adding .qanat/ to .gitignore.")
             if not os.path.exists(os.path.join(self.path, ".gitignore")):
                 # create empty file
@@ -119,6 +170,20 @@ class QanatRepertory:
                     f.seek(0, os.SEEK_END)
                     f.write(".qanat/*\n")
                     f.write("!.qanat/config.yaml")
+
+            if should_add_results:
+                self.logger.info(f"Adding {result_path} to .gitignore.")
+                with open(os.path.join(self.path, ".gitignore"), "r+") as f:
+                    # check if not already in gitignore
+                    for line in f:
+                        if result_path in line:
+                            self.logger.info(
+                                    "Results repertory already in .gitignore.")
+                            break
+                    else:
+                        should_commit = True
+                        f.seek(0, os.SEEK_END)
+                        f.write(f"\n{result_path}\n")
 
         # Commit the changes if user want to
         if should_commit:

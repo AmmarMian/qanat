@@ -1,11 +1,12 @@
 """Console script for qanat."""
+import os
 import sys
 import rich_click as click
 import rich
 
 from .cli_commands.init import init_qanat
 from .cli_commands import (
-        experiment, dataset
+        experiment, dataset, status
 )
 
 click.rich_click.USE_RICH_MARKUP = True
@@ -23,6 +24,13 @@ ASCII_ART_use = r"""
 """
 
 
+def check_cwd_is_qanat():
+    """Check if current working directory is a Qanat repertory."""
+    if not os.path.exists(".qanat"):
+        click.echo("Current working directory is not a Qanat repertory.")
+        sys.exit(1)
+
+
 @click.group()
 @click.version_option(message=ASCII_ART_use + "%(prog)s, version %(version)s")
 def main(args=None):
@@ -31,10 +39,11 @@ def main(args=None):
 
 
 # Main commands
-@main.command()
-def status():
+@main.command(name="status")
+def status_main():
     """Check status of experiments in this directory."""
-    click.echo("TODO")
+    check_cwd_is_qanat()
+    status.command_status()
 
 
 @main.command()
@@ -47,18 +56,21 @@ def init(directory):
 @main.group(name="experiment")
 def experiment_main():
     """Experiment-level utility"""
+    check_cwd_is_qanat()
     return 0
 
 
 @main.group(name="dataset")
 def dataset_main():
     """Dataset-level utility"""
+    check_cwd_is_qanat()
     return 0
 
 
 @main.group()
 def config():
     """Repository configuration utility"""
+    check_cwd_is_qanat()
     click.echo("TODO")
 
 
@@ -73,6 +85,7 @@ def experiment_list():
 def experiment_new():
     """Create new experiment."""
     experiment.command_add_prompt()
+
 
 @experiment_main.command(name="show")
 @click.argument("name", type=click.STRING, required=True)

@@ -4,6 +4,7 @@ todo/*
 !todo/done.txt
 
 *.bak
+*.tar*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

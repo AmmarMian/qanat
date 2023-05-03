@@ -42,3 +42,12 @@ DATASET_PATH = PATH
 DATASET_TAGS = TAGS
 DATASET_ID = ID
 
+
+# --------------------------------------------------------
+# Status CLI Constants
+# --------------------------------------------------------
+STATUS_DISKSIZE = ":computer_disk:"
+STATUS_EXPERIMENT = EXPERIMENT
+STATUS_DATASET = DATASET
+STATUS_RUN = RUN
+STATUS_RUNNING = ":hourglass_not_done:"
