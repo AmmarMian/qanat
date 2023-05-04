@@ -32,6 +32,7 @@ EXPERIMENT_TAGS = TAGS
 EXPERIMENT_DATASETS = DATASET
 EXPERIMENT_ID = ID
 EXPERIMENT_RUNS = RUN
+EXPERIMEN_ACTION = ":hammer_and_wrench:"
 
 # --------------------------------------------------------
 # Dataset CLI Constants

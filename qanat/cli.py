@@ -1,5 +1,4 @@
 """Console script for qanat."""
-import os
 import sys
 import rich_click as click
 import rich
@@ -8,6 +7,7 @@ from .cli_commands.init import init_qanat
 from .cli_commands import (
         experiment, dataset, status
 )
+from .core.repo import check_directory_is_qanat
 
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.SHOW_ARGUMENTS = True
@@ -26,7 +26,7 @@ ASCII_ART_use = r"""
 
 def check_cwd_is_qanat():
     """Check if current working directory is a Qanat repertory."""
-    if not os.path.exists(".qanat"):
+    if not check_directory_is_qanat('./'):
         click.echo("Current working directory is not a Qanat repertory.")
         sys.exit(1)
 
@@ -96,9 +96,9 @@ def experiment_show():
 
 @experiment_main.command(name="delete")
 @click.argument("name", type=click.STRING, required=True)
-def experiment_delete():
+def experiment_delete(name):
     """Delete experiment."""
-    click.echo("TODO")
+    experiment.command_delete(name)
 
 
 @experiment_main.command(name="update")
@@ -161,9 +161,10 @@ def dataset_new():
 
 
 @dataset_main.command(name="delete")
-def dataset_delete():
+@click.argument("name", type=click.STRING, required=True)
+def dataset_delete(name):
     """Delete dataset."""
-    click.echo("TODO")
+    dataset.command_delete(name)
 
 
 @dataset_main.command(name="update")

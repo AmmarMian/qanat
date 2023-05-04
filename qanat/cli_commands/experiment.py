@@ -14,7 +14,8 @@ from ..utils.logging import setup_logger
 from ..core.database import (
     open_database, add_experiment, find_experiment_id,
     find_dataset_id, count_number_runs_experiment,
-    fetch_tags_of_experiment)
+    fetch_tags_of_experiment, delete_experiment,
+    add_action)
 from ._constants import (
     EXPERIMENT_NAME, EXPERIMENT_DESCRIPTION, EXPERIMENT_PATH,
     EXPERIMENT_EXECUTABLE, EXPERIMENT_EXECUTE_COMMAND, EXPERIMENT_TAGS,
@@ -35,7 +36,6 @@ def command_add_prompt():
     logger.info("Experiment adding prompt")
     rich.print("Please enter the following information:")
     name = Prompt.ask(f"{EXPERIMENT_NAME} Name of the experiment")
-
     engine, Base, session = open_database('.qanat/database.db')
     Session = session()
     if find_experiment_id(Session, name) != -1:
@@ -52,7 +52,8 @@ def command_add_prompt():
         path = Prompt.ask(f"{EXPERIMENT_PATH} Path to the experiment")
 
     executable = Prompt.ask(
-            f"{EXPERIMENT_EXECUTABLE} Executable of the experiment",
+            f"{EXPERIMENT_EXECUTABLE} Executable of the experiment "
+            "(path from project root)",
             default=f"{path}/execute.sh")
     execute_command = Prompt.ask(
             f"{EXPERIMENT_EXECUTE_COMMAND} Execute command of the experiment",
@@ -76,7 +77,7 @@ def command_add_prompt():
             f"{EXPERIMENT_DATASETS} Datasets (name) of the experiment\n "
             "List of datasets in the database:\n "
             f"[bold green]{datasets_in_db}[/bold green]\n"
-            "Enter the paths separated by a comma: ",
+            "Enter the names separated by a comma: ",
             default="").strip().split(",")
 
     if datasets == [""]:
@@ -88,6 +89,7 @@ def command_add_prompt():
             logger.error(f"Dataset {dataset} does not exist")
             logger.error("Please add the dataset first by using the command: "
                          "'qanat dataset new'")
+            session.close_all()
             return
 
     rich.print("Please confirm the following information:")
@@ -104,12 +106,89 @@ def command_add_prompt():
                        execute_command, tags, datasets)
         logger.info("Experiment added to database")
 
+    # Add actions
+    add_actions = prompt.Confirm.ask(
+            "Would you like to add an action to this experiment ?\n"
+            "It is possible to add actions later with the command "
+            "'qanat experiment update'.\n")
+
+    while add_actions:
+        try:
+            logger.info('Action adding prompt. Press Ctrl+C to cancel.')
+            action_name = Prompt.ask(f"{EXPERIMENT_NAME} Name of the action")
+            action_description = Prompt.ask(
+                    f"{EXPERIMENT_DESCRIPTION} Description of the action")
+
+            action_executable = Prompt.ask(
+                    f"{EXPERIMENT_EXECUTABLE} Executable of the action"
+                    "(path from project root)")
+
+            action_command = Prompt.ask(
+                    f"{EXPERIMENT_EXECUTE_COMMAND} Execute command of "
+                    "the action",
+                    default="/usr/bin/bash")
+
+            add_action(Session, action_name, action_description,
+                       action_executable, action_command, name)
+
+        except KeyboardInterrupt:
+            logger.info("Action adding canceled")
+
+        add_actions = prompt.Confirm.ask(
+                "Would you like to add another action to this experiment ?\n",
+                default=False)
+
     session.close_all()
 
 
 def command_add_yaml():
     """Add experiment from yaml"""
+    # TODO: Implement this
     pass
+
+
+# --------------------------------------------------------
+# Command delete
+# --------------------------------------------------------
+def command_delete(experiment_name: str):
+    """Remove experiment.
+
+    :param experiment_name: Name of the experiment
+    :type experiment_name: str
+    """
+
+    engine, Base, session = open_database('.qanat/database.db')
+    Session = session()
+    if find_experiment_id(Session, experiment_name) == -1:
+        logger.error("Experiment does not exist")
+        Session.close_all()
+        return
+
+    # Fetch experiment information
+    experiment_id = find_experiment_id(Session, experiment_name)
+    number_runs = count_number_runs_experiment(Session, experiment_id)
+    tags = fetch_tags_of_experiment(Session, experiment_id)
+    description = Session.query(Base.classes.experiments).filter_by(
+            name=experiment_name).first().description
+    path = Session.query(Base.classes.experiments).filter_by(
+            name=experiment_name).first().path
+
+    rich.print("Please confirm the following information:")
+    rich.print(f"[bold]{EXPERIMENT_NAME} Name[/bold]: {experiment_name}")
+    rich.print(f"[bold]{EXPERIMENT_DESCRIPTION} Description[/bold]: {description}")
+    rich.print(f"[bold]{EXPERIMENT_PATH} Path[/bold]: {path}")
+    rich.print(f"[bold]{EXPERIMENT_TAGS} Tags[/bold]: {tags}")
+    rich.print(f"[bold]{EXPERIMENT_RUNS} Number of runs[/bold]: {number_runs}")
+
+    if prompt.Confirm.ask("Do you want to remove this experiment?\n"
+                          "This will remove all the runs associated with it "
+                          "as well as results and logs.\n"
+                          "[bold red]This action cannot be undone!\n"):
+        logger.info("Removing experiment from database")
+        delete_experiment(Session, experiment_name)
+        logger.info("Experiment removed from database")
+
+    session.close_all()
 
 
 # --------------------------------------------------------

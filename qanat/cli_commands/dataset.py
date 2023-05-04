@@ -14,7 +14,7 @@ from rich import prompt
 from ..utils.logging import setup_logger
 from ..core.database import (
     open_database, add_dataset, find_dataset_id,
-    fetch_tags_of_dataset)
+    fetch_tags_of_dataset, delete_dataset)
 from ._constants import (
     DATASET_NAME, DATASET_DESCRIPTION, DATASET_PATH,
     DATASET_TAGS, DATASET_ID)
@@ -63,6 +63,54 @@ def command_add_prompt():
         logger.info("Adding dataset to database")
         add_dataset(Session, path, name, description, tags)
         logger.info("Dataset added successfully")
+
+    Session.close_all()
+
+
+# --------------------------------------------------------
+# Command Delete
+# --------------------------------------------------------
+def command_delete(dataset_name: str):
+    """Delete dataset from database"""
+
+    engine, Base, session = open_database('.qanat/database.db')
+    Session = session()
+
+    dataset_id = find_dataset_id(Session, dataset_name)
+    if dataset_id == -1:
+        logger.error("Dataset does not exist")
+        Session.close_all()
+        return
+
+    # Fetch dataset info
+    description, path = Session.query(
+            Base.classes.datasets.description,
+            Base.classes.datasets.path).filter_by(id=dataset_id).first()
+
+    # Fetch experiments_id that use this dataset
+    experiments_datasets = [element.experiment_id for element in
+                            Session.query(
+                                Base.classes.datasets_experiments).filter_by(
+                                    dataset_id=dataset_id).all()]
+
+    experiments = [experiment.name for experiment in
+                   Session.query(Base.classes.experiments).filter(
+                       Base.classes.experiments.id.in_(
+                           experiments_datasets)).all()]
+
+    rich.print("Please confirm the following information:")
+    rich.print(f"[bold]{DATASET_NAME} Name[/bold]: {dataset_name}")
+    rich.print(f"[bold]{DATASET_DESCRIPTION} Description[/bold]: "
+               f"{description}")
+    rich.print(f"[bold]{DATASET_PATH} Path[/bold]: {path}")
+
+    if prompt.Confirm.ask("Do you want to delete this dataset?\n"
+                          "The link between experiments "
+                          f"[bold]{experiments}[/bold] and "
+                          "this dataset will be deleted as well.\n"):
+        logger.info("Deleting dataset from database")
+        delete_dataset(Session, dataset_name)
+        logger.info("Dataset deleted successfully")
 
     Session.close_all()
 

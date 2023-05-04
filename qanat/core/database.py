@@ -8,10 +8,7 @@
 # for Qanat.
 # =========================================
 
-# import os
-# import git
-# import shutil
-# import sqlite3
+import shutil
 from dataclasses import dataclass
 from sqlalchemy import (
         Column, Integer, String, ForeignKey, DateTime,
@@ -24,6 +21,7 @@ from sqlalchemy.sql import func
 
 from sqlalchemy.types import TypeDecorator
 import json
+from rich.console import Console
 
 from ..utils.logging import setup_logger
 logger = setup_logger()
@@ -106,6 +104,7 @@ class Action(Base):
     experiment_id = Column(Integer, ForeignKey("experiments.id"))
     name = Column(String)
     executable = Column(String)
+    executable_command = Column(String)
     description = Column(String)
     created = Column(DateTime, server_default=func.now())
     updated = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -414,7 +413,8 @@ def add_tag(session: Session, name: str, description: str) -> Tags:
 
 
 def add_action(session: Session, name: str, description: str,
-               executable: str, experiment_name: str) -> Action:
+               executable: str, executable_command: str,
+               experiment_name: str) -> Action:
     """Add an action to the database.
 
     :param session: The session of the database.
@@ -428,6 +428,9 @@ def add_action(session: Session, name: str, description: str,
 
     :param executable: The path to the executable of the action.
     :type executable: str
+
+    :param executable_command: The command to run the executable.
+    :type executable_command: str
 
     :param experiment_name: The name of the experiment of the action.
     :type experiment_path: str
@@ -449,6 +452,7 @@ def add_action(session: Session, name: str, description: str,
 
     # Create the action
     action = Action(name=name, description=description, executable=executable,
+                    executable_command=executable_command,
                     experiment_id=experiment_id)
 
     # Add the action to the database
@@ -519,6 +523,126 @@ def add_run(session: Session,
     session.commit()
 
     return run
+
+
+def delete_experiment(session: Session, experiment_name: str):
+    """Remove an experiment from the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+    """
+
+    # Find the experiment
+    experiment_id = find_experiment_id(session, experiment_name)
+
+    # If the experiment does not exist, return
+    if experiment_id == -1:
+        logger.warning(f"Experiment {experiment_name} does not exist in the "
+                       f"database.")
+        return
+
+    # Rich console with status
+    logger.info(f"Removing experiment {experiment_name} from the database.")
+    console = Console()
+    with console.status("[bold green]Removing experiment...") as status:
+
+        # Find runs corresponding to the experiment
+        runs = session.query(RunOfAnExperiment).filter(
+            RunOfAnExperiment.experiment_id == experiment_id).all()
+
+        console.print(
+                f"Removing {len(runs)} runs of the "
+                f"experiment {experiment_name}.")
+
+        # Remove the groups_of_parameters of runs corresponding to the
+        # experiment
+        console.print("Removing the groups of parameters of the runs.")
+        for run in runs:
+            session.query(GroupOfParametersOfARun).filter(
+                GroupOfParametersOfARun.run_id == run.id).delete()
+
+        # Remove the tags of runs in the experiment
+        console.print("Removing the tags of the runs.")
+        for run in runs:
+            session.query(RunsTags).filter(RunsTags.run_id == run.id).delete()
+
+        # Removing the directories of runs
+        console.print("Removing the directories of the runs.")
+        for run in runs:
+            shutil.rmtree(run.storage_path)
+
+        # Remove the runs of the experiment
+        console.print("Removing the runs of the experiment.")
+        session.query(RunOfAnExperiment).filter(
+            RunOfAnExperiment.experiment_id == experiment_id).delete()
+
+        # Remove the actions of the experiment
+        console.print("Removing the actions of the experiment.")
+        session.query(Action).filter(
+                Action.experiment_id == experiment_id).delete()
+
+        # Remove the tags of the experiment
+        console.print("Removing the tags of the experiment.")
+        session.query(ExperimentsTags).filter(
+            ExperimentsTags.experiment_id == experiment_id).delete()
+
+        # Remove the datasets link of the experiment
+        console.print("Removing the datasets link of the experiment.")
+        session.query(DatasetExperiment).filter(
+            DatasetExperiment.experiment_id == experiment_id).delete()
+
+        # Remove the experiment
+        console.print("Removing the experiment.")
+        session.query(Experiment).filter(
+                Experiment.id == experiment_id).delete()
+        session.commit()
+
+    status.update(f"[bold green]Experiment {experiment_name} removed.")
+
+
+def delete_dataset(session: Session, dataset_name: str):
+    """Remove a dataset from the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param dataset_name: The name of the dataset.
+    :type dataset_name: str
+    """
+
+    dataset_id = find_dataset_id(session, dataset_name)
+
+    # If the dataset does not exist, return
+    if dataset_id == -1:
+        logger.warning(f"Dataset {dataset_name} does not exist in the "
+                       f"database.")
+        return
+
+    # Rich console with status
+    logger.info(f"Removing dataset {dataset_name} from the database.")
+    console = Console()
+    with console.status("[bold green]Removing dataset...") as status:
+
+        # Remove the link between datasets and experiments
+        console.print("Removing the link between datasets and experiments.")
+        session.query(DatasetExperiment).filter(
+            DatasetExperiment.dataset_id == dataset_id).delete()
+
+        # Remove the tags of the dataset
+        console.print("Removing the tags of the dataset.")
+        session.query(DatasetsTags).filter(
+            DatasetsTags.dataset_id == dataset_id).delete()
+
+        # Remove the dataset
+        console.print("Removing the dataset.")
+        session.query(Dataset).filter(
+            Dataset.id == dataset_id).delete()
+        session.commit()
+
+    status.update(f"[bold green]Dataset {dataset_name} removed.")
 
 
 # ------------------------------------------------------------
@@ -706,3 +830,26 @@ def fetch_datasets_experiment(Session: Session,
     datasets = Session.query(Dataset).join(DatasetExperiment).filter(
             DatasetExperiment.experiment_id == experiment_id).distinct()
     return datasets
+
+
+def fetch_actions_experiment(Session: Session,
+                             experiment_name: str) -> list:
+    """Fetch the actions of an experiment in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_path: str
+
+    :return: The actions of the experiment.
+    :rtype: list
+    """
+
+    # Find experiment_id through path
+    experiment_id = find_experiment_id(Session, experiment_name)
+
+    # Query the database for the actions
+    actions = Session.query(Action).filter_by(
+            experiment_id=experiment_id).distinct()
+    return actions

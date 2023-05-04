@@ -18,6 +18,23 @@ from ..utils.logging import setup_logger
 from ..core.database import init_database
 
 
+def check_directory_is_qanat(path='./'):
+    """Check if directory is a Qanat repertory.
+
+    :param path: The path to the directory to check.
+    :type path: str
+
+    :return: True if the directory is a Qanat repertory, False otherwise.
+    :rtype: bool
+    """
+    is_qanat = os.path.exists(os.path.join(path, ".qanat"))
+    is_qanat = is_qanat and os.path.exists(
+            os.path.join(path, ".qanat/database.db"))
+    is_qanat = is_qanat and os.path.exists(
+            os.path.join(path, ".qanat/config.yaml"))
+    return is_qanat
+
+
 class QanatRepertory:
     """Class for managing the Qanat repertory."""
 
