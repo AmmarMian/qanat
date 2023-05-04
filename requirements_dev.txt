@@ -11,6 +11,7 @@ rich_click
 rich
 SQLAlchemy
 GitPython
+pyyaml
 
 pytest>=6.2.4
 black>=22.3.0

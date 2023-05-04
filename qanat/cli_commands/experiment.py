@@ -175,7 +175,8 @@ def command_delete(experiment_name: str):
 
     rich.print("Please confirm the following information:")
     rich.print(f"[bold]{EXPERIMENT_NAME} Name[/bold]: {experiment_name}")
-    rich.print(f"[bold]{EXPERIMENT_DESCRIPTION} Description[/bold]: {description}")
+    rich.print(f"[bold]{EXPERIMENT_DESCRIPTION} Description[/bold]: "
+               f"{description}")
     rich.print(f"[bold]{EXPERIMENT_PATH} Path[/bold]: {path}")
     rich.print(f"[bold]{EXPERIMENT_TAGS} Tags[/bold]: {tags}")
     rich.print(f"[bold]{EXPERIMENT_RUNS} Number of runs[/bold]: {number_runs}")

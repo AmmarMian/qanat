@@ -9,6 +9,7 @@
 
 from qanat import cli
 import unittest
+
 # import tempfile
 # import os
 # import git
@@ -56,13 +57,14 @@ class CLIMainTest(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
 
     def test_status(self):
-        """Test that the status command exists. Should exit with no error."""
+        """Test that the status command exists. Should exit with error
+        since it is not a Qanat repository."""
         result = self.runner.invoke(cli.main, ["status"])
-        self.assertEqual(result.exit_code, 0)
+        self.assertEqual(result.exit_code, 1)
 
     def test_init(self):
         """Test that the init command exists. Should exit with error.
-        Because no path is given b default."""
+        Because no path is given by default."""
         result = self.runner.invoke(cli.main, ["init"])
         self.assertEqual(result.exit_code, 2)
 

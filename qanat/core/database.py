@@ -14,9 +14,8 @@ from sqlalchemy import (
         Column, Integer, String, ForeignKey, DateTime,
         create_engine
 )
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.sql import func
 
 from sqlalchemy.types import TypeDecorator
@@ -195,6 +194,9 @@ def init_database(path: str):
 
     :return: The engine of the database.
     :rtype: sqlalchemy.engine.base.Engine
+
+    :return: The base of the database.
+    :rtype: sqlalchemy.ext.declarative.api.DeclarativeMeta
     """
 
     # Create the database
@@ -375,17 +377,6 @@ def add_tag(session: Session, name: str, description: str) -> Tags:
     :param name: The name of the tag.
     :type name: str
     impl = sqlalchemy.Text(SIZE)
-
-    def process_bind_param(self, value, dialect):
-        if value is not None:
-            value = json.dumps(value)
-
-        return value
-
-    def process_result_value(self, value, dialect):
-        if value is not None:
-            value = json.loads(value)
-        return value
 
     :param description: The description of the tag.
     :type description: str
