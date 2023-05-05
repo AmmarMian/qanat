@@ -89,9 +89,10 @@ def experiment_new():
 
 @experiment_main.command(name="show")
 @click.argument("name", type=click.STRING, required=True)
-def experiment_show():
-    """Show runs of experiment."""
-    click.echo("TODO")
+@click.option("--prompt", "-p", is_flag=True, default=False)
+def experiment_show(name, prompt):
+    """Show runs of experiment + prompt."""
+    experiment.command_show(name, prompt)
 
 
 @experiment_main.command(name="delete")

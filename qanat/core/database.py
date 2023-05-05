@@ -438,7 +438,7 @@ def add_action(session: Session, name: str, description: str,
         logger.warning(f"Action {name} already exists in the database.")
         return
 
-    # Find experiment_id through path
+    # Find experiment_id through name
     experiment_id = find_experiment_id(session, experiment_name)
 
     # Create the action
@@ -487,7 +487,7 @@ def add_run(session: Session,
     :rtype: qanat.core.dataset.RunOfAnExperiment
     """
 
-    # Find experiment_id through path
+    # Find experiment_id through name
     experiment_id = find_experiment_id(session, experiment_name)
 
     # Create the run
@@ -742,7 +742,7 @@ def count_number_runs_experiment(session: Session,
     :rtype: int
     """
 
-    # Find experiment_id through path
+    # Find experiment_id through name
     experiment_id = find_experiment_id(session, experiment_name)
 
     # Query the database for the number of runs
@@ -766,7 +766,7 @@ def fetch_tags_of_experiment(Session: Session,
     :rtype: list
     """
 
-    # Find experiment_id through path
+    # Find experiment_id through name
     experiment_id = find_experiment_id(Session, experiment_name)
 
     # Query the database for the tags
@@ -790,7 +790,7 @@ def fetch_tags_of_dataset(Session: Session,
     :rtype: list
     """
 
-    # Find dataset_id through path
+    # Find dataset_id through name
     dataset_id = find_dataset_id(Session, dataset_name)
 
     # Query the database for the tags
@@ -800,8 +800,8 @@ def fetch_tags_of_dataset(Session: Session,
     return tags
 
 
-def fetch_datasets_experiment(Session: Session,
-                              experiment_name: str) -> list:
+def fetch_datasets_of_experiment(Session: Session,
+                                  experiment_name: str) -> list:
     """Fetch the datasets of an experiment in the database.
 
     :param session: The session of the database.
@@ -814,17 +814,17 @@ def fetch_datasets_experiment(Session: Session,
     :rtype: list
     """
 
-    # Find experiment_id through path
+    # Find experiment_id through name
     experiment_id = find_experiment_id(Session, experiment_name)
 
     # Query the database for the datasets
     datasets = Session.query(Dataset).join(DatasetExperiment).filter(
             DatasetExperiment.experiment_id == experiment_id).distinct()
-    return datasets
+    return list(datasets)
 
 
-def fetch_actions_experiment(Session: Session,
-                             experiment_name: str) -> list:
+def fetch_actions_of_experiment(Session: Session,
+                                experiment_name: str) -> list:
     """Fetch the actions of an experiment in the database.
 
     :param session: The session of the database.
@@ -837,10 +837,54 @@ def fetch_actions_experiment(Session: Session,
     :rtype: list
     """
 
-    # Find experiment_id through path
+    # Find experiment_id through name
     experiment_id = find_experiment_id(Session, experiment_name)
 
     # Query the database for the actions
     actions = Session.query(Action).filter_by(
             experiment_id=experiment_id).distinct()
-    return actions
+    return list(actions)
+
+
+def fetch_runs_of_experiment(Session: Session,
+                             experiment_name: str) -> list:
+    """Fetch the runs of an experiment in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_path: str
+
+    :return: The runs of the experiment.
+    :rtype: list
+    """
+
+    # Find experiment_id through name
+    experiment_id = find_experiment_id(Session, experiment_name)
+
+    # Query the database for the runs
+    runs = Session.query(RunOfAnExperiment).filter_by(
+            experiment_id=experiment_id).distinct()
+    return list(runs)
+
+
+def fetch_tags_of_run(Session: Session,
+                      run_id: int) -> list:
+    """Fetch the tags of a run in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param run_id: The id of the run.
+    :type run_id: int
+
+    :return: The tags of the run.
+    :rtype: list
+    """
+
+    # Query the database for the tags
+    tags = [tag.name for tag in
+            Session.query(Tags).join(RunsTags).filter(
+                RunsTags.run_id == run_id).distinct()]
+    return tags

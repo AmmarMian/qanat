@@ -15,11 +15,14 @@ from ..core.database import (
     open_database, add_experiment, find_experiment_id,
     find_dataset_id, count_number_runs_experiment,
     fetch_tags_of_experiment, delete_experiment,
-    add_action)
+    fetch_datasets_of_experiment, fetch_runs_of_experiment,
+    add_action, fetch_tags_of_run,
+    fetch_actions_of_experiment)
 from ._constants import (
     EXPERIMENT_NAME, EXPERIMENT_DESCRIPTION, EXPERIMENT_PATH,
     EXPERIMENT_EXECUTABLE, EXPERIMENT_EXECUTE_COMMAND, EXPERIMENT_TAGS,
-    EXPERIMENT_DATASETS, EXPERIMENT_RUNS, EXPERIMENT_ID)
+    EXPERIMENT_DATASETS, EXPERIMENT_RUNS, EXPERIMENT_ID,
+    EXPERIMENT_ACTION, get_run_status_emoji)
 from rich.table import Table
 
 logger = setup_logger()
@@ -172,12 +175,15 @@ def command_delete(experiment_name: str):
             name=experiment_name).first().description
     path = Session.query(Base.classes.experiments).filter_by(
             name=experiment_name).first().path
+    datasets_names = fetch_datasets_of_experiment(Session, experiment_id)
 
     rich.print("Please confirm the following information:")
     rich.print(f"[bold]{EXPERIMENT_NAME} Name[/bold]: {experiment_name}")
     rich.print(f"[bold]{EXPERIMENT_DESCRIPTION} Description[/bold]: "
                f"{description}")
     rich.print(f"[bold]{EXPERIMENT_PATH} Path[/bold]: {path}")
+    rich.print(f"[bold]{EXPERIMENT_DATASETS} Datasets[/bold]:"
+               f"{datasets_names}")
     rich.print(f"[bold]{EXPERIMENT_TAGS} Tags[/bold]: {tags}")
     rich.print(f"[bold]{EXPERIMENT_RUNS} Number of runs[/bold]: {number_runs}")
 
@@ -230,4 +236,88 @@ def command_list():
                      f"{EXPERIMENT_RUNS} {runs_count}",
                      f"{tags}")
     rich.print(grid)
+    session.close_all()
+
+
+# --------------------------------------------------------
+# Command show
+# -------------------------------------------------------
+def command_show(experiment_name: str,
+                 show_run_prompts: bool = False):
+    """Show information about an experiment.
+
+    :param experiment_name: Name of the experiment
+    :type experiment_name: str
+
+    :param show_run_prompts: Show prompts for run information
+    :type show_run_prompts: bool
+    """
+    engine, Base, session = open_database('.qanat/database.db')
+    Session = session()
+    experiment_id = find_experiment_id(Session, experiment_name)
+    if experiment_id == -1:
+        logger.error("Experiment does not exist")
+        Session.close_all()
+        return
+
+    experiment = Session.query(Base.classes.experiments).filter_by(
+            name=experiment_name).first()
+    number_runs = count_number_runs_experiment(Session, experiment_name)
+    tags = fetch_tags_of_experiment(Session, experiment_name)
+    rich.print(f"[bold]{EXPERIMENT_NAME} Name[/bold]: {experiment.name}")
+    rich.print(f"[bold]{EXPERIMENT_DESCRIPTION} Description[/bold]: "
+               f"{experiment.description}")
+    rich.print(f"[bold]{EXPERIMENT_PATH} Path[/bold]: {experiment.path}")
+    rich.print(f"[bold]{EXPERIMENT_EXECUTABLE} Executable[/bold]: "
+               f"{experiment.executable}")
+    rich.print(f"[bold]{EXPERIMENT_EXECUTE_COMMAND} Execute command[/bold]: "
+               f"{experiment.executable_command}")
+    rich.print(f"[bold]{EXPERIMENT_RUNS} Number of runs[/bold]: {number_runs}")
+    rich.print(f"[bold]{EXPERIMENT_TAGS} Tags[/bold]: {tags}")
+
+    # Get actions associated with the experiment
+    actions = fetch_actions_of_experiment(Session, experiment_name)
+    if len(actions) >= 1:
+        rich.print(f"[bold]{EXPERIMENT_ACTION} Actions[/bold]:")
+        for action in actions:
+            rich.print(f"  - [bold]{action.name}[/bold]: {action.description}")
+
+    # Show runs associated with the experiment as a list
+    rich.print(f"\n[bold]{EXPERIMENT_RUNS} Runs[/bold]:")
+    grid = Table.grid(expand=False, padding=(0, 4))
+    grid.add_column(justify="left", header="ID")
+    grid.add_column(justify="left", header="Name")
+    grid.add_column(justify="left", header="Description")
+    grid.add_column(justify="left", header="Path", width=20)
+    grid.add_column(justify="left", header="Status")
+    grid.add_column(justify="left", header="Tags", style="bold")
+    grid.add_row("[bold]ID[/bold]",
+                    "[bold]Name[/bold]", "[bold]Description[/bold]",
+                    "[bold]Path[/bold]", "[bold]Status[/bold]",
+                    "[bold]Tags[/bold]")
+
+    runs = fetch_runs_of_experiment(Session, experiment_name)
+    for run in runs:
+        tags = fetch_tags_of_run(Session, run.id)
+        if len(tags) >= 1:
+            tags = f"{EXPERIMENT_TAGS} " +\
+                   f", {EXPERIMENT_TAGS} ".join(fetch_tags_of_run(
+                                                Session, run.id))
+        else:
+            tags = ""
+
+        RUN_STATUS = get_run_status_emoji(run.status)
+        grid.add_row(f"{EXPERIMENT_ID} {run.id}",
+                     f"{EXPERIMENT_NAME} {run.name}",
+                     f"{EXPERIMENT_DESCRIPTION} {run.description}",
+                     f"{EXPERIMENT_PATH} {run.path}",
+                     f"{RUN_STATUS} {run.status}",
+                     f"{tags}")
+
+    rich.print(grid)
+
+    # TODO: add prompt if the option is passed
+    if show_run_prompts:
+        logger.info("Showing run prompts")
+
     session.close_all()

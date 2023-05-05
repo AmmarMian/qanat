@@ -32,7 +32,32 @@ EXPERIMENT_TAGS = TAGS
 EXPERIMENT_DATASETS = DATASET
 EXPERIMENT_ID = ID
 EXPERIMENT_RUNS = RUN
-EXPERIMEN_ACTION = ":hammer_and_wrench:"
+EXPERIMENT_ACTION = ":hammer_and_wrench:"
+RUN_IS_RUNNING = ":play_button:"
+RUN_IS_FINISHED = ":white_check_mark:"
+RUN_IS_FAILED = ":x:"
+RUN_IS_PENDING = ":stopwatch:"
+RUN_IS_PAUSED = ":pause_button:"
+RUN_IS_UNKNOWN = ":question:"
+
+
+def get_run_status_emoji(status):
+    """Return the emoji corresponding to the status of the run."""
+    if status == "running":
+        emoji_status = f"{RUN_IS_RUNNING}"
+    elif status == "finished":
+        emoji_status = f"{RUN_IS_FINISHED}"
+    elif status == "failed":
+        emoji_status = f"{RUN_IS_FAILED}"
+    elif status == "pending":
+        emoji_status = f"{RUN_IS_PENDING}"
+    elif status == "paused":
+        emoji_status = f"{RUN_IS_PAUSED}"
+    else:
+        emoji_status = f"{RUN_IS_UNKNOWN}"
+
+    return emoji_status
+
 
 # --------------------------------------------------------
 # Dataset CLI Constants
