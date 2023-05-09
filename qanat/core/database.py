@@ -822,6 +822,26 @@ def update_experiment(session: Session, experiment_name: str,
     session.commit()
 
 
+def update_run_status(session: Session, run_id: int,
+                      new_status: str) -> None:
+    """Update the status of a run in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param run_id: The id of the run.
+    :type run_id: int
+
+    :param new_status: The new status of the run.
+    :type new_status: str
+    """
+
+    session.query(RunOfAnExperiment).filter(
+        RunOfAnExperiment.id == run_id).update(
+        {"status": new_status})
+    session.commit()
+
+
 # ------------------------------------------------------------
 # Useful lookup functions
 # ------------------------------------------------------------
@@ -1089,3 +1109,43 @@ def fetch_tags_of_run(Session: Session,
             Session.query(Tags).join(RunsTags).filter(
                 RunsTags.run_id == run_id).distinct()]
     return tags
+
+
+def fetch_groupofparameters_of_run(
+        Session: Session, run_id: int) -> list:
+    """Fetch the group of parameters of a run in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param run_id: The id of the run.
+    :type run_id: int
+
+    :return: The group of parameters of the run.
+    :rtype: list
+    """
+
+    # Query the database for the group of parameters
+    groups_of_parameters = Session.query(GroupOfParametersOfARun).filter_by(
+            run_id=run_id).distinct()
+    return list(groups_of_parameters)
+
+
+def get_experiment_of_run(Session: Session,
+                          run_id: int) -> Experiment:
+    """Get the experiment of a run in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param run_id: The id of the run.
+    :type run_id: int
+
+    :return: The experiment of the run.
+    :rtype: Experiment
+    """
+
+    # Query the database for the experiment
+    experiment = Session.query(Experiment).join(RunOfAnExperiment).filter(
+            RunOfAnExperiment.id == run_id).first()
+    return experiment

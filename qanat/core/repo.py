@@ -186,6 +186,7 @@ class QanatRepertory:
                     should_commit = True
                     f.seek(0, os.SEEK_END)
                     f.write(".qanat/*\n")
+                    f.write('.qanat/database.db\n')
                     f.write("!.qanat/config.yaml")
 
             if should_add_results:

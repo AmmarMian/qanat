@@ -5,13 +5,14 @@ import rich
 
 from .cli_commands.init import init_qanat
 from .cli_commands import (
-        experiment, dataset, status
+        experiment, dataset, status, run
 )
 from .core.repo import check_directory_is_qanat
 
 click.rich_click.USE_RICH_MARKUP = True
 click.rich_click.SHOW_ARGUMENTS = True
 click.rich_click.GROUP_ARGUMENTS_OPTIONS = True
+click.rich_click.APPEND_METAVARS_HELP = True
 
 ASCII_ART_use = r"""
                         .
@@ -117,15 +118,44 @@ def experiment_update(name):
     ),
 )
 @click.argument("name", type=click.STRING, required=True)
+@click.option("--runner", "-r", default="local",
+              type=click.Choice(["local", "MUST"]), show_default=True,
+              help="Runner to use for experiment.")
+@click.option("--group_param", "-g", default=None, type=click.STRING,
+              help="Group of parameters to run.", multiple=True)
+@click.option("--storage_path", default=None, type=click.STRING)
+@click.option("--tag", "-t", default=None, type=click.STRING,
+              help="Tag to assing this run", multiple=True)
+@click.option("--description", default="", type=click.STRING)
 @click.pass_context
 # TODO: Debug this
 # fetched from:
 # https://stackoverflow.com/questions/32944131/ ...
 # add-unspecified-options-to-cli-command-using-python-click
-def experiment_run(ctx, name):
-    """Run experiment."""
+def experiment_run(ctx, name, runner, group_param, storage_path,
+                   tag, description):
+    """Run an experiment with additional positional and option args.\n
+    [bold red]WARNING: The following options are not available "
+    "for your executable command:[/bold red]\n"
+    - [bold red]'--runner'[/bold red] to specify runner\n
+    - [bold red]'--parallel'[/bold red] for local runner to run in parallel\n
+    - [bold red]'--group_param'[/bold red] to specify group of parameters to
+    run as the same run.\n
+    - [bold red]'--storage_path'[/bold red] to override storage path for
+    the run of the experiment.\n
+    - [bold red]'--tag'[/bold red] to add tag to the run of the experiment.\n
+    - [bold red]'--description'[/bold red] to add description to the run of
+    the experiment.\n
+    """
     click.echo("TODO")
+    print('DEBUG ctx.args:', ctx.args)
+    print('DEBUG xtx params', ctx.params)
+    print('DEBUG name:', name)
+    print('DEBUG runner:', runner)
+    print('DEBUG group_param:', group_param)
     click.echo(ctx.args)
+    run.launch_run_experiment(
+            name, ctx, group_param, runner, storage_path, description, tag)
     # click.echo(
     # {ctx.args[i][1:]: ctx.args[i+1] for i in range(0, len(ctx.args), 1)}
     # )
