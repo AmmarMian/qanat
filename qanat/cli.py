@@ -103,9 +103,10 @@ def experiment_delete(name):
 
 
 @experiment_main.command(name="update")
-def experiment_update():
+@click.argument("name", type=click.STRING, required=True)
+def experiment_update(name):
     """Update experiment."""
-    click.echo("TODO")
+    experiment.command_update(name)
 
 
 @experiment_main.command(

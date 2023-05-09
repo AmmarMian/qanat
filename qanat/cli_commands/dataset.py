@@ -14,7 +14,8 @@ from rich import prompt
 from ..utils.logging import setup_logger
 from ..core.database import (
     open_database, add_dataset, find_dataset_id,
-    fetch_tags_of_dataset, delete_dataset)
+    fetch_tags_of_dataset, delete_dataset,
+    add_tag, find_tag_id)
 from ._constants import (
     DATASET_NAME, DATASET_DESCRIPTION, DATASET_PATH,
     DATASET_TAGS, DATASET_ID)
@@ -52,6 +53,18 @@ def command_add_prompt():
     tags = Prompt.ask(
             f"{DATASET_TAGS} Tags of the dataset separated by a comma",
             default="").strip().split(",")
+    if tags == [""]:
+        tags = []
+
+    for tag in tags:
+        if find_tag_id(Session, tag) == -1:
+            logger.info(f"Tag {tag} does not exist")
+            logger.info("Creating tag")
+            tag_description = Prompt.ask(
+                f'{DATASET_DESCRIPTION} Please add a description '
+                f'for the tag [bold yellow]{tag}[/bold yellow]]',
+                default="")
+            add_tag(Session, tag, tag_description)
 
     rich.print("Please confirm the following information:")
     rich.print(f"[bold]Name[/bold]: {name}")
@@ -66,6 +79,10 @@ def command_add_prompt():
 
     Session.close_all()
 
+
+# --------------------------------------------------------
+# Command Update
+# --------------------------------------------------------
 
 # --------------------------------------------------------
 # Command Delete

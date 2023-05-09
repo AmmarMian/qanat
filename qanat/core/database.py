@@ -431,7 +431,7 @@ def add_action(session: Session, name: str, description: str,
     """
 
     # Check if the action already exists in the database
-    action_id = find_action_id(session, name)
+    action_id = find_action_id(session, name, experiment_name)
 
     # If the action does not exist, add it to the database
     if action_id != -1:
@@ -636,6 +636,192 @@ def delete_dataset(session: Session, dataset_name: str):
     status.update(f"[bold green]Dataset {dataset_name} removed.")
 
 
+def delete_action(session: Session, action_name: str,
+                  experiment_name) -> bool:
+    """Delete an action from the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param action_name: The name of the action.
+    :type action_name: str
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :return: True if the action has been deleted, False otherwise.
+    :rtype: bool
+    """
+
+    # Find the experiment_id
+    experiment_id = find_experiment_id(session, experiment_name)
+
+    # If the experiment does not exist, return
+    if experiment_id == -1:
+        logger.warning(f"Experiment {experiment_name} does not exist in the "
+                       f"database.")
+        return
+
+    # Find the action_id
+    action_id = find_action_id(session, action_name, experiment_name)
+
+    # If the action does not exist, return
+    if action_id == -1:
+        logger.warning(f"Action {action_name} does not exist in the "
+                       f"database.")
+        return False
+
+    # Deleting the action
+    session.query(Action).filter(Action.id == action_id).delete()
+    session.commit()
+    return True
+
+
+def update_experiment(session: Session, experiment_name: str,
+                      new_experiment_name: str = None,
+                      new_experiment_description: str = None,
+                      new_experiment_path: str = None,
+                      new_experiment_executable: str = None,
+                      new_experiment_executable_command: str = None,
+                      new_experiment_tags: list = None,
+                      new_experiment_datasets: list = None,
+                      new_experiment_actions: list = None):
+    """Update an experiment in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :param new_experiment_name: The new name of the experiment.
+    :type new_experiment_name: str
+
+    :param new_experiment_description: The new description of the experiment.
+    :type new_experiment_description: str
+
+    :param new_experiment_path: The new path of the experiment.
+    :type new_experiment_path: str
+
+    :param new_experiment_executable: The new executable of the experiment.
+    :type new_experiment_executable: str
+
+    :param new_experiment_executable_command: The new executable command of the
+        experiment.
+    :type new_experiment_executable_command: str
+
+    :param new_experiment_tags: The new tags of the experiment.
+    :type new_experiment_tags: list
+
+    :param new_experiment_datasets: The new datasets of the experiment.
+    :type new_experiment_datasets: list
+
+    :param new_experiment_actions: The new actions of the experiment.
+    :type new_experiment_actions: list
+    """
+
+    # Find the id of the experiment
+    experiment_id = find_experiment_id(session, experiment_name)
+
+    # If the experiment does not exist, return
+    if experiment_id == -1:
+        logger.warning(f"Experiment {experiment_name} does not exist in the "
+                       "database.")
+        return
+
+    # Update elements only if needed
+    # ------------------------------
+    for element in zip(
+            ["name", "description", "path", "executable",
+             "executable_command"],
+            [new_experiment_name, new_experiment_description,
+             new_experiment_path, new_experiment_executable,
+             new_experiment_executable_command]):
+        if element[1] is not None:
+
+            # Update desired properties
+            session.query(Experiment).filter(
+                Experiment.id == experiment_id).update(
+                {element[0]: element[1]})
+
+    # Update the tags of the experiment
+    # ---------------------------------
+    # Find the tags of the experiment
+    experiment_tags = session.query(Tags).join(ExperimentsTags).filter(
+        ExperimentsTags.experiment_id == experiment_id).all()
+
+    if new_experiment_tags is not None:
+        # Delete the link between the experiment and the tags
+        # that are not in the new tags
+        for tag in experiment_tags:
+            if tag.name not in new_experiment_tags:
+                session.query(ExperimentsTags).filter(
+                    ExperimentsTags.experiment_id == experiment_id,
+                    ExperimentsTags.tag_id == tag.id).delete()
+
+        # Adding new tags to the experiment
+        for tag in new_experiment_tags:
+            if tag not in [x.name for x in experiment_tags]:
+                tag_id = find_tag_id(session, tag)
+                if tag_id == -1:
+                    logger.warning(f"Tag {tag} does not exist in the "
+                                   "database.")
+                    logger.info(f"Creating tag {tag} in the database.")
+                    tag = add_tag(session, tag)
+                    tag_id = tag.id
+                session.add(ExperimentsTags(
+                    experiment_id=experiment_id, tag_id=tag_id))
+
+    # Update the datasets of the experiment
+    # -------------------------------------
+    # Find the datasets of the experiment
+    experiment_datasets = session.query(Dataset).join(
+            DatasetExperiment).filter(
+        DatasetExperiment.experiment_id == experiment_id).all()
+
+    if new_experiment_datasets is not None:
+        # Delete the link between the experiment and the datasets
+        # that are not in the new datasets
+        for dataset in experiment_datasets:
+            if dataset.name not in new_experiment_datasets:
+                session.query(DatasetExperiment).filter(
+                    DatasetExperiment.experiment_id == experiment_id,
+                    DatasetExperiment.dataset_id == dataset.id).delete()
+
+        # Adding new datasets to the experiment
+        for dataset in new_experiment_datasets:
+            if dataset not in [x.name for x in experiment_datasets]:
+                dataset_id = find_dataset_id(session, dataset)
+                if dataset_id == -1:
+                    logger.warning(f"Dataset {dataset} does not exist in the "
+                                   "database. Please add it first using "
+                                   " 'qanat dataset new'.")
+                    continue
+                session.add(DatasetExperiment(
+                    experiment_id=experiment_id, dataset_id=dataset_id))
+
+    # Update the actions of the experiment
+    # ------------------------------------
+    # Find the actions of the experiment
+    experiment_actions = session.query(Action).filter(
+        Action.experiment_id == experiment_id).all()
+
+    if new_experiment_actions is not None:
+        # Delete the actions not in the new actions
+        for action in experiment_actions:
+            if action.id not in [x.id for x in new_experiment_actions]:
+                delete_action(session, action.name, experiment_name)
+
+        # Add the new actions
+        for action in new_experiment_actions:
+            if action.id not in [x.id for x in experiment_actions]:
+                add_action(session, action.name, experiment_name,
+                           action.description, action.command,
+                           action.arguments, action.tags)
+
+    session.commit()
+
+
 # ------------------------------------------------------------
 # Useful lookup functions
 # ------------------------------------------------------------
@@ -713,12 +899,27 @@ def find_dataset_id(session: Session, dataset_name: str) -> int:
     return dataset_id
 
 
-def find_action_id(session: Session, action_name: str) -> int:
-    """Find the id of an action in the database."""
+def find_action_id(session: Session, action_name: str,
+                   experiment_name: str) -> int:
+    """Find the id of an action in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param action_name: The name of the action.
+    :type action_name: str
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+    """
+
+    # Find experiment_id through name
+    experiment_id = find_experiment_id(session, experiment_name)
 
     # Query the database for the action
     action = session.query(Action).filter(
-            Action.name == action_name).first()
+            Action.name == action_name,
+            Action.experiment_id == experiment_id).first()
 
     # If the action does not exist, return -1
     if action is None:
@@ -801,7 +1002,7 @@ def fetch_tags_of_dataset(Session: Session,
 
 
 def fetch_datasets_of_experiment(Session: Session,
-                                  experiment_name: str) -> list:
+                                 experiment_name: str) -> list:
     """Fetch the datasets of an experiment in the database.
 
     :param session: The session of the database.

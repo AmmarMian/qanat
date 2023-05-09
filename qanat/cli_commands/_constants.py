@@ -19,6 +19,11 @@ NAME = ":bookmark:"
 PATH = ":file_folder:"
 TAGS = ":label:"
 ID = ":id:"
+EXIT = ":door:"
+HELP = ":question:"
+YES = ":white_check_mark:"
+NO = ":x:"
+PROMPT = ":pencil:"
 
 # --------------------------------------------------------
 # Experiment CLI Constants
