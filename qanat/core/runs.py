@@ -186,7 +186,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
 
             console = rich.console.Console()
             with console.status(
-                    "[bold green]Running...", spinner='dots') as status:
+                    "[bold green]Running...", spinner='dots'):
                 stdout_list = []
                 stderr_list = []
                 for i, command in enumerate(self.commands):
