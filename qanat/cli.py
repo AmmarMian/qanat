@@ -135,8 +135,8 @@ def experiment_update(name):
 def experiment_run(ctx, name, runner, group_param, storage_path,
                    tag, description):
     """Run an experiment with additional positional and option args.\n
-    [bold red]WARNING: The following options are not available "
-    "for your executable command:[/bold red]\n"
+    [bold red]WARNING: The following options are not available
+    for your executable command:[/bold red]\n
     - [bold red]'--runner'[/bold red] to specify runner\n
     - [bold red]'--parallel'[/bold red] for local runner to run in parallel\n
     - [bold red]'--group_param'[/bold red] to specify group of parameters to
