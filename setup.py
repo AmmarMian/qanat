@@ -11,7 +11,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = ['rich', 'rich_click', 'SQLAlchemy',
-                'GitPython', 'pyyaml']
+                'GitPython', 'pyyaml', 'psutil']
 
 test_requirements = ['pytest>=3', ]
 
