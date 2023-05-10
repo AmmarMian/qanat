@@ -252,6 +252,8 @@ def launch_run_experiment(experiment_name: str,
 
         # Get las id of experiments in the database
         last_id = session.query(func.max(RunOfAnExperiment.id)).scalar()
+        if last_id is None:
+            last_id = 0
         storage_path = os.path.join(
                 config["result_dir"],
                 f"{experiment_name}/run_{last_id+1}"
