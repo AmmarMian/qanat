@@ -1,5 +1,8 @@
-Finish database structure in link with dataclass for easy management
 Click autocompletion on all shell
 qanat experiment prompt
 How to launch groups of parameters most simply from CLI ?
 Parsing config.yaml and update database of experiments
+Git Annex handling
+Hnadle error with executable command
+qanat status check_status of runner to show actually running runs
+qanat action
