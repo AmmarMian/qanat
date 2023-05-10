@@ -170,7 +170,7 @@ class QanatRepertory:
 
         # Add .qanat/ to .gitignore except .qanat/config.yaml
         if should_gitignore:
-            self.logger.info("Adding .qanat/ to .gitignore.")
+            self.logger.info("Adding .qanat to .gitignore.")
             if not os.path.exists(os.path.join(self.path, ".gitignore")):
                 # create empty file
                 Path(os.path.join(self.path, ".gitignore")).touch()
@@ -178,16 +178,14 @@ class QanatRepertory:
             with open(os.path.join(self.path, ".gitignore"), "r+") as f:
                 # check if not already in gitignore
                 for line in f:
-                    if '.qanat/' in line:
+                    if '.qanat' in line:
                         self.logger.info(
                                 "Qanat repertory already in .gitignore.")
                         break
                 else:
                     should_commit = True
                     f.seek(0, os.SEEK_END)
-                    f.write(".qanat/*\n")
-                    f.write('.qanat/database.db\n')
-                    f.write("!.qanat/config.yaml")
+                    f.write(".qanat\n")
 
             if should_add_results:
                 self.logger.info(f"Adding {result_path} to .gitignore.")
@@ -201,12 +199,12 @@ class QanatRepertory:
                     else:
                         should_commit = True
                         f.seek(0, os.SEEK_END)
-                        f.write(f"\n{result_path}\n")
+                        f.write(f"{result_path}\n")
 
         # Commit the changes if user want to
         if should_commit:
             if Confirm.ask("Do you want to commit the changes?"):
                 self.logger.info("Commiting the creation of qanat.")
                 repo = git.Repo(self.path)
-                repo.index.add([".gitignore", ".qanat"])
+                repo.index.add([".gitignore"])
                 repo.index.commit("Create qanat repertory.")

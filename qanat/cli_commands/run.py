@@ -11,8 +11,9 @@
 import os
 import yaml
 import rich_click as click
+import rich
 import git
-from ..core.database import(
+from ..core.database import (
      open_database,
      add_run,
      RunOfAnExperiment,
@@ -87,24 +88,27 @@ def parse_args_cli(ctx: click.Context, groups_of_parameters: list,
             del fixed_args[param]
 
     # Parse the arguments of the groups of parameters
-    parsed_parameters = []
-    for group in groups_of_parameters:
-        # Find the shift needed in the key of positional
-        # arguments
-        pos_shift = 0
-        for key in fixed_args.keys():
-            if key.startswith("pos_"):
-                pos_shift = max(pos_shift, int(key[-1]))
+    if len(groups_of_parameters) == 0:
+        parsed_parameters = [fixed_args]
+    else:
+        parsed_parameters = []
+        for group in groups_of_parameters:
+            # Find the shift needed in the key of positional
+            # arguments
+            pos_shift = 0
+            for key in fixed_args.keys():
+                if key.startswith("pos_"):
+                    pos_shift = max(pos_shift, int(key[-1]))
 
-        # Parse the string of the group by splitting
-        # it with the space character
-        group = group.split(" ")
-        varying_parameters = \
-            parse_positional_optional_arguments(
-                group,
-                pos_shift=int(pos_shift)+1
-            )
-        parsed_parameters.append({**fixed_args, **varying_parameters})
+            # Parse the string of the group by splitting
+            # it with the space character
+            group = group.split(" ")
+            varying_parameters = \
+                parse_positional_optional_arguments(
+                    group,
+                    pos_shift=int(pos_shift)+1
+                )
+            parsed_parameters.append({**fixed_args, **varying_parameters})
 
     return parsed_parameters, runner_params
 
@@ -144,18 +148,6 @@ def launch_run_experiment(experiment_name: str,
     :rtype: int
     """
 
-    # Check whether cwd is a git repository and committed
-    repo = git.Repo('.')
-    if repo.is_dirty():
-        logger.error(
-                "The repository is not clean. Please commit your changes.")
-        # return -1
-    commit_sha = repo.head.object.hexsha
-
-    # Get the parsed parameters
-    parsed_parameters, runner_params = \
-        parse_args_cli(ctx, groups_of_parameters)
-
     # Opening database
     engine, Base, Session = open_database('.qanat/database.db')
     session = Session()
@@ -165,6 +157,34 @@ def launch_run_experiment(experiment_name: str,
     if experiment_id == -1:
         logger.error(f"Experiment {experiment_name} does not exist.")
         return -1
+
+    # Check whether cwd is a git repository and committed
+    repo = git.Repo('.')
+    if repo.is_dirty():
+        logger.error(
+                "The repository is not clean. Please commit your changes.")
+        # Show the changes in the repository
+        logger.info("The following files have been modified:")
+        for file in repo.git.diff(None, name_only=True).split("\n"):
+            logger.info(file)
+
+        if rich.prompt.Confirm.ask("Do you want me to commit the changes "
+                                   "for you?",
+                                   default=False):
+            repo.git.add(".")
+            commit_description = rich.prompt.Prompt.ask(
+                    "Please enter a description for the commit")
+            repo.git.commit("-m",
+                            "Automatic commit before running experiment "
+                            f"{experiment_name}: {commit_description}")
+        else:
+            return -1
+
+    commit_sha = repo.head.object.hexsha
+
+    # Get the parsed parameters
+    parsed_parameters, runner_params = \
+        parse_args_cli(ctx, groups_of_parameters)
 
     # Check whether storage_path is not None
     if storage_path is None:
@@ -179,8 +199,13 @@ def launch_run_experiment(experiment_name: str,
                 f"{experiment_name}/run_{last_id+1}"
         )
 
-        # Create directories recursively if they do not exist
+    # Create directories recursively if they do not exist
+    if not os.path.exists(storage_path):
         os.makedirs(storage_path)
+    else:
+        logger.error("Something went wrong.")
+        logger.error(f"Storage path {storage_path} already exists.")
+        return -1
 
     # Create the run in the database
     if tags is None:
@@ -188,7 +213,7 @@ def launch_run_experiment(experiment_name: str,
     run = add_run(
             session, experiment_name, storage_path,
             commit_sha, parsed_parameters, description,
-            tags)
+            tags, runner, runner_params)
     run_id = run.id
 
     # Create the execution handler
@@ -208,6 +233,10 @@ def launch_run_experiment(experiment_name: str,
     else:
         raise NotImplementedError(f"Runner {runner} is not implemented yet.")
 
-    import pdb; pdb.set_trace()
+    # Setting up the run
+    logger.info("Setting up the run...")
+    execution_handler.setUp()
 
-
+    # Run the experiment
+    logger.info("Running the experiment...")
+    execution_handler.run_experiment()

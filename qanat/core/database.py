@@ -9,6 +9,7 @@
 # =========================================
 
 import shutil
+from datetime import datetime
 from dataclasses import dataclass
 from sqlalchemy import (
         Column, Integer, String, ForeignKey, DateTime,
@@ -123,8 +124,9 @@ class RunOfAnExperiment(Base):
     storage_path = Column(String)
     description = Column(String)
     metric = Column(String)
-    parameters = Column(JSONEncodedDict)
     commit_sha = Column(String)
+    runner = Column(String)
+    runner_params = Column(JSONEncodedDict)
 
 
 @dataclass
@@ -458,7 +460,9 @@ def add_run(session: Session,
             commit_sha: str,
             parameters_groups: list = [],
             description: str = "",
-            tags: list = []) -> RunOfAnExperiment:
+            tags: list = [],
+            runner: str = 'local',
+            runner_params: dict = {}) -> RunOfAnExperiment:
     """Add a run to the database.
 
     :param session: The session of the database.
@@ -483,6 +487,12 @@ def add_run(session: Session,
     :param tags: The tags (names) of the run. Default is [].
     :type tags: list
 
+    :param runner: The name of the runner. Default is 'local'.
+    :type runner: str
+
+    :param runner_params: The parameters of the runner. Default is {}.
+    :type runner_params: dict
+
     :return: The run object.
     :rtype: qanat.core.dataset.RunOfAnExperiment
     """
@@ -493,8 +503,10 @@ def add_run(session: Session,
     # Create the run
     run = RunOfAnExperiment(experiment_id=experiment_id,
                             description=description, commit_sha=commit_sha,
-                            storage_path=storage_path)
+                            storage_path=storage_path,
+                            runner=runner, runner_params=runner_params)
     session.add(run)
+    session.commit()
 
     # Create Group of parameters for the run
     for parameters in parameters_groups:
@@ -508,6 +520,7 @@ def add_run(session: Session,
         if tag_id == -1:
             tag = Tags(name=tag)
             session.add(tag)
+            session.commit()
             tag_id = tag.id
         run_tag = RunsTags(run_id=run.id, tag_id=tag_id)
         session.add(run_tag)
@@ -841,6 +854,28 @@ def update_run_status(session: Session, run_id: int,
         {"status": new_status})
     session.commit()
 
+
+def update_run_finish_time(session: Session, run_id: int,
+                           new_finish_time: datetime = None) -> None:
+    """Update the finish time of a run in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param run_id: The id of the run.
+    :type run_id: int
+
+    :param new_finish_time: The new finish time of the run.
+    :type new_finish_time: datetime.datetime
+    """
+
+    if new_finish_time is None:
+        new_finish_time = datetime.now()
+
+    session.query(RunOfAnExperiment).filter(
+        RunOfAnExperiment.id == run_id).update(
+        {"finished": new_finish_time})
+    session.commit()
 
 # ------------------------------------------------------------
 # Useful lookup functions

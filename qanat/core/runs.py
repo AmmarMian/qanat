@@ -10,15 +10,17 @@
 import os
 from sqlalchemy.orm import sessionmaker
 import subprocess
-import datetime
+from datetime import datetime
 import psutil
 import rich
-from rich.progress import track
+from rich.progress import (
+        Progress, SpinnerColumn, BarColumn, TextColumn
+)
 import yaml
 from .database import (
         get_experiment_of_run, RunOfAnExperiment,
         fetch_groupofparameters_of_run,
-        update_run_status
+        update_run_status, update_run_finish_time
 )
 from ..utils.logging import setup_logger
 
@@ -54,7 +56,7 @@ class RunExecutionHandler:
 
     Such a class must implement the following methods:
     * setUp(self, database_sessionmaker, run_id)
-    * run(self)
+    * run_experiment(self)
     * update_status(self)
     * check_status(self)
     * update_metrics(self)
@@ -65,15 +67,18 @@ class RunExecutionHandler:
         self.run_id = run_id
         self.experiment = get_experiment_of_run(self.session_maker(),
                                                 run_id)
-        self.run = self.session_maker().query(
+        Session = self.session_maker()
+        self.run = Session.query(
                 RunOfAnExperiment).get(run_id)
+        Session.close()
 
     def setUp(self):
         """Set up the execution of the run."""
 
         # Fetch parameters of the run
+        Session = self.session_maker()
         groups_of_parameters = fetch_groupofparameters_of_run(
-                self.session_maker(), self.run_id)
+                Session, self.run_id)
 
         # Constructing directory structure depending on the
         # number of groups of parameters
@@ -86,8 +91,8 @@ class RunExecutionHandler:
         else:
             logger.info("Multiple groups of parameters detected:"
                         f" {len(groups_of_parameters)}")
-            logger.infot(f"Creating {len(groups_of_parameters)} repertories "
-                         "in {self.run.storage_path}")
+            logger.info(f"Creating {len(groups_of_parameters)} repertories "
+                        f"in {self.run.storage_path}")
             if not os.path.exists(self.run.storage_path):
                 os.makedirs(self.run.storage_path)
 
@@ -103,7 +108,7 @@ class RunExecutionHandler:
         self.groups_of_parameters = [parameters.values for
                                      parameters in
                                      fetch_groupofparameters_of_run(
-                                         self.session_maker(), self.run_id)]
+                                         Session, self.run_id)]
         self.commands = []
         for i, group_of_parameters in enumerate(self.groups_of_parameters):
             command = [self.experiment.executable_command,
@@ -127,7 +132,9 @@ class RunExecutionHandler:
                                'info.yaml'), 'w') as f:
             yaml.dump(info, f)
 
-    def run(self):
+        Session.close()
+
+    def run_experiment(self):
         """Run the run."""
         raise NotImplementedError
 
@@ -150,11 +157,17 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         super().__init__(database_sessionmaker, run_id)
         self.parallel = parallel
 
-    def run(self):
+    def run_experiment(self):
         """Launch the execution of the run as subprocesses.
         To run after calling setUp().
         """
         logger.info("Launching the execution of the run")
+        launched_time = datetime.now()
+
+        Session = self.session_maker()
+        Session.query(RunOfAnExperiment).filter(
+                RunOfAnExperiment.id == self.run_id).update(
+                {'launched': launched_time})
         if self.parallel:
             logger.info(
                     f"Running {len(self.commands)} executions in parallel:")
@@ -170,15 +183,16 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                 process = subprocess.Popen(command)
                 pids.append(str(process.pid))
 
-            update_run_status(self.session_maker(), self.run_id,
+            update_run_status(Session, self.run_id,
                               "running")
+            Session.close()
 
             # Add info in the yaml file
             with open(os.path.join(self.run.storage_path,
                                    'info.yaml'), 'r') as f:
                 info = yaml.load(f, Loader=yaml.FullLoader)
             info['pids'] = pids
-            info['start_time'] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            info['start_time'] = datetime.now()
             info['status'] = 'running'
             with open(os.path.join(self.run.storage_path,
                                    'info.yaml'), 'w') as f:
@@ -192,78 +206,109 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
             with open(os.path.join(self.run.storage_path,
                                    'info.yaml'), 'r') as f:
                 info = yaml.load(f, Loader=yaml.FullLoader)
-            info['end_time'] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            info['end_time'] = datetime.now()
             info['status'] = 'finished'
             with open(os.path.join(self.run.storage_path,
                                    'info.yaml'), 'w') as f:
                 yaml.dump(info, f)
 
+            Session = self.session_maker()
+            update_run_status(Session, self.run_id,
+                              "finished")
+            Session.close()
+
         else:
             logger.info(
-                    f"Running in {len(self.commands)} executions sequentially")
+                    f"Running {len(self.commands)} executions sequentially")
 
-            update_run_status(self.session_maker(), self.run_id,
+            update_run_status(Session, self.run_id,
                               "running")
+            Session.close()
 
             status_list = ['not_started' for _ in self.commands]
             pid_list = ['' for _ in self.commands]
             start_time_list = ['' for _ in self.commands]
             end_time_list = ['' for _ in self.commands]
 
-            for i, command in track(enumerate(self.commands),
-                                    description="Running..."):
-                logger.info(f"Running {command}")
-                logger.warning("Do not close the terminal window. "
-                               "It will cancel the execution of the run.")
+            with Progress(
+                 SpinnerColumn(),
+                 TextColumn("[bold blue]{task.description}"),
+                 BarColumn(bar_width=None),
+                 "[progress.percentage]{task.percentage:>3.0f}%") as progress:
+                task = progress.add_task("Running..", total=len(self.commands))
+                for i, command in enumerate(self.commands):
+                    logger.info(f"Running {command}")
+                    logger.warning("Do not close the terminal window. "
+                                   "It will cancel the execution of the run.")
 
-                process = subprocess.Popen(command)
+                    # Redirect stdout and stderr of the subprocess
+                    # to a file
+                    stdout_file = os.path.join(self.repertories[i],
+                                                'stdout.txt')
+                    stderr_file = os.path.join(self.repertories[i],
+                                               'stderr.txt')
+                    stdout = open(stdout_file, 'w')
+                    stderr = open(stderr_file, 'w')
+                    process = subprocess.Popen(command, stdout=stdout,
+                                               stderr=stderr)
 
-                pid = process.pid
-                status_list[i] = 'running'
-                pid_list[i] = str(pid)
-                start_time_list[i] = datetime.now(
-                        ).strftime("%d/%m/%Y %H:%M:%S")
-                # Add info in the yaml file
-                with open(os.path.join(self.run.storage_path,
-                                       'info.yaml'), 'r') as f:
-                    info = yaml.load(f, Loader=yaml.FullLoader)
-                info['start_time'] = start_time_list
-                info['status'] = status_list
-                info['pid'] = pid_list
-                with open(os.path.join(self.run.storage_path,
-                                       'info.yaml'), 'w') as f:
-                    yaml.dump(info, f)
+                    pid = process.pid
+                    status_list[i] = 'running'
+                    pid_list[i] = str(pid)
+                    start_time_list[i] = datetime.now()
+                    # Add info in the yaml file
+                    with open(os.path.join(self.run.storage_path,
+                                           'info.yaml'), 'r') as f:
+                        info = yaml.load(f, Loader=yaml.FullLoader)
+                    info['start_time'] = start_time_list
+                    info['status'] = status_list
+                    info['pid'] = pid_list
+                    with open(os.path.join(self.run.storage_path,
+                                           'info.yaml'), 'w') as f:
+                        yaml.dump(info, f)
 
-                # Wait for the process to finish
-                process.wait()
+                    # Wait for the process to finish
+                    process.wait()
 
-                # Command finished
-                status_list[i] = 'finished'
-                end_time_list[i] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                logger.info(f"Finished {command}\n")
+                    # Close the files
+                    stdout.close()
+                    stderr.close()
 
-                # Add info in the yaml file
-                with open(os.path.join(self.run.storage_path,
-                                       'info.yaml'), 'r') as f:
-                    info = yaml.load(f, Loader=yaml.FullLoader)
-                info['end_time'] = end_time_list
-                info['status'] = status_list
-                with open(os.path.join(self.run.storage_path,
-                          'info.yaml'), 'w') as f:
-                    yaml.dump(info, f)
+                    # Command finished
+                    status_list[i] = 'finished'
+                    end_time_list[i] = datetime.now()
+                    logger.info(f"Finished {command}\n")
 
-        update_run_status(self.session_maker(), self.run_id,
+                    # Add info in the yaml file
+                    with open(os.path.join(self.run.storage_path,
+                                           'info.yaml'), 'r') as f:
+                        info = yaml.load(f, Loader=yaml.FullLoader)
+                    info['end_time'] = end_time_list
+                    info['status'] = status_list
+                    with open(os.path.join(self.run.storage_path,
+                              'info.yaml'), 'w') as f:
+                        yaml.dump(info, f)
+
+                    progress.update(task, advance=1)
+
+        logger.info("Updating databse with finished time")
+        Session = self.session_maker()
+        update_run_status(Session, self.run_id,
                           "finished")
+        update_run_finish_time(Session, self.run_id)
+        Session.close()
 
     def check_status(self):
         """Check the status of the run."""
 
+        Session = self.session_maker()
         # Check if run in database is marked as finished
-        if self.session_maker().query(
+        if Session.query(
                 RunOfAnExperiment).filter(
                     RunOfAnExperiment.id == self.run_id).first().status == \
                 'finished':
             return "finished"
+        Session.close()
 
         # Otherwhise we need more checks
 
@@ -276,11 +321,18 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                                'info.yaml'), 'r') as f:
             info = yaml.load(f, Loader=yaml.FullLoader)
 
-        # Test wheter cancelled or running
-        pids = info['pids']
+        # Test wheter cancelled, running or finished
+        if any(status == "running" for status in info['status']):
+            pids = info['pid']
 
-        # Check if all processes are finished
-        if not all(psutil.pid_exists(pid) for pid in pids):
-            return "cancelled"
+            # Check if at least one pid is still running
+            if not any(psutil.pid_exists(int(pid))
+                       for pid in pids if pid != ''):
+                return "cancelled"
+            else:
+                return "running"
         else:
-            return "running"
+            if all(status == 'finished' for status in info['status']):
+                return "finished"
+            else:
+                return "running"

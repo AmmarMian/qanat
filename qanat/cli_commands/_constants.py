@@ -39,11 +39,14 @@ EXPERIMENT_ID = ID
 EXPERIMENT_RUNS = RUN
 EXPERIMENT_ACTION = ":hammer_and_wrench:"
 RUN_IS_RUNNING = ":play_button:"
-RUN_IS_FINISHED = ":white_check_mark:"
+RUN_IS_FINISHED = ":checkered_flag:"
 RUN_IS_FAILED = ":x:"
 RUN_IS_PENDING = ":stopwatch:"
 RUN_IS_PAUSED = ":pause_button:"
-RUN_IS_UNKNOWN = ":question:"
+RUN_IS_UNKNOWN = ":grey_question:"
+RUN_LAUNCH_DATE = ":calendar:"
+RUN_DURATION = ":stopwatch:"
+RUN_IS_CANCELLED = ":x:"
 
 
 def get_run_status_emoji(status):
@@ -58,6 +61,8 @@ def get_run_status_emoji(status):
         emoji_status = f"{RUN_IS_PENDING}"
     elif status == "paused":
         emoji_status = f"{RUN_IS_PAUSED}"
+    elif status == "cancelled":
+        emoji_status = f"{RUN_IS_CANCELLED}"
     else:
         emoji_status = f"{RUN_IS_UNKNOWN}"
 

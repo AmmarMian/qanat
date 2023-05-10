@@ -8,6 +8,7 @@
 # =========================================
 
 import os
+from datetime import datetime
 import rich
 from rich.table import Table
 from rich import prompt
@@ -26,7 +27,11 @@ from ._constants import (
     EXPERIMENT_NAME, EXPERIMENT_DESCRIPTION, EXPERIMENT_PATH,
     EXPERIMENT_EXECUTABLE, EXPERIMENT_EXECUTE_COMMAND, EXPERIMENT_TAGS,
     EXPERIMENT_DATASETS, EXPERIMENT_RUNS, EXPERIMENT_ID,
-    EXPERIMENT_ACTION, get_run_status_emoji, EXIT)
+    EXPERIMENT_ACTION, get_run_status_emoji, EXIT,
+    RUN_LAUNCH_DATE, RUN_DURATION)
+from ..core.runs import (
+    LocalMachineExecutionHandler
+)
 
 logger = setup_logger()
 
@@ -630,19 +635,23 @@ def command_show(experiment_name: str,
     rich.print(f"\n[bold]{EXPERIMENT_RUNS} Runs[/bold]:")
     grid = Table.grid(expand=False, padding=(0, 4))
     grid.add_column(justify="left", header="ID")
-    grid.add_column(justify="left", header="Name")
     grid.add_column(justify="left", header="Description")
-    grid.add_column(justify="left", header="Path", width=20)
-    grid.add_column(justify="left", header="Status")
+    grid.add_column(justify="left", header="Path")
+    grid.add_column(justify="left", header="Launch date")
+    grid.add_column(justify="left", header="Duration")
+    grid.add_column(justify="left", header="Status", width=5, no_wrap=True)
     grid.add_column(justify="left", header="Tags", style="bold")
     grid.add_row("[bold]ID[/bold]",
-                 "[bold]Name[/bold]", "[bold]Description[/bold]",
-                 "[bold]Path[/bold]", "[bold]Status[/bold]",
+                 "[bold]Description[/bold]",
+                 "[bold]Path[/bold]", "[bold]Launch date[/bold]",
+                 "[bold]Duration[/bold]", "[bold]Status[/bold]",
                  "[bold]Tags[/bold]")
 
     runs = fetch_runs_of_experiment(Session, experiment_name)
     for run in runs:
+
         tags = fetch_tags_of_run(Session, run.id)
+        Session.close()
         if len(tags) >= 1:
             tags = f"{EXPERIMENT_TAGS} " +\
                    f", {EXPERIMENT_TAGS} ".join(fetch_tags_of_run(
@@ -650,12 +659,28 @@ def command_show(experiment_name: str,
         else:
             tags = ""
 
+        # Update status to canceled if needed
+        if run.runner == "local":
+            execution_handler = LocalMachineExecutionHandler(session, run.id)
+            run.status = execution_handler.check_status()
+
+        if run.launched is not None:
+            if run.status == "running":
+                duration = datetime.now() - run.launched
+            elif run.status == "finished" and run.finished is not None:
+                duration = run.finished - run.launched
+            else:
+                duration = "N/A"
+        else:
+            duration = "N/A"
+
         RUN_STATUS = get_run_status_emoji(run.status)
         grid.add_row(f"{EXPERIMENT_ID} {run.id}",
-                     f"{EXPERIMENT_NAME} {run.name}",
                      f"{EXPERIMENT_DESCRIPTION} {run.description}",
-                     f"{EXPERIMENT_PATH} {run.path}",
-                     f"{RUN_STATUS} {run.status}",
+                     f"{EXPERIMENT_PATH} {run.storage_path}",
+                     f"{RUN_LAUNCH_DATE} {run.launched}",
+                     f"{RUN_DURATION} {duration}",
+                     f"{RUN_STATUS}",
                      f"{tags}")
 
     rich.print(grid)
