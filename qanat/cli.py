@@ -147,18 +147,19 @@ def experiment_run(ctx, name, runner, group_param, storage_path,
     - [bold red]'--description'[/bold red] to add description to the run of
     the experiment.\n
     """
-    click.echo("TODO")
-    print('DEBUG ctx.args:', ctx.args)
-    print('DEBUG xtx params', ctx.params)
-    print('DEBUG name:', name)
-    print('DEBUG runner:', runner)
-    print('DEBUG group_param:', group_param)
-    click.echo(ctx.args)
     run.launch_run_experiment(
             name, ctx, group_param, runner, storage_path, description, tag)
-    # click.echo(
-    # {ctx.args[i][1:]: ctx.args[i+1] for i in range(0, len(ctx.args), 1)}
-    # )
+
+
+@experiment_main.command(
+    name="run_delete",
+)
+@click.argument("experiment_name", type=click.STRING,
+                required=True)
+@click.argument("run_id", type=int, required=True)
+def experiment_run_delete(experiment_name, run_id):
+    """Delete run of experiment."""
+    run.delete_run(experiment_name, run_id)
 
 
 @experiment_main.command(

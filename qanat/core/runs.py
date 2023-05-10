@@ -171,36 +171,56 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         if self.parallel:
             logger.info(
                     f"Running {len(self.commands)} executions in parallel:")
+            logger.info("The output of the executions will be "
+                           f"redirected to {self.run.storage_path}")
+            logger.warning('Do not interrupt the program or the '
+                           'executions will be interrupted')
 
             # Print list of commands
             rich.print('[bold]List of commands to run:[/bold]')
             for command in self.commands:
-                rich.print('- [bold]'+command+'[/bold]')
+                rich.print('- [bold]'+' '.join(command)+'[/bold]')
 
             processes = []
             pids = []
-            for i, command in enumerate(self.commands):
-                process = subprocess.Popen(command)
-                pids.append(str(process.pid))
 
-            update_run_status(Session, self.run_id,
-                              "running")
-            Session.close()
+            console = rich.console.Console()
+            with console.status(
+                    "[bold green]Running...", spinner='dots') as status:
+                stdout_list = []
+                stderr_list = []
+                for i, command in enumerate(self.commands):
+                    stdout_file = open(os.path.join(self.repertories[i],
+                                                    'stdout.txt'), 'w')
+                    stderr_file = open(os.path.join(self.repertories[i],
+                                                    'stderr.txt'), 'w')
+                    stdout_list.append(stdout_file)
+                    stderr_list.append(stderr_file)
+                    process = subprocess.Popen(command,
+                                               stdout=stdout_file,
+                                               stderr=stderr_file)
+                    pids.append(str(process.pid))
+                    processes.append(process)
 
-            # Add info in the yaml file
-            with open(os.path.join(self.run.storage_path,
-                                   'info.yaml'), 'r') as f:
-                info = yaml.load(f, Loader=yaml.FullLoader)
-            info['pids'] = pids
-            info['start_time'] = datetime.now()
-            info['status'] = 'running'
-            with open(os.path.join(self.run.storage_path,
-                                   'info.yaml'), 'w') as f:
-                yaml.dump(info, f)
+                update_run_status(Session, self.run_id,
+                                  "running")
+                Session.close()
 
-            for process in processes:
-                self.pids.append(process.pid)
-                process.wait()
+                # Add info in the yaml file
+                with open(os.path.join(self.run.storage_path,
+                                       'info.yaml'), 'r') as f:
+                    info = yaml.load(f, Loader=yaml.FullLoader)
+                info['pids'] = pids
+                info['start_time'] = datetime.now()
+                info['status'] = 'running'
+                with open(os.path.join(self.run.storage_path,
+                                       'info.yaml'), 'w') as f:
+                    yaml.dump(info, f)
+
+                for i, process in enumerate(processes):
+                    process.wait()
+                    stdout_list[i].close()
+                    stderr_list[i].close()
 
             # Add info in the yaml file
             with open(os.path.join(self.run.storage_path,
@@ -220,6 +240,8 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         else:
             logger.info(
                     f"Running {len(self.commands)} executions sequentially")
+            logger.info("The output of the executions will be "
+                        f"redirected to {self.run.storage_path}")
 
             update_run_status(Session, self.run_id,
                               "running")
@@ -244,7 +266,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                     # Redirect stdout and stderr of the subprocess
                     # to a file
                     stdout_file = os.path.join(self.repertories[i],
-                                                'stdout.txt')
+                                               'stdout.txt')
                     stderr_file = os.path.join(self.repertories[i],
                                                'stderr.txt')
                     stdout = open(stdout_file, 'w')

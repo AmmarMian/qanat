@@ -13,16 +13,69 @@ import yaml
 import rich_click as click
 import rich
 import git
+from sqlalchemy import func
 from ..core.database import (
      open_database,
      add_run,
      RunOfAnExperiment,
-     find_experiment_id
+     find_experiment_id,
+     delete_run_from_id
     )
 from ..core.runs import LocalMachineExecutionHandler
 from ..utils.logging import setup_logger
 
 logger = setup_logger()
+
+
+def delete_run(experiment_name: str, run_id: int):
+    """Delete a run from the database.
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :param run_id: The id of the run to delete.
+    :type run_id: int
+    """
+
+    # Opening database
+    engine, Base, Session = open_database('.qanat/database.db')
+    session = Session()
+
+    # Find the experiment id
+    experiment_id = find_experiment_id(session, experiment_name)
+    if experiment_id == -1:
+        logger.error("Experiment does not exist")
+        return
+
+    # Check if run exists
+    run = session.query(RunOfAnExperiment).filter_by(
+        experiment_id=experiment_id, id=run_id).first()
+    if run is None:
+        logger.error(f"Run {run_id} of experiment {experiment_name} does not exist")
+        return
+
+    # Delete the run
+    logger.info(f"Deleting run {run_id} of experiment {experiment_name}")
+    # Show run informations
+    run = session.query(RunOfAnExperiment).filter_by(
+        experiment_id=experiment_id, id=run_id).first()
+    logger.info(f"Run {run_id} of experiment {experiment_name} informations:")
+    logger.info(f"  - id: {run.id}")
+    logger.info(f"  - experiment_id: {run.experiment_id}")
+    logger.info(f"  - description: {run.description}")
+    logger.info(f"  - start_time: {run.launched}")
+    logger.info(f"  - end_time: {run.finished}")
+    logger.info(f"  - status: {run.status}")
+    logger.info(f"  - storage_path {run.storage_path}")
+    if rich.prompt.Confirm.ask("Are you sure?"):
+        delete_run_from_id(session, run_id)
+        logger.info(f"Run {run_id} of experiment {experiment_name} deleted")
+    else:
+        logger.info(f"Run {run_id} of experiment {experiment_name} not deleted")
+        return
+
+    # Close the database
+    session.close()
 
 
 def parse_positional_optional_arguments(
@@ -47,7 +100,7 @@ def parse_positional_optional_arguments(
     result = {}
     while i < len(parameters):
         if parameters[i].startswith("--"):
-            result[parameters[i][2:]] = parameters[i+1]
+            result[parameters[i]] = parameters[i+1]
             i += 2
         else:
             result[f"pos_{pos_number}"] = parameters[i]
@@ -160,12 +213,17 @@ def launch_run_experiment(experiment_name: str,
 
     # Check whether cwd is a git repository and committed
     repo = git.Repo('.')
-    if repo.is_dirty():
+    if repo.is_dirty() or len(repo.untracked_files) > 0:
         logger.error(
                 "The repository is not clean. Please commit your changes.")
         # Show the changes in the repository
         logger.info("The following files have been modified:")
         for file in repo.git.diff(None, name_only=True).split("\n"):
+            logger.info(file)
+
+        # Show untracked files
+        logger.info("The following files are untracked:")
+        for file in repo.untracked_files:
             logger.info(file)
 
         if rich.prompt.Confirm.ask("Do you want me to commit the changes "
@@ -193,7 +251,7 @@ def launch_run_experiment(experiment_name: str,
             config = yaml.safe_load(f)
 
         # Get las id of experiments in the database
-        last_id = session.query(RunOfAnExperiment).count()
+        last_id = session.query(func.max(RunOfAnExperiment.id)).scalar()
         storage_path = os.path.join(
                 config["result_dir"],
                 f"{experiment_name}/run_{last_id+1}"

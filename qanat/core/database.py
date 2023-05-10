@@ -690,6 +690,41 @@ def delete_action(session: Session, action_name: str,
     return True
 
 
+def delete_run_from_id(session: Session, run_id: int):
+    """Delete a run from the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param run_id: The id of the run.
+    :type run_id: int
+    """
+
+    # Get run from id
+    run = session.query(RunOfAnExperiment).filter(
+            RunOfAnExperiment.id == run_id).first()
+
+    if run is None:
+        logger.warning(f"Run {run_id} does not exist in the database.")
+        return
+
+    # Remove the groups_of_parameters of run corresponding to the
+    # run_id
+    session.query(GroupOfParametersOfARun).filter(
+            GroupOfParametersOfARun.run_id == run_id).delete()
+
+    # Remove the tags of run in the experiment
+    session.query(RunsTags).filter(RunsTags.run_id == run_id).delete()
+
+    # Removing the directories of runs
+    shutil.rmtree(run.storage_path)
+
+    # Remove the run
+    session.query(RunOfAnExperiment).filter(
+            RunOfAnExperiment.id == run_id).delete()
+    session.commit()
+
+
 def update_experiment(session: Session, experiment_name: str,
                       new_experiment_name: str = None,
                       new_experiment_description: str = None,

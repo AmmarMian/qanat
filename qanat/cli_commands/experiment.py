@@ -639,7 +639,7 @@ def command_show(experiment_name: str,
     grid.add_column(justify="left", header="Path")
     grid.add_column(justify="left", header="Launch date")
     grid.add_column(justify="left", header="Duration")
-    grid.add_column(justify="left", header="Status", width=5, no_wrap=True)
+    grid.add_column(justify="center", header="Status", no_wrap=True)
     grid.add_column(justify="left", header="Tags", style="bold")
     grid.add_row("[bold]ID[/bold]",
                  "[bold]Description[/bold]",
@@ -658,28 +658,31 @@ def command_show(experiment_name: str,
                                                 Session, run.id))
         else:
             tags = ""
+        try:
+            # Update status to canceled if needed
+            if run.runner == "local":
+                execution_handler = LocalMachineExecutionHandler(session, run.id)
+                run.status = execution_handler.check_status()
 
-        # Update status to canceled if needed
-        if run.runner == "local":
-            execution_handler = LocalMachineExecutionHandler(session, run.id)
-            run.status = execution_handler.check_status()
-
-        if run.launched is not None:
-            if run.status == "running":
-                duration = datetime.now() - run.launched
-            elif run.status == "finished" and run.finished is not None:
-                duration = run.finished - run.launched
+            if run.launched is not None:
+                if run.status == "running":
+                    duration = datetime.now() - run.launched
+                elif run.status == "finished" and run.finished is not None:
+                    duration = run.finished - run.launched
+                else:
+                    duration = "N/A"
             else:
                 duration = "N/A"
-        else:
+        except KeyError:
             duration = "N/A"
+            run.status = "canceled"
 
         RUN_STATUS = get_run_status_emoji(run.status)
         grid.add_row(f"{EXPERIMENT_ID} {run.id}",
                      f"{EXPERIMENT_DESCRIPTION} {run.description}",
                      f"{EXPERIMENT_PATH} {run.storage_path}",
                      f"{RUN_LAUNCH_DATE} {run.launched}",
-                     f"{RUN_DURATION} {duration}",
+                     f"{RUN_DURATION}  {duration}",
                      f"{RUN_STATUS}",
                      f"{tags}")
 
