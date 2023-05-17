@@ -146,7 +146,8 @@ class QanatRepertory:
                     os.path.join(self.qanat_dir_path, "config.yaml"),
                     "w") as f:
                 yaml.dump(
-                        {"result_dir": result_path},
+                        {"result_dir": result_path,
+                         "logging": "INFO"},
                         f,
                         default_flow_style=False)
         else:

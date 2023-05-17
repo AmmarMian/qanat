@@ -7,7 +7,9 @@
 # Brief: Manging execution of the runs
 # =========================================
 
+import sys
 import os
+import signal
 from sqlalchemy.orm import sessionmaker
 import subprocess
 from datetime import datetime
@@ -25,6 +27,19 @@ from .database import (
 from ..utils.logging import setup_logger
 
 logger = setup_logger()
+
+
+def parse_executionhandler(executionhandler: str):
+    """Parse the execution handler from a string.
+
+    :param executionhandler: The execution handler as a string.
+    :type executionhandler: str
+    """
+
+    if executionhandler == 'local':
+        return LocalMachineExecutionHandler
+    else:
+        raise ValueError(f"Unknown execution handler {executionhandler}")
 
 
 def parse_group_parameters(group_parameters: dict) -> list:
@@ -134,8 +149,36 @@ class RunExecutionHandler:
 
         Session.close()
 
+    def parse_yaml_file(self) -> dict:
+        """Parse YAML info file
+
+        :return dict: The info dictionary
+        """
+        try:
+            with open(os.path.join(self.run.storage_path,
+                                   'info.yaml'), 'r') as f:
+                info = yaml.load(f, Loader=yaml.FullLoader)
+            return info
+
+        except FileNotFoundError:
+            logger.error("No info.yaml file found.")
+            return
+
+    def update_yaml_file(self, info: dict):
+        """Update YAML info file
+
+        :param dict info: The info dictionary
+        """
+        with open(os.path.join(self.run.storage_path,
+                               'info.yaml'), 'w') as f:
+            yaml.dump(info, f)
+
     def run_experiment(self):
         """Run the run."""
+        raise NotImplementedError
+
+    def cancel_experiment(self):
+        """Cancel the run."""
         raise NotImplementedError
 
     def check_status(self):
@@ -156,6 +199,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                  run_id: int, n_threads: int = 1):
         super().__init__(database_sessionmaker, run_id)
         self.n_threads = n_threads
+        self.process_pid = os.getpid()
 
     def run_experiment(self):
         """Launch the execution of the run as subprocesses.
@@ -163,6 +207,10 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         """
         logger.info("Launching the execution of the run")
         launched_time = datetime.now()
+
+        info = self.parse_yaml_file()
+        info['main_pid'] = self.process_pid
+        self.update_yaml_file(info)
 
         Session = self.session_maker()
         Session.query(RunOfAnExperiment).filter(
@@ -240,16 +288,12 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                     Session.close()
 
                     # Add info in the yaml file
-                    with open(os.path.join(self.run.storage_path,
-                                           'info.yaml'), 'r') as f:
-                        info = yaml.load(f, Loader=yaml.FullLoader)
+                    info = self.parse_yaml_file()
                     info['pids'] = pids
                     if 'start_time' not in info:
                         info['start_time'] = datetime.now()
                     info['status'] = status_list
-                    with open(os.path.join(self.run.storage_path,
-                                           'info.yaml'), 'w') as f:
-                        yaml.dump(info, f)
+                    self.update_yaml_file(info)
 
                     for i, process in enumerate(processes):
                         process.wait()
@@ -261,14 +305,10 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                         stderr_list[i].close()
 
             # Add info in the yaml file
-            with open(os.path.join(self.run.storage_path,
-                                   'info.yaml'), 'r') as f:
-                info = yaml.load(f, Loader=yaml.FullLoader)
+            info = self.parse_yaml_file()
             info['end_time'] = datetime.now()
             info['status'] = status_list
-            with open(os.path.join(self.run.storage_path,
-                                   'info.yaml'), 'w') as f:
-                yaml.dump(info, f)
+            self.update_yaml_file(info)
 
             Session = self.session_maker()
             update_run_status(Session, self.run_id,
@@ -317,15 +357,11 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                     pid_list[i] = str(pid)
                     start_time_list[i] = datetime.now()
                     # Add info in the yaml file
-                    with open(os.path.join(self.run.storage_path,
-                                           'info.yaml'), 'r') as f:
-                        info = yaml.load(f, Loader=yaml.FullLoader)
+                    info = self.parse_yaml_file()
                     info['start_time'] = start_time_list
                     info['status'] = status_list
                     info['pids'] = pid_list
-                    with open(os.path.join(self.run.storage_path,
-                                           'info.yaml'), 'w') as f:
-                        yaml.dump(info, f)
+                    self.update_yaml_file(info)
 
                     # Wait for the process to finish
                     process.wait()
@@ -340,23 +376,72 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                     logger.info(f"Finished {command}\n")
 
                     # Add info in the yaml file
-                    with open(os.path.join(self.run.storage_path,
-                                           'info.yaml'), 'r') as f:
-                        info = yaml.load(f, Loader=yaml.FullLoader)
+                    info = self.parse_yaml_file()
                     info['end_time'] = end_time_list
                     info['status'] = status_list
-                    with open(os.path.join(self.run.storage_path,
-                              'info.yaml'), 'w') as f:
-                        yaml.dump(info, f)
+                    self.update_yaml_file(info)
 
                     progress.update(task, advance=1)
 
-        logger.info("Updating databse with finished time")
+        logger.info("Updating database with finished time")
         Session = self.session_maker()
         update_run_status(Session, self.run_id,
                           "finished")
         update_run_finish_time(Session, self.run_id)
         Session.close()
+
+    def cancel_experiment(self):
+        """Cancel the run."""
+
+        # Check if run is running
+        if self.check_status() != "running":
+            logger.info("Run is not running. Nothing to cancel.")
+            return 0
+        elif self.check_status() == "finished" or \
+                self.check_status() == "cancelled":
+            logger.info(f"Run is {self.check_status()}. Nothing to cancel.")
+            return 0
+
+        # Get the pids of the processes
+        try:
+            with open(os.path.join(self.run.storage_path,
+                                   'info.yaml'), 'r') as f:
+                info = yaml.load(f, Loader=yaml.FullLoader)
+            pids = info['pids']
+
+            # Kill the processes
+            logger.info("Killing the processes: "
+                        f"{', '.join(pids)}")
+            for pid in pids:
+                try:
+                    os.kill(int(pid), signal.SIGTERM)
+                except ProcessLookupError:
+                    logger.info(f"Process {pid} already killed or finished.")
+            logger.info("Processes killed.")
+
+            # Update the status of the run
+            Session = self.session_maker()
+            update_run_status(Session, self.run_id,
+                              "cancelled")
+
+            # Update the YAML file
+            info['status'] = ['cancelled' for _ in info['status']]
+            info['end_time'] = datetime.now()
+            with open(os.path.join(self.run.storage_path,
+                                   'info.yaml'), 'w') as f:
+                yaml.dump(info, f)
+
+            # Close the session
+            Session.close()
+
+            logger.info("Run cancelled.")
+
+            # Quit the program
+            sys.exit(-1)
+
+        except FileNotFoundError:
+            logger.info("Run was not started. Nothing to cancel.")
+            return 0
 
     def check_status(self):
         """Check the status of the run."""

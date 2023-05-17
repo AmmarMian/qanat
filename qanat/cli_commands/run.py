@@ -9,11 +9,14 @@
 # =========================================
 
 import os
+import time
+import signal
 import yaml
 import rich_click as click
 import rich
 import git
 from sqlalchemy import func
+from functools import partial
 from ..core.database import (
      open_database,
      add_run,
@@ -21,7 +24,9 @@ from ..core.database import (
      find_experiment_id,
      delete_run_from_id
     )
-from ..core.runs import LocalMachineExecutionHandler
+from ..core.runs import (
+        parse_executionhandler, RunExecutionHandler,
+        LocalMachineExecutionHandler)
 from ..utils.logging import setup_logger
 
 logger = setup_logger()
@@ -51,7 +56,9 @@ def delete_run(experiment_name: str, run_id: int):
     run = session.query(RunOfAnExperiment).filter_by(
         experiment_id=experiment_id, id=run_id).first()
     if run is None:
-        logger.error(f"Run {run_id} of experiment {experiment_name} does not exist")
+        logger.error(
+                f"Run {run_id} of experiment {experiment_name} "
+                "does not exist")
         return
 
     # Delete the run
@@ -61,6 +68,8 @@ def delete_run(experiment_name: str, run_id: int):
         experiment_id=experiment_id, id=run_id).first()
     logger.info(f"Run {run_id} of experiment {experiment_name} informations:")
     logger.info(f"  - id: {run.id}")
+    logger.info(f"  - status {run.status}")
+    logger.info(f"  - runner: {run.runner}")
     logger.info(f"  - experiment_id: {run.experiment_id}")
     logger.info(f"  - description: {run.description}")
     logger.info(f"  - start_time: {run.launched}")
@@ -68,10 +77,51 @@ def delete_run(experiment_name: str, run_id: int):
     logger.info(f"  - status: {run.status}")
     logger.info(f"  - storage_path {run.storage_path}")
     if rich.prompt.Confirm.ask("Are you sure?"):
+
+        # Cancel the run if running
+        if run.status == "running":
+            wait_finish = False
+
+            # Get the execution handler
+            execution_handler = parse_executionhandler(
+                run.runner)
+
+            # Cancel the run
+            info = execution_handler(Session, run.id).parse_yaml_file()
+
+            # Kill main pid
+            try:
+                os.kill(info['main_pid'], signal.SIGTERM)
+                wait_finish = True
+            except ProcessLookupError:
+                logger.debug(f"Process {info['main_pid']} not found")
+
+            logger.info(
+                    f"Run {run_id} of experiment {experiment_name} canceled")
+
+            # Wait for signal that run has been canceled
+            if wait_finish:
+                session.close()
+                console = rich.console.Console()
+                with console.status(
+                        "[bold green]Waiting for run to finish gracefully..."):
+                    cancel_done = False
+                    while not cancel_done:
+                        session = Session()
+                        run = session.query(RunOfAnExperiment).filter_by(
+                            experiment_id=experiment_id, id=run_id).first()
+                        time.sleep(0.5)
+                        cancel_done = run.status == "cancelled"
+                        session.close()
+                # Close the database if not closed
+                if session.is_active:
+                    session.close()
+                session = Session()
         delete_run_from_id(session, run_id)
         logger.info(f"Run {run_id} of experiment {experiment_name} deleted")
     else:
-        logger.info(f"Run {run_id} of experiment {experiment_name} not deleted")
+        logger.info(
+                f"Run {run_id} of experiment {experiment_name} not deleted")
         return
 
     # Close the database
@@ -111,7 +161,8 @@ def parse_positional_optional_arguments(
 
 
 def parse_args_cli(ctx: click.Context, groups_of_parameters: list,
-                   runner_params_to_get: list = ["--n_threads"]) -> tuple:
+                   runner_params_to_get: list =
+                   ["--n_threads", "--submit_template"]) -> tuple:
     """Parse the arguments of the CLI and return a list of dictionary of them.
     The arguments are parsed from the context of the CLI and the groups
     of parameters.
@@ -164,6 +215,26 @@ def parse_args_cli(ctx: click.Context, groups_of_parameters: list,
             parsed_parameters.append({**fixed_args, **varying_parameters})
 
     return parsed_parameters, runner_params
+
+
+def signals_experiment_handler(executionhandler: RunExecutionHandler,
+                              signum, frame):
+    """Handler of signals to a run of the experiment.
+
+    :param executionhandler: The execution handler of the experiment.
+    :type executionhandler: RunExecutionHandler
+
+    :param signum: The signal number.
+    :type signum: int
+
+    :param frame: The frame.
+    :type frame: frame
+    """
+
+    if signum == signal.SIGTERM:
+        executionhandler.cancel_experiment()
+    else:
+        raise ValueError(f"Signal {signum} not handled")
 
 
 def launch_run_experiment(experiment_name: str,
@@ -293,6 +364,11 @@ def launch_run_experiment(experiment_name: str,
     # Setting up the run
     logger.info("Setting up the run...")
     execution_handler.setUp()
+
+    # Setting singla handler for eventual cancel/halt/resume
+    signal.signal(signal.SIGTERM,
+                  handler=partial(
+                      signals_experiment_handler, execution_handler))
 
     # Run the experiment
     logger.info("Running the experiment...")

@@ -119,7 +119,7 @@ def experiment_update(name):
 )
 @click.argument("name", type=click.STRING, required=True)
 @click.option("--runner", "-r", default="local",
-              type=click.Choice(["local", "MUST"]), show_default=True,
+              type=click.Choice(["local", "htcondor"]), show_default=True,
               help="Runner to use for experiment.")
 @click.option("--group_param", "-g", default=None, type=click.STRING,
               help="Group of parameters to run.", multiple=True)
@@ -137,15 +137,19 @@ def experiment_run(ctx, name, runner, group_param, storage_path,
     """Run an experiment with additional positional and option args.\n
     [bold red]WARNING: The following options are not available
     for your executable command:[/bold red]\n
-    - [bold red]'--runner'[/bold red] to specify runner\n
-    - [bold red]'--n_threads'[/bold red] for local runner, number of threads to
-    use when several groups of parameters.\n
-    - [bold red]'--group_param'[/bold red] to specify group of parameters to
-    run as the same run.\n
-    - [bold red]'--storage_path'[/bold red] to override storage path for
+    * [bold yellow]--runner[/bold yellow] to specify runner\n
+    * [bold yellow]--n_threads[/bold yellow] for local runner, number of
+    threads to use when several groups of parameters.\n
+    * [bold yellow]--submit_template[/bold yellow] for htcondor runner,
+    path to the submit template to use or name of the submit template in the
+    config file.\n
+    * [bold yellow]--group_param[/bold yellow] to specify group of parameters
+    to run as the same run.\n
+    * [bold yellow] --storage_path[/bold yellow] to override storage path for
     the run of the experiment.\n
-    - [bold red]'--tag'[/bold red] to add tag to the run of the experiment.\n
-    - [bold red]'--description'[/bold red] to add description to the run of
+    * [bold yellow]--tag[/bold yellow] to add tag to the run of the
+    experiment.\n
+    * [bold yellow]--description[/bold yellow] to add description to the run of
     the experiment.\n
     """
     run.launch_run_experiment(
