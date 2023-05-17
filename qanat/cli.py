@@ -138,7 +138,8 @@ def experiment_run(ctx, name, runner, group_param, storage_path,
     [bold red]WARNING: The following options are not available
     for your executable command:[/bold red]\n
     - [bold red]'--runner'[/bold red] to specify runner\n
-    - [bold red]'--parallel'[/bold red] for local runner to run in parallel\n
+    - [bold red]'--n_threads'[/bold red] for local runner, number of threads to
+    use when several groups of parameters.\n
     - [bold red]'--group_param'[/bold red] to specify group of parameters to
     run as the same run.\n
     - [bold red]'--storage_path'[/bold red] to override storage path for

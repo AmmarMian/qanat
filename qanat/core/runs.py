@@ -20,7 +20,7 @@ import yaml
 from .database import (
         get_experiment_of_run, RunOfAnExperiment,
         fetch_groupofparameters_of_run,
-        update_run_status, update_run_finish_time
+        update_run_status, update_run_finish_time,
 )
 from ..utils.logging import setup_logger
 
@@ -153,9 +153,9 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
     """Handle the execution of the runs on the local machine."""
 
     def __init__(self, database_sessionmaker: sessionmaker,
-                 run_id: int, parallel: bool = False):
+                 run_id: int, n_threads: int = 1):
         super().__init__(database_sessionmaker, run_id)
-        self.parallel = parallel
+        self.n_threads = n_threads
 
     def run_experiment(self):
         """Launch the execution of the run as subprocesses.
@@ -168,11 +168,12 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         Session.query(RunOfAnExperiment).filter(
                 RunOfAnExperiment.id == self.run_id).update(
                 {'launched': launched_time})
-        if self.parallel:
+        if self.n_threads > 1:
             logger.info(
-                    f"Running {len(self.commands)} executions in parallel:")
+                    f"Running {len(self.commands)} executions in parallel:"
+                    f" {max(self.n_threads, len(self.commands))} threads")
             logger.info("The output of the executions will be "
-                           f"redirected to {self.run.storage_path}")
+                        f"redirected to {self.run.storage_path}")
             logger.warning('Do not interrupt the program or the '
                            'executions will be interrupted')
 
@@ -183,51 +184,88 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
 
             processes = []
             pids = []
+            status_list = []
 
             console = rich.console.Console()
             with console.status(
                     "[bold green]Running...", spinner='dots'):
                 stdout_list = []
                 stderr_list = []
+
+                # Creating sequence of commands to runs at
+                # different times
+                commands_sequences = []
+                command_one_sequence = []
+                repertories_sequences = []
+                repertories_one_sequence = []
                 for i, command in enumerate(self.commands):
-                    stdout_file = open(os.path.join(self.repertories[i],
-                                                    'stdout.txt'), 'w')
-                    stderr_file = open(os.path.join(self.repertories[i],
-                                                    'stderr.txt'), 'w')
-                    stdout_list.append(stdout_file)
-                    stderr_list.append(stderr_file)
-                    process = subprocess.Popen(command,
-                                               stdout=stdout_file,
-                                               stderr=stderr_file)
-                    pids.append(str(process.pid))
-                    processes.append(process)
+                    command_one_sequence.append(command)
+                    repertories_one_sequence.append(self.repertories[i])
+                    if (i+1) % self.n_threads == 0 or \
+                        (i == len(self.commands)-1 and
+                         len(self.commands) <= self.n_threads):
+                        commands_sequences.append(command_one_sequence)
+                        repertories_sequences.append(repertories_one_sequence)
+                        command_one_sequence = []
+                        repertories_one_sequence = []
 
-                update_run_status(Session, self.run_id,
-                                  "running")
-                Session.close()
+                for i, (command_sequence, repertory_sequence) in \
+                        enumerate(zip(
+                            commands_sequences, repertories_sequences)):
 
-                # Add info in the yaml file
-                with open(os.path.join(self.run.storage_path,
-                                       'info.yaml'), 'r') as f:
-                    info = yaml.load(f, Loader=yaml.FullLoader)
-                info['pids'] = pids
-                info['start_time'] = datetime.now()
-                info['status'] = 'running'
-                with open(os.path.join(self.run.storage_path,
-                                       'info.yaml'), 'w') as f:
-                    yaml.dump(info, f)
+                    logger.info(f"Running {i}/{len(commands_sequences)} "
+                                "sequence of commands:")
+                    for command in command_sequence:
+                        logger.info("- " + " ".join(command))
 
-                for i, process in enumerate(processes):
-                    process.wait()
-                    stdout_list[i].close()
-                    stderr_list[i].close()
+                    for command, repertory in zip(command_sequence,
+                                                  repertory_sequence):
+                        stdout_file = open(os.path.join(repertory,
+                                                        'stdout.txt'), 'w')
+                        stderr_file = open(os.path.join(repertory,
+                                                        'stderr.txt'), 'w')
+                        stdout_list.append(stdout_file)
+                        stderr_list.append(stderr_file)
+                        process = subprocess.Popen(command,
+                                                   stdout=stdout_file,
+                                                   stderr=stderr_file)
+                        pids.append(str(process.pid))
+                        processes.append(process)
+                        status_list.append('running')
+
+                    if self.run.status != 'running':
+                        self.run.status = 'running'
+                        update_run_status(Session, self.run_id,
+                                          "running")
+                    Session.close()
+
+                    # Add info in the yaml file
+                    with open(os.path.join(self.run.storage_path,
+                                           'info.yaml'), 'r') as f:
+                        info = yaml.load(f, Loader=yaml.FullLoader)
+                    info['pids'] = pids
+                    if 'start_time' not in info:
+                        info['start_time'] = datetime.now()
+                    info['status'] = status_list
+                    with open(os.path.join(self.run.storage_path,
+                                           'info.yaml'), 'w') as f:
+                        yaml.dump(info, f)
+
+                    for i, process in enumerate(processes):
+                        process.wait()
+                        if process.returncode != 0:
+                            status_list[i] = 'error'
+                        else:
+                            status_list[i] = 'finished'
+                        stdout_list[i].close()
+                        stderr_list[i].close()
 
             # Add info in the yaml file
             with open(os.path.join(self.run.storage_path,
                                    'info.yaml'), 'r') as f:
                 info = yaml.load(f, Loader=yaml.FullLoader)
             info['end_time'] = datetime.now()
-            info['status'] = 'finished'
+            info['status'] = status_list
             with open(os.path.join(self.run.storage_path,
                                    'info.yaml'), 'w') as f:
                 yaml.dump(info, f)
@@ -259,7 +297,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                  "[progress.percentage]{task.percentage:>3.0f}%") as progress:
                 task = progress.add_task("Running..", total=len(self.commands))
                 for i, command in enumerate(self.commands):
-                    logger.info(f"Running {command}")
+                    logger.info("Running '" + " ".join(command) + "'")
                     logger.warning("Do not close the terminal window. "
                                    "It will cancel the execution of the run.")
 
@@ -284,7 +322,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                         info = yaml.load(f, Loader=yaml.FullLoader)
                     info['start_time'] = start_time_list
                     info['status'] = status_list
-                    info['pid'] = pid_list
+                    info['pids'] = pid_list
                     with open(os.path.join(self.run.storage_path,
                                            'info.yaml'), 'w') as f:
                         yaml.dump(info, f)
@@ -345,7 +383,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
 
         # Test wheter cancelled, running or finished
         if any(status == "running" for status in info['status']):
-            pids = info['pid']
+            pids = info['pids']
 
             # Check if at least one pid is still running
             if not any(psutil.pid_exists(int(pid))

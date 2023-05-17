@@ -661,7 +661,8 @@ def command_show(experiment_name: str,
         try:
             # Update status to canceled if needed
             if run.runner == "local":
-                execution_handler = LocalMachineExecutionHandler(session, run.id)
+                execution_handler = LocalMachineExecutionHandler(
+                        session, run.id)
                 run.status = execution_handler.check_status()
 
             if run.launched is not None:
@@ -673,7 +674,7 @@ def command_show(experiment_name: str,
                     duration = "N/A"
             else:
                 duration = "N/A"
-        except KeyError:
+        except KeyError as e:
             duration = "N/A"
             run.status = "canceled"
 

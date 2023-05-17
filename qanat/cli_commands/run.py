@@ -111,7 +111,7 @@ def parse_positional_optional_arguments(
 
 
 def parse_args_cli(ctx: click.Context, groups_of_parameters: list,
-                   runner_params_to_get: list = ["--parallel"]) -> tuple:
+                   runner_params_to_get: list = ["--n_threads"]) -> tuple:
     """Parse the arguments of the CLI and return a list of dictionary of them.
     The arguments are parsed from the context of the CLI and the groups
     of parameters.
@@ -276,18 +276,15 @@ def launch_run_experiment(experiment_name: str,
             tags, runner, runner_params)
     run_id = run.id
 
+    if "--n_threads" not in runner_params:
+        runner_params["--n_threads"] = 1
+
     # Create the execution handler
     if runner == "local":
-        # Check whether parallel is in the runner params
-        if "--parallel" in runner_params:
-            parallel = runner_params["--parallel"]
-        else:
-            parallel = False
-
         execution_handler = LocalMachineExecutionHandler(
                 database_sessionmaker=Session,
                 run_id=run_id,
-                parallel=bool(parallel)
+                n_threads=int(runner_params['--n_threads'])
         )
 
     else:
