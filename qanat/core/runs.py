@@ -534,8 +534,8 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                 f.write('echo "Running on host: $HOSTNAME"\n')
                 f.write('echo "Starting at: $(date)"\n\n')
 
-                f.write(f'Moving to repertory {os.cwd()}\n')
-                f.wite(f'cd {os.cwd()}\n\n')
+                f.write(f'Moving to repertory {os.getcwd()}\n')
+                f.wite(f'cd {os.getcwd()}\n\n')
 
                 f.write(f'echo "Running command: {str_command}"\n')
                 f.write(str_command)
