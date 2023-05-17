@@ -8,6 +8,7 @@
 # =========================================
 
 import sys
+import shutil
 import os
 import signal
 from sqlalchemy.orm import sessionmaker
@@ -27,6 +28,13 @@ from .database import (
 from ..utils.logging import setup_logger
 
 logger = setup_logger()
+
+try:
+    import htcondor
+except ImportError:
+    logger.info("HTCondor python bindings not available on system. "
+                "Please install htcondor if available: "
+                "pip install htcondor")
 
 
 def parse_executionhandler(executionhandler: str):
@@ -119,11 +127,13 @@ class RunExecutionHandler:
                     os.makedirs(path)
                 self.repertories.append(path)
 
-        # Constructing the commands to run as subprocesses
+        # Constructing the commands to run as subprocesses for local
+        # execution
         self.groups_of_parameters = [parameters.values for
                                      parameters in
                                      fetch_groupofparameters_of_run(
                                          Session, self.run_id)]
+
         self.commands = []
         for i, group_of_parameters in enumerate(self.groups_of_parameters):
             command = [self.experiment.executable_command,
@@ -140,13 +150,12 @@ class RunExecutionHandler:
                 'executable': self.experiment.executable,
                 'executable_command': self.experiment.executable_command,
                 'storage_path': self.run.storage_path,
-                'groups_of_parameters': self.groups_of_parameters,
                 'commands': self.commands,
+                'groups_of_parameters': self.groups_of_parameters,
                 'repertories': self.repertories}
         with open(os.path.join(self.run.storage_path,
                                'info.yaml'), 'w') as f:
             yaml.dump(info, f)
-
         Session.close()
 
     def parse_yaml_file(self) -> dict:
@@ -481,3 +490,131 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                 return "finished"
             else:
                 return "running"
+
+
+class HTCondorExecutionHandler(RunExecutionHandler):
+    """Class for excuting run as jobs through an HTCondor
+    job submission system"""
+
+    def __init__(self, database_sessionmaker, run_id,
+                 htcondor_submit_options=None):
+        super().__init__(database_sessionmaker, run_id)
+
+        # Check wheter htcondor is available on system
+        if not shutil.which('condor_submit'):
+            logger.warning("HTCondor not available on system.")
+            self.htcondor_available = False
+        else:
+            self.htcondor_available = True
+
+        self.htcondor_submit_options = htcondor_submit_options
+
+    def run_experiment(self):
+        """Run the experiment."""
+
+        if not self.htcondor_available:
+            logger.error("HTCondor not available on system.")
+            sys.exit(-1)
+
+        # Getting schedd
+        schedd = htcondor.Schedd()
+
+        # Submit all jobs
+        cluster_ids = []
+        submit_dicts = []
+        for command, repertory in zip(self.commands,
+                                      self.repertories):
+
+            str_command = " ".join(command)
+
+            # Create new executable file
+            executable = os.path.join(repertory, 'executable.sh')
+            with open(executable, 'w') as f:
+                f.write("#!/bin/bash\n")
+                f.write('echo "Running on host: $HOSTNAME"\n')
+                f.write('echo "Starting at: $(date)"\n\n')
+
+                f.write(f'Moving to repertory {os.cwd()}\n')
+                f.wite(f'cd {os.cwd()}\n\n')
+
+                f.write(f'echo "Running command: {str_command}"\n')
+                f.write(str_command)
+                f.write('Done.')
+
+            # TODO: bind paths of datasets and stuff...
+            # TODO: Maybe not harcode some stuff...
+            submit_dict = {
+                'executable': executable,
+                'output': os.path.join(repertory, 'output.txt'),
+                'error': os.path.join(repertory, 'error.txt'),
+                'log': os.path.join(repertory, 'log.txt'),
+                'should_transfer_files': 'YES',
+                'when_to_transfer_output': 'ON_EXIT',
+                'batch_name': f"{self.experiment.name}_{self.run_id}"
+            }
+            if self.htcondor_submit_options is not None:
+                submit_dict.update(self.htcondor_submit_options)
+
+            # Submit the job
+            logger.info(f"Submitting job for command {str_command}")
+            job = htcondor.Submit(submit_dict)
+            submit_result = schedd.submit(job)
+            cluster_ids.append(submit_result.cluster())
+            submit_dicts.append(submit_dict)
+
+        # Update the database
+        Session = self.session_maker()
+        update_run_status(Session, self.run_id,
+                          'running')
+        Session.close()
+
+        # Update the YAML file
+        info = self.parse_yaml_file()
+        info['status'] = 'running'
+        info['start_time'] = datetime.now()
+        info['cluster_ids'] = cluster_ids
+        info['submit_dicts'] = submit_dicts
+        self.update_yaml_file(info)
+
+        logger.info("Jobs submitted.")
+
+    def check_status(self):
+        """Check the status of the run."""
+
+        # Read info from YAML file
+        info = self.parse_yaml_file()
+
+        # If htcondor available on system, we can't really
+        # check status
+        if not self.htcondor_available:
+            if info['status'] == 'finished':
+                return "finished"
+            else:
+                return "unknown"
+
+        # Check if clusters are running
+        schedd = htcondor.Schedd()
+        for cluster_id in info['cluster_ids']:
+            if not any(job['ClusterId'] == cluster_id
+                       for job in schedd.xquery()):
+                return "cancelled"
+            elif any(job['JobStatus'] == 4
+                     for job in schedd.xquery()
+                     if job['ClusterId'] == cluster_id):
+                return "running"
+            elif any(job['JobStatus'] == 5
+                     for job in schedd.xquery()
+                     if job['ClusterId'] == cluster_id):
+                info['status'] = 'finished'
+                self.update_yaml_file(info)
+                return "finished"
+            elif all([job['JobStatus'] == 1
+                      for job in schedd.xquery()
+                      if job['ClusterId'] == cluster_id]):
+                return "not_started"
+            elif all([job['JobStatus'] == 2
+                      for job in schedd.xquery()
+                      if job['ClusterId'] == cluster_id]):
+                return "held"
+            else:
+                return "unknown"

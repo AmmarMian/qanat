@@ -26,7 +26,7 @@ from ..core.database import (
     )
 from ..core.runs import (
         parse_executionhandler, RunExecutionHandler,
-        LocalMachineExecutionHandler)
+        LocalMachineExecutionHandler, HTCondorExecutionHandler)
 from ..utils.logging import setup_logger
 
 logger = setup_logger()
@@ -117,6 +117,7 @@ def delete_run(experiment_name: str, run_id: int):
                 if session.is_active:
                     session.close()
                 session = Session()
+
         delete_run_from_id(session, run_id)
         logger.info(f"Run {run_id} of experiment {experiment_name} deleted")
     else:
@@ -218,7 +219,7 @@ def parse_args_cli(ctx: click.Context, groups_of_parameters: list,
 
 
 def signals_experiment_handler(executionhandler: RunExecutionHandler,
-                              signum, frame):
+                               signum, frame):
     """Handler of signals to a run of the experiment.
 
     :param executionhandler: The execution handler of the experiment.
@@ -347,16 +348,47 @@ def launch_run_experiment(experiment_name: str,
             tags, runner, runner_params)
     run_id = run.id
 
-    if "--n_threads" not in runner_params:
-        runner_params["--n_threads"] = 1
-
     # Create the execution handler
     if runner == "local":
+        if "--n_threads" not in runner_params:
+            runner_params["--n_threads"] = 1
         execution_handler = LocalMachineExecutionHandler(
                 database_sessionmaker=Session,
                 run_id=run_id,
                 n_threads=int(runner_params['--n_threads'])
         )
+
+    elif runner == "htcondor":
+        # Check whether the submit_template is specified
+        if "--submit_template" not in runner_params:
+            # Take by default the submit_template in config.yaml
+            with open(".qanat/config.yaml", "r") as f:
+                config = yaml.safe_load(f)
+            submit_info = config["htcondor"]["default"]
+
+        else:
+            # Check if submit_template is a file
+            if os.path.isfile(runner_params["--submit_template"]):
+                # load yaml
+                with open(runner_params["--submit_template"], "r") as f:
+                    submit_info = yaml.safe_load(f)
+            else:
+                # Read from config file
+                with open(".qanat/config.yaml", "r") as f:
+                    config = yaml.safe_load(f)
+                if runner_params["--submit_template"] in \
+                        config["submit_info"]['htcondor']:
+                    submit_info = config["htcondor"][
+                        runner_params["--submit_template"]]
+                else:
+                    raise ValueError("Submit template "
+                                     f"{runner_params['--submit_template']} "
+                                     "not found in config.yaml nor is a file")
+
+        execution_handler = HTCondorExecutionHandler(
+                database_sessionmaker=Session,
+                run_id=run_id,
+                htcondor_submit_options=submit_info)
 
     else:
         raise NotImplementedError(f"Runner {runner} is not implemented yet.")
@@ -365,7 +397,7 @@ def launch_run_experiment(experiment_name: str,
     logger.info("Setting up the run...")
     execution_handler.setUp()
 
-    # Setting singla handler for eventual cancel/halt/resume
+    # Setting signal handler for eventual cancel/halt/resume
     signal.signal(signal.SIGTERM,
                   handler=partial(
                       signals_experiment_handler, execution_handler))

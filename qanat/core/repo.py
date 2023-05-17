@@ -145,9 +145,19 @@ class QanatRepertory:
             with open(
                     os.path.join(self.qanat_dir_path, "config.yaml"),
                     "w") as f:
+                default_htcondor_options = {
+                    'request_cpus': 1,
+                    'request_memory': '1GB',
+                    'request_disk': '1GB',
+                    'request_gpus': 0,
+                    'universe': 'vanilla',
+                    '+WishedAcctGroup': 'group_usmb.listic',
+                    'getenv': 'true',
+                }
                 yaml.dump(
                         {"result_dir": result_path,
-                         "logging": "INFO"},
+                         "logging": "INFO",
+                         "htcondor": {"default": default_htcondor_options}},
                         f,
                         default_flow_style=False)
         else:
