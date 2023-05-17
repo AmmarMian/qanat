@@ -377,7 +377,7 @@ def launch_run_experiment(experiment_name: str,
                 with open(".qanat/config.yaml", "r") as f:
                     config = yaml.safe_load(f)
                 if runner_params["--submit_template"] in \
-                        config["submit_info"]['htcondor']:
+                        config['htcondor']:
                     submit_info = config["htcondor"][
                         runner_params["--submit_template"]]
                 else:

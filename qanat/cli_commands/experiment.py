@@ -30,7 +30,8 @@ from ._constants import (
     EXPERIMENT_ACTION, get_run_status_emoji, EXIT,
     RUN_LAUNCH_DATE, RUN_DURATION)
 from ..core.runs import (
-    LocalMachineExecutionHandler
+    LocalMachineExecutionHandler,
+    HTCondorExecutionHandler
 )
 
 logger = setup_logger()
@@ -637,13 +638,15 @@ def command_show(experiment_name: str,
     grid.add_column(justify="left", header="ID")
     grid.add_column(justify="left", header="Description")
     grid.add_column(justify="left", header="Path")
+    grid.add_column(justify="center", header="Runner")
     grid.add_column(justify="left", header="Launch date")
     grid.add_column(justify="left", header="Duration")
     grid.add_column(justify="center", header="Status", no_wrap=True)
     grid.add_column(justify="left", header="Tags", style="bold")
     grid.add_row("[bold]ID[/bold]",
                  "[bold]Description[/bold]",
-                 "[bold]Path[/bold]", "[bold]Launch date[/bold]",
+                 "[bold]Path[/bold]", "[bold]Runner[/bold]",
+                 "[bold]Launch date[/bold]",
                  "[bold]Duration[/bold]", "[bold]Status[/bold]",
                  "[bold]Tags[/bold]")
 
@@ -663,7 +666,10 @@ def command_show(experiment_name: str,
             if run.runner == "local":
                 execution_handler = LocalMachineExecutionHandler(
                         session, run.id)
-                run.status = execution_handler.check_status()
+            elif run.runner == "htcondor":
+                execution_handler = HTCondorExecutionHandler(
+                        session, run.id)
+            run.status = execution_handler.check_status()
 
             if run.launched is not None:
                 if run.status == "running":
@@ -674,7 +680,8 @@ def command_show(experiment_name: str,
                     duration = "N/A"
             else:
                 duration = "N/A"
-        except KeyError as e:
+
+        except KeyError:
             duration = "N/A"
             run.status = "canceled"
 
@@ -682,6 +689,7 @@ def command_show(experiment_name: str,
         grid.add_row(f"{EXPERIMENT_ID} {run.id}",
                      f"{EXPERIMENT_DESCRIPTION} {run.description}",
                      f"{EXPERIMENT_PATH} {run.storage_path}",
+                     f"{run.runner}",
                      f"{RUN_LAUNCH_DATE} {run.launched}",
                      f"{RUN_DURATION}  {duration}",
                      f"{RUN_STATUS}",

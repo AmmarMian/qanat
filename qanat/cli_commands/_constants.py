@@ -57,7 +57,7 @@ def get_run_status_emoji(status):
         emoji_status = f"{RUN_IS_FINISHED}"
     elif status == "failed":
         emoji_status = f"{RUN_IS_FAILED}"
-    elif status == "pending":
+    elif status == "not_started":
         emoji_status = f"{RUN_IS_PENDING}"
     elif status == "paused":
         emoji_status = f"{RUN_IS_PAUSED}"
