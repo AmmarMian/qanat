@@ -12,6 +12,7 @@ from datetime import datetime
 import rich
 from rich.table import Table
 from rich import prompt
+from rich.console import Console
 import sqlalchemy
 from ..utils.logging import setup_logger
 from ..core.database import (
@@ -606,6 +607,7 @@ def command_show(experiment_name: str,
         Session.close_all()
         return
 
+
     experiment = Session.query(Base.classes.experiments).filter_by(
             name=experiment_name).first()
     number_runs = count_number_runs_experiment(Session, experiment_name)
@@ -650,50 +652,53 @@ def command_show(experiment_name: str,
                  "[bold]Duration[/bold]", "[bold]Status[/bold]",
                  "[bold]Tags[/bold]")
 
-    runs = fetch_runs_of_experiment(Session, experiment_name)
-    for run in runs:
+    console = Console()
+    with console.status(
+            "[bold green]Fetching runs...", spinner="dots"):
+        runs = fetch_runs_of_experiment(Session, experiment_name)
+        for run in runs:
 
-        tags = fetch_tags_of_run(Session, run.id)
-        Session.close()
-        if len(tags) >= 1:
-            tags = f"{EXPERIMENT_TAGS} " +\
-                   f", {EXPERIMENT_TAGS} ".join(fetch_tags_of_run(
-                                                Session, run.id))
-        else:
-            tags = ""
-        try:
-            # Update status to canceled if needed
-            if run.runner == "local":
-                execution_handler = LocalMachineExecutionHandler(
-                        session, run.id)
-            elif run.runner == "htcondor":
-                execution_handler = HTCondorExecutionHandler(
-                        session, run.id)
-            run.status = execution_handler.check_status()
+            tags = fetch_tags_of_run(Session, run.id)
+            Session.close()
+            if len(tags) >= 1:
+                tags = f"{EXPERIMENT_TAGS} " +\
+                    f", {EXPERIMENT_TAGS} ".join(fetch_tags_of_run(
+                                                    Session, run.id))
+            else:
+                tags = ""
+            try:
+                # Update status to canceled if needed
+                if run.runner == "local":
+                    execution_handler = LocalMachineExecutionHandler(
+                            session, run.id)
+                elif run.runner == "htcondor":
+                    execution_handler = HTCondorExecutionHandler(
+                            session, run.id)
+                run.status = execution_handler.check_status()
 
-            if run.launched is not None:
-                if run.status == "running":
-                    duration = datetime.now() - run.launched
-                elif run.status == "finished" and run.finished is not None:
-                    duration = run.finished - run.launched
+                if run.launched is not None:
+                    if run.status == "running":
+                        duration = datetime.now() - run.launched
+                    elif run.status == "finished" and run.finished is not None:
+                        duration = run.finished - run.launched
+                    else:
+                        duration = "N/A"
                 else:
                     duration = "N/A"
-            else:
+
+            except KeyError:
                 duration = "N/A"
+                run.status = "canceled"
 
-        except KeyError:
-            duration = "N/A"
-            run.status = "canceled"
-
-        RUN_STATUS = get_run_status_emoji(run.status)
-        grid.add_row(f"{EXPERIMENT_ID} {run.id}",
-                     f"{EXPERIMENT_DESCRIPTION} {run.description}",
-                     f"{EXPERIMENT_PATH} {run.storage_path}",
-                     f"{run.runner}",
-                     f"{RUN_LAUNCH_DATE} {run.launched}",
-                     f"{RUN_DURATION}  {duration}",
-                     f"{RUN_STATUS}",
-                     f"{tags}")
+            RUN_STATUS = get_run_status_emoji(run.status)
+            grid.add_row(f"{EXPERIMENT_ID} {run.id}",
+                        f"{EXPERIMENT_DESCRIPTION} {run.description}",
+                        f"{EXPERIMENT_PATH} {run.storage_path}",
+                        f"{run.runner}",
+                        f"{RUN_LAUNCH_DATE} {run.launched}",
+                        f"{RUN_DURATION}  {duration}",
+                        f"{RUN_STATUS}",
+                        f"{tags}")
 
     rich.print(grid)
 

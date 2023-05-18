@@ -46,6 +46,8 @@ def parse_executionhandler(executionhandler: str):
 
     if executionhandler == 'local':
         return LocalMachineExecutionHandler
+    elif executionhandler == 'htcondor':
+        return HTCondorExecutionHandler
     else:
         raise ValueError(f"Unknown execution handler {executionhandler}")
 
@@ -494,7 +496,17 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
 
 class HTCondorExecutionHandler(RunExecutionHandler):
     """Class for excuting run as jobs through an HTCondor
-    job submission system"""
+    job submission system.
+    
+    Reminder for HTcondor job status:
+    0	Unexpanded 	U
+    1	Idle 	I
+    2	Running 	R
+    3	Removed 	X
+    4	Completed 	C
+    5	Held 	H
+    6	Submission_err 	E
+    """
 
     def __init__(self, database_sessionmaker, run_id,
                  htcondor_submit_options=None):
@@ -611,6 +623,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                             finish_times[i] = datetime.strptime(time_str,
                                                                   "%Y-%m-%d %H:%M:%S")
                             found_finish_time = True
+
         # Update the YAML file
         info['launch_times'] = launch_times
         info['finish_times'] = finish_times
@@ -639,10 +652,18 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         status_clusters = []
         for cluster_id in info['cluster_ids']:
             try:
-                status_clusters.append(
-                        schedd.query(f'ClusterId == {cluster_id}')[0]['JobStatus'])
+                query = schedd.query(f'ClusterId == {cluster_id}')
+                if len(query) == 0:
+                    # We haven't found the cluster so it must be in history
+                    query = list(
+                        schedd.history(
+                            constraint="ClusterId == 2487", 
+                            projection=["JobStatus"]))
+                status_clusters.append(query[0]['JobStatus'])
+                    
             except IndexError:
-                status_clusters.append(4)
+                status_clusters.append(0)
+                
 
         # If all jobs are finished, we can update the status
         # to finished
@@ -683,3 +704,34 @@ class HTCondorExecutionHandler(RunExecutionHandler):
             Session.commit()
             Session.close()
         return status
+
+
+    def cancel_experiment(self):
+        """Cancel a run of the experiment."""
+
+        info = self.parse_yaml_file()
+        if info is None:
+            logger.warning(f"Run {self.run_id} doesn't have a info.yaml file")
+            logger.warning("Probably due to it being not started or some error")
+            logger.info("Try waiting for it to launch or delete the run altogether")
+            return
+
+        # Removing jobs that are removable
+        schedd = htcondor.Schedd()
+        for cluster_id in info['cluster_ids']:
+            query = schedd.query(f'ClusterId == {cluster_id}')
+            if len(query) >= 1:
+                if query[0]['JobStatus'] in [1, 2, 5]:
+                    schedd.act(
+                        htcondor.JobAction.Remove,
+                        f"ClusterId == {cluster_id}")
+
+        # Updating YAML file
+        info["status"] = "cancelled"
+        self.update_yaml_file(info)
+
+        # Update database
+        Session = self.session_maker()
+        update_run_status(Session, self.run_id,
+                            'cancelled')
+        Session.close()

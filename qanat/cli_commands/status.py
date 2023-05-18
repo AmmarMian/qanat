@@ -46,7 +46,7 @@ def command_status():
 
     console = Console()
     with console.status(
-            "[bold green]Computing status...", spinner="aesthetic"):
+            "[bold green]Computing status...", spinner="dots"):
         # Compute number of experiments
         engine, Base, session = open_database('.qanat/database.db')
         Session = session()
