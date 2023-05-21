@@ -123,7 +123,7 @@ def delete_run(experiment_name: str, run_id: int):
                     if session.is_active:
                         session.close()
                     session = Session()
-            
+
             else:
                 execution_handler(Session, run.id).cancel_experiment()
                 logger.info(

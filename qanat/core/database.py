@@ -8,6 +8,7 @@
 # for Qanat.
 # =========================================
 
+import os
 import shutil
 from datetime import datetime
 from dataclasses import dataclass
@@ -717,7 +718,8 @@ def delete_run_from_id(session: Session, run_id: int):
     session.query(RunsTags).filter(RunsTags.run_id == run_id).delete()
 
     # Removing the directories of runs
-    shutil.rmtree(run.storage_path)
+    if os.path.exists(run.storage_path):
+        shutil.rmtree(run.storage_path)
 
     # Remove the run
     session.query(RunOfAnExperiment).filter(
