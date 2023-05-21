@@ -13,6 +13,7 @@ import rich
 from rich.table import Table
 from rich import prompt
 from rich.console import Console
+import rich_click as click
 import sqlalchemy
 from ..utils.logging import setup_logger
 from ..core.database import (
@@ -34,8 +35,53 @@ from ..core.runs import (
     LocalMachineExecutionHandler,
     HTCondorExecutionHandler
 )
+from ..core.actions import ActionExecutionHandler
 
 logger = setup_logger()
+
+# --------------------------------------------------------
+# Command Action
+# --------------------------------------------------------
+def command_action(experiment_name: str, action_name: str,
+                   run_id: int, ctx: click.Context):
+    """Execute action on a run of an experiment.
+
+    :param experiment_name: Name of the experiment
+    :param type: str
+
+    :param action_name: Name of the action
+    :param type: str
+
+    :param run_id: ID of the run
+    :param type: int
+    """
+    
+    engine, Base, session = open_database('.qanat/database.db')
+
+    # Check if action_name is associated with the experiment
+    Session = session()
+    experiment_id = find_experiment_id(Session, experiment_name)
+    if experiment_id == -1:
+        logger.error("Experiment does not exist")
+        return
+    experiment_actions = fetch_actions_of_experiment(Session, experiment_name)
+    action_names = [action.name for action in experiment_actions]
+    if action_name not in action_names:
+        logger.error(f"Action '{action_name}' is not associated with the experiment")
+        return
+
+    # Check if run_id is associated with the experiment
+    run_ids = [run.id for run in fetch_runs_of_experiment(Session, experiment_name)]
+
+    if run_id not in run_ids:
+        logger.error("Run is not associated with the experiment: "
+                     f"{experiment_name}"  )
+        return
+
+    # Execute action
+    action_handler = ActionExecutionHandler(
+        session, run_id, action_name, experiment_name)    
+    action_handler.execute_action(ctx)
 
 
 # --------------------------------------------------------
@@ -587,9 +633,9 @@ def command_list():
 
 
 # --------------------------------------------------------
-# Command show
+# Command status
 # -------------------------------------------------------
-def command_show(experiment_name: str,
+def command_status(experiment_name: str,
                  show_run_prompts: bool = False):
     """Show information about an experiment.
 
@@ -655,6 +701,19 @@ def command_show(experiment_name: str,
     console = Console()
     with console.status(
             "[bold green]Fetching runs...", spinner="dots"):
+
+        # Update status of all runs
+        runs = fetch_runs_of_experiment(Session, experiment_name)
+        for run in runs:
+            if run.runner == "local":
+                execution_handler = LocalMachineExecutionHandler(
+                        session, run.id)
+            elif run.runner == "htcondor":
+                execution_handler = HTCondorExecutionHandler(
+                        session, run.id)
+            run.status = execution_handler.check_status()
+        
+        # Fetch all runs again
         runs = fetch_runs_of_experiment(Session, experiment_name)
         for run in runs:
 
@@ -666,29 +725,16 @@ def command_show(experiment_name: str,
                                                     Session, run.id))
             else:
                 tags = ""
-            try:
-                # Update status to canceled if needed
-                if run.runner == "local":
-                    execution_handler = LocalMachineExecutionHandler(
-                            session, run.id)
-                elif run.runner == "htcondor":
-                    execution_handler = HTCondorExecutionHandler(
-                            session, run.id)
-                run.status = execution_handler.check_status()
 
-                if run.launched is not None:
-                    if run.status == "running":
-                        duration = datetime.now() - run.launched
-                    elif run.status == "finished" and run.finished is not None:
-                        duration = run.finished - run.launched
-                    else:
-                        duration = "N/A"
+            if run.launched is not None:
+                if run.status == "running":
+                    duration = datetime.now() - run.launched
+                elif run.status == "finished" and run.finished is not None:
+                    duration = run.finished - run.launched
                 else:
                     duration = "N/A"
-
-            except KeyError:
+            else:
                 duration = "N/A"
-                run.status = "canceled"
 
             RUN_STATUS = get_run_status_emoji(run.status)
             grid.add_row(f"{EXPERIMENT_ID} {run.id}",

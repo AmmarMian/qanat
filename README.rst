@@ -14,7 +14,7 @@ Qanat
         :alt: Documentation Status
 
 
-
+'''
                         .
                        _|_
  .-.,  .-.  .--.  .-.   |
@@ -22,7 +22,7 @@ Qanat
  `-'|  `-'`-'  `- `-'`- `-'
    -|-
     '
-
+'''
 
 Qanat is a Minimal package to manage and reproduce research experiments.
 

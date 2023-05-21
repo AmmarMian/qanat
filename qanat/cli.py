@@ -88,12 +88,12 @@ def experiment_new():
     experiment.command_add_prompt()
 
 
-@experiment_main.command(name="show")
+@experiment_main.command(name="status")
 @click.argument("name", type=click.STRING, required=True)
 @click.option("--prompt", "-p", is_flag=True, default=False)
 def experiment_show(name, prompt):
-    """Show runs of experiment + prompt."""
-    experiment.command_show(name, prompt)
+    """Show status of all runs."""
+    experiment.command_status(name, prompt)
 
 
 @experiment_main.command(name="delete")
@@ -123,6 +123,8 @@ def experiment_update(name):
               help="Runner to use for experiment.")
 @click.option("--group_param", "-g", default=None, type=click.STRING,
               help="Group of parameters to run.", multiple=True)
+@click.option("--range_param", "-r", default=None, type=click.STRING,
+              help="Range for a single parameter.", multiple=True)
 @click.option("--storage_path", default=None, type=click.STRING)
 @click.option("--tag", "-t", default=None, type=click.STRING,
               help="Tag to assing this run", multiple=True)
@@ -132,8 +134,8 @@ def experiment_update(name):
 # fetched from:
 # https://stackoverflow.com/questions/32944131/ ...
 # add-unspecified-options-to-cli-command-using-python-click
-def experiment_run(ctx, name, runner, group_param, storage_path,
-                   tag, description):
+def experiment_run(ctx, name, runner, group_param, range_param,
+                   storage_path, tag, description):
     """Run an experiment with additional positional and option args.\n
     [bold red]WARNING: The following options are not available
     for your executable command:[/bold red]\n
@@ -145,6 +147,8 @@ def experiment_run(ctx, name, runner, group_param, storage_path,
     config file.\n
     * [bold yellow]--group_param[/bold yellow] to specify group of parameters
     to run as the same run.\n
+    * [bold yellow]--range_param[/bold yellow] to specify to create groups of
+    parameters as a range. Syntax is: -r '--param start end step'.\n
     * [bold yellow] --storage_path[/bold yellow] to override storage path for
     the run of the experiment.\n
     * [bold yellow]--tag[/bold yellow] to add tag to the run of the
@@ -153,7 +157,8 @@ def experiment_run(ctx, name, runner, group_param, storage_path,
     the experiment.\n
     """
     run.launch_run_experiment(
-            name, ctx, group_param, runner, storage_path, description, tag)
+            name, ctx, group_param, range_param, runner,
+            storage_path, description, tag)
 
 
 @experiment_main.command(
@@ -176,13 +181,13 @@ def experiment_run_delete(experiment_name, run_id):
 )
 @click.argument("experiment_name", type=click.STRING, required=True)
 @click.argument("action_name", type=click.STRING, required=True)
+@click.argument("run_id", type=int, required=True)
 @click.pass_context
-def experiment_action(ctx, experiment_name, action_name):
+def experiment_action(ctx, experiment_name, action_name, run_id):
     """Run an action on a run of an experiment.
     Additional option args can be passed to the action after
     experiment and action name."""
-    click.echo("TODO")
-    click.echo(ctx.args)
+    experiment.command_action(experiment_name, action_name, run_id, ctx)
 
 
 # Subcommands: dataset

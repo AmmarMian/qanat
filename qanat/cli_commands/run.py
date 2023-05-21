@@ -28,6 +28,11 @@ from ..core.runs import (
         parse_executionhandler, RunExecutionHandler,
         LocalMachineExecutionHandler, HTCondorExecutionHandler)
 from ..utils.logging import setup_logger
+from ..utils.parsing import (
+    parse_positional_optional_arguments,
+    parse_args_cli
+)
+import numpy as np
 
 logger = setup_logger()
 
@@ -135,95 +140,6 @@ def delete_run(experiment_name: str, run_id: int):
     session.close()
 
 
-def parse_positional_optional_arguments(
-        parameters: list, pos_shift: int = 0) -> dict:
-    """Parse the positional and optional arguments depending on
-    if there is -- or not in the string of the parameters.
-
-    :param parameters: The parameters to parse.
-    :type parameters: list
-
-    :param pos_shift: The shift of the positional arguments.
-    :type pos_shift: int
-
-    :return: A dictionary of the parsed parameters.
-    :rtype: dict
-    """
-
-    # Parse the string of the group by splitting
-    # it with the space character
-    i = 0
-    pos_number = pos_shift
-    result = {}
-    while i < len(parameters):
-        if parameters[i].startswith("--"):
-            result[parameters[i]] = parameters[i+1]
-            i += 2
-        else:
-            result[f"pos_{pos_number}"] = parameters[i]
-            pos_number += 1
-            i += 1
-
-    return result
-
-
-def parse_args_cli(ctx: click.Context, groups_of_parameters: list,
-                   runner_params_to_get: list =
-                   ["--n_threads", "--submit_template"]) -> tuple:
-    """Parse the arguments of the CLI and return a list of dictionary of them.
-    The arguments are parsed from the context of the CLI and the groups
-    of parameters.
-
-
-    :param ctx: The context of the CLI.
-    :type ctx: click.Context
-
-    :param groups_of_parameters: The groups of parameters to parse.
-    :type groups_of_parameters: list
-
-    :param runner_params_to_get: The parameters of the runner to get.
-    :type runner_params_to_get: list
-
-    :return: A tuple of the parsed parameters and the runner parameters.
-    :rtype: tuple
-    """
-
-    # Get the arguments from the context
-    fixed_args = parse_positional_optional_arguments(ctx.args)
-
-    # Remove the runner params in a separate list
-    runner_params = {}
-    for param in runner_params_to_get:
-        if param in fixed_args:
-            runner_params[param] = fixed_args[param]
-            del fixed_args[param]
-
-    # Parse the arguments of the groups of parameters
-    if len(groups_of_parameters) == 0:
-        parsed_parameters = [fixed_args]
-    else:
-        parsed_parameters = []
-        for group in groups_of_parameters:
-            # Find the shift needed in the key of positional
-            # arguments
-            pos_shift = 0
-            for key in fixed_args.keys():
-                if key.startswith("pos_"):
-                    pos_shift = max(pos_shift, int(key[-1]))
-
-            # Parse the string of the group by splitting
-            # it with the space character
-            group = group.split(" ")
-            varying_parameters = \
-                parse_positional_optional_arguments(
-                    group,
-                    pos_shift=int(pos_shift)+1
-                )
-            parsed_parameters.append({**fixed_args, **varying_parameters})
-
-    return parsed_parameters, runner_params
-
-
 def signals_experiment_handler(executionhandler: RunExecutionHandler,
                                signum, frame):
     """Handler of signals to a run of the experiment.
@@ -247,6 +163,7 @@ def signals_experiment_handler(executionhandler: RunExecutionHandler,
 def launch_run_experiment(experiment_name: str,
                           ctx: click.Context,
                           groups_of_parameters: list,
+                          range_of_parameters: list,
                           runner: str,
                           storage_path: str,
                           description: str = "",
@@ -262,6 +179,9 @@ def launch_run_experiment(experiment_name: str,
 
     :param groups_of_parameters: The groups of parameters to parse.
     :type groups_of_parameters: list
+
+    :param range_of_parameters: The range of parameters to parse.
+    :type range_of_parameters: list
 
     :param runner: The runner to use for the run.
     :type runner: str
@@ -320,7 +240,8 @@ def launch_run_experiment(experiment_name: str,
 
     # Get the parsed parameters
     parsed_parameters, runner_params = \
-        parse_args_cli(ctx, groups_of_parameters)
+        parse_args_cli(ctx, groups_of_parameters,
+                       range_of_parameters)
 
     # Check whether storage_path is not None
     if storage_path is None:

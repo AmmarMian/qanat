@@ -7,6 +7,7 @@
 # Brief: Manging execution of the runs
 # =========================================
 
+import time
 import sys
 import shutil
 import os
@@ -26,7 +27,8 @@ from .database import (
         update_run_status, update_run_finish_time,
 )
 from ..utils.logging import setup_logger
-
+from ..utils.misc import reverse_readline
+from ..utils.parsing import parse_group_parameters
 logger = setup_logger()
 
 try:
@@ -52,39 +54,14 @@ def parse_executionhandler(executionhandler: str):
         raise ValueError(f"Unknown execution handler {executionhandler}")
 
 
-def parse_group_parameters(group_parameters: dict) -> list:
-    """Parse dictionary of parameters of a run to
-    a list to passe as arguments to subprocess.
-
-    :param group_parameters: Dictionary of parameters
-    :type group_parameters: dict
-
-    :return: List of parameters
-    :rtype: list
-    """
-
-    list_pos_arguments = []
-    list_options = []
-    for key, value in group_parameters.items():
-
-        # Positional arguments
-        if not key.startswith('--'):
-            list_pos_arguments.append(value)
-        else:
-            list_options += [key, value]
-
-    return list_pos_arguments + list_options
-
-
 class RunExecutionHandler:
     """Template class to handle the execution of the runs.
 
     Such a class must implement the following methods:
     * setUp(self, database_sessionmaker, run_id)
     * run_experiment(self)
-    * update_status(self)
+    * cancel_experiment(self)
     * check_status(self)
-    * update_metrics(self)
     """
     def __init__(self, database_sessionmaker: sessionmaker,
                  run_id: int):
@@ -211,6 +188,14 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         super().__init__(database_sessionmaker, run_id)
         self.n_threads = n_threads
         self.process_pid = os.getpid()
+        signal.signal(signal.SIGINT, self.sigint_handler)
+        self.console = rich.console.Console()
+        self.progress = None
+
+    def sigint_handler(self, signum, frame):
+        """Handle the SIGINT signal."""
+        self.cancel_experiment()
+
 
     def run_experiment(self):
         """Launch the execution of the run as subprocesses.
@@ -245,8 +230,8 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
             pids = []
             status_list = []
 
-            console = rich.console.Console()
-            with console.status(
+            
+            with self.console.status(
                     "[bold green]Running...", spinner='dots'):
                 stdout_list = []
                 stderr_list = []
@@ -257,22 +242,24 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                 command_one_sequence = []
                 repertories_sequences = []
                 repertories_one_sequence = []
+                i_start = 0
                 for i, command in enumerate(self.commands):
                     command_one_sequence.append(command)
                     repertories_one_sequence.append(self.repertories[i])
                     if (i+1) % self.n_threads == 0 or \
                         (i == len(self.commands)-1 and
-                         len(self.commands) <= self.n_threads):
+                        (len(self.commands)-i_start) <= self.n_threads):
                         commands_sequences.append(command_one_sequence)
                         repertories_sequences.append(repertories_one_sequence)
                         command_one_sequence = []
                         repertories_one_sequence = []
+                        i_start = i+1
 
                 for i, (command_sequence, repertory_sequence) in \
                         enumerate(zip(
                             commands_sequences, repertories_sequences)):
 
-                    logger.info(f"Running {i}/{len(commands_sequences)} "
+                    logger.info(f"Running {i+1}/{len(commands_sequences)} "
                                 "sequence of commands:")
                     for command in command_sequence:
                         logger.info("- " + " ".join(command))
@@ -341,11 +328,12 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
             start_time_list = ['' for _ in self.commands]
             end_time_list = ['' for _ in self.commands]
 
-            with Progress(
+            self.progress = Progress(
                  SpinnerColumn(),
                  TextColumn("[bold blue]{task.description}"),
                  BarColumn(bar_width=None),
-                 "[progress.percentage]{task.percentage:>3.0f}%") as progress:
+                 "[progress.percentage]{task.percentage:>3.0f}%")
+            with self.progress as progress:
                 task = progress.add_task("Running..", total=len(self.commands))
                 for i, command in enumerate(self.commands):
                     logger.info("Running '" + " ".join(command) + "'")
@@ -425,7 +413,8 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                         f"{', '.join(pids)}")
             for pid in pids:
                 try:
-                    os.kill(int(pid), signal.SIGTERM)
+                    if pid != '':
+                        os.kill(int(pid), signal.SIGTERM)
                 except ProcessLookupError:
                     logger.info(f"Process {pid} already killed or finished.")
             logger.info("Processes killed.")
@@ -457,15 +446,23 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
     def check_status(self):
         """Check the status of the run."""
 
+        status = "unknown"
         Session = self.session_maker()
-        # Check if run in database is marked as finished
+        # Check if run in database is marked as finished or cancelled
         if Session.query(
-                RunOfAnExperiment).filter(
-                    RunOfAnExperiment.id == self.run_id).first().status == \
-                'finished':
-            return "finished"
-        Session.close()
+                RunOfAnExperiment).filter_by(id=self.run_id).first().status \
+                == "finished":
+            status = "finished"
+        elif Session.query(
+                RunOfAnExperiment).filter_by(id=self.run_id).first().status \
+                == "cancelled":
+            status = "cancelled"
 
+        Session.close()
+        if status != "unknown":
+            return status
+        
+    
         # Otherwhise we need more checks
 
         # Check if yaml file exists
@@ -557,8 +554,8 @@ class HTCondorExecutionHandler(RunExecutionHandler):
             # TODO: Maybe not harcode some stuff...
             submit_dict = {
                 'executable': executable,
-                'output': os.path.join(repertory, 'output.txt'),
-                'error': os.path.join(repertory, 'error.txt'),
+                'output': os.path.join(repertory, 'stdout.txt'),
+                'error': os.path.join(repertory, 'stderr.txt'),
                 'log': os.path.join(repertory, 'log.txt'),
                 'should_transfer_files': 'YES',
                 'when_to_transfer_output': 'ON_EXIT',
@@ -578,9 +575,6 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         Session = self.session_maker()
         update_run_status(Session, self.run_id,
                           'running')
-        Session.query(RunOfAnExperiment).filter(
-                RunOfAnExperiment.id == self.run_id).update(
-                        {'launched': datetime.now()})
         Session.commit()
         Session.close()
 
@@ -602,49 +596,73 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         if info is None:
             return "unknown"
 
-        launch_times = [None for _ in info['repertories']]
-        finish_times = [None for _ in info['repertories']]
-        for i, repertory in enumerate(info['repertories']):
+        
+        if ('launch_time' not in info):
+            # Supposed that order of jobs is order of commands
+            repertory = info['repertories'][0]
+            found_launch_time = False
             if os.path.exists(os.path.join(repertory, 'log.txt')):
-                found_launch_time = False
-                found_finish_time = False
                 with open(os.path.join(repertory, 'log.txt'), 'r') as f:
                     for line in f:
                         if 'Job executing on host:' in line and not found_launch_time:
                             time_str = line.split(")")[1].split("Job")[0].strip()
                             # Time format is like 2023-05-17 18:55:23
-                            launch_times[i] = datetime.strptime(time_str,
-                                                                  "%Y-%m-%d %H:%M:%S")
+                            launch_time = datetime.strptime(time_str,
+                                                                "%Y-%m-%d %H:%M:%S")
                             found_launch_time = True
+                            break
 
-                        if 'Job terminated.' in line and not found_finish_time:
-                            time_str = line.split(")")[1].split("Job")[0].strip()
-                            # Time format is like 2023-05-17 18:55:23
-                            finish_times[i] = datetime.strptime(time_str,
-                                                                  "%Y-%m-%d %H:%M:%S")
-                            found_finish_time = True
+            if found_launch_time:
+                # Update the YAML file
+                info['launch_time'] = launch_time
+                self.update_yaml_file(info)
 
-        # Update the YAML file
-        info['launch_times'] = launch_times
-        info['finish_times'] = finish_times
+                # Update database with first launch time only if not already done
+                Session = self.session_maker()
+                if Session.query(RunOfAnExperiment).filter(
+                        RunOfAnExperiment.id == self.run.id).first().launched is None:
+                    
+                    Session.query(RunOfAnExperiment).filter(
+                            RunOfAnExperiment.id == self.run.id).update(
+                                    {'launched': launch_time})
+                    Session.commit()
+                Session.close()
 
-        # Update database with first launch time only if not already done
-        Session = self.session_maker()
-        if Session.query(RunOfAnExperiment).filter(
-                RunOfAnExperiment.id == self.run.id).first().launched is None:
-            Session.query(RunOfAnExperiment).filter(
-                    RunOfAnExperiment.id == self.run.id).update(
-                            {'launched': min([date for date in launch_times if date is not None])})
-            Session.commit()
-        Session.close()
+        if 'finish_time' not in info and info['status'] == 'finished':
+            # Supposed that order of jobs is order of commands
+            repertory = info['repertories'][-1]
+            found_finish_time = False
+            for line in reverse_readline(os.path.join(repertory, 'log.txt')):
+                if 'Job terminated.' in line and not found_finish_time:
+                    time_str = line.split(")")[1].split("Job")[0].strip()
+                    # Time format is like 2023-05-17 18:55:23
+                    finish_time = datetime.strptime(time_str,
+                                                        "%Y-%m-%d %H:%M:%S")
+                    found_finish_time = True
+                    break
+
+            if found_finish_time:
+                # Update the YAML file
+                info['finish_time'] = finish_time
+                self.update_yaml_file(info)
+
+                # Update database with first launch time only if not already done
+                Session = self.session_maker()
+                Session.query(RunOfAnExperiment).filter(
+                        RunOfAnExperiment.id == self.run.id).update(
+                                {'finished': finish_time})
+                Session.commit()
+                Session.close()
+
+
+        # Don't do stuff if already checked
+        if info['status'] in ['finished', 'cancelled']:
+            return info['status']
 
         # If htcondor available on system, we can't really
         # check status
         if not self.htcondor_available:
-            if info['status'] == 'finished':
-                status = "finished"
-            else:
-                status = "unknown"
+            status = "unknown"
             return status
 
         # Check if clusters are running
@@ -657,7 +675,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                     # We haven't found the cluster so it must be in history
                     query = list(
                         schedd.history(
-                            constraint="ClusterId == 2487", 
+                            constraint=f"ClusterId == {cluster_id}", 
                             projection=["JobStatus"]))
                 status_clusters.append(query[0]['JobStatus'])
                     
@@ -692,19 +710,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
 
         else:
             status = "unknown"
-
-        # Update the database with the last finish time if run is finished
-        if status == "finished":
-            Session = self.session_maker()
-            Session.query(RunOfAnExperiment).filter(
-                    RunOfAnExperiment.id == self.run_id).update(
-                            {'finished': max([date for date
-                                              in finish_times
-                                              if date is not None])})
-            Session.commit()
-            Session.close()
         return status
-
 
     def cancel_experiment(self):
         """Cancel a run of the experiment."""
