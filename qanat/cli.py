@@ -5,7 +5,8 @@ import rich
 
 from .cli_commands.init import init_qanat
 from .cli_commands import (
-        experiment, dataset, status, run
+        experiment, dataset, status, run,
+        config
 )
 from .core.repo import check_directory_is_qanat
 
@@ -68,12 +69,11 @@ def dataset_main():
     return 0
 
 
-@main.group()
-def config():
+@main.group(name="config")
+def config_main():
     """Repository configuration utility"""
     check_cwd_is_qanat()
-    click.echo("TODO")
-
+    return 0
 
 # Subcommands: experiment
 @experiment_main.command(name="list")
@@ -217,13 +217,13 @@ def dataset_update():
 
 
 # Subcommands: config
-@config.command()
+@config_main.command()
 def show():
     """Show configuration."""
-    click.echo("TODO")
+    config.command_show()
 
 
-@config.command()
+@config_main.command()
 @click.argument("file", type=click.Path(exists=True))
 def edit(file):
     """Edit configuration with YAML file."""
@@ -232,7 +232,7 @@ def edit(file):
     if not file.endswith(".yaml"):
         rich.print("[bold red]Configuration file must be YAML file.")
         return 1
-    click.echo("TODO")
+    config.command_edit(file)
 
 
 if __name__ == "__main__":

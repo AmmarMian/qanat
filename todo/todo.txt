@@ -1,15 +1,10 @@
 Click autocompletion on all shell
 qanat experiment prompt
-How to launch groups of parameters most simply from CLI ?
-Parsing config.yaml and update database of experiments
 Git Annex handling
 Hnadle error with executable command
 qanat status check_status of runner to show actually running runs
-qanat action
-MUSTExecutionHandler
 run at previous version with commit sha
 re-rerun same
-parallel execution with a queue list with regards to available cpus
 Addional info column in run to have leaway to store MUST submit info
 LOTS OF TESTS
 Coverage
@@ -18,3 +13,4 @@ Templaing with either cookicutter or jinja2
 Beautiful docs
 High: Roadmap
 Halt/Cancel/Resume run
+Change htcondor status tracking with jobevent and log file
