@@ -32,7 +32,10 @@ from ..utils.parsing import parse_group_parameters
 logger = setup_logger()
 
 try:
-    import htcondor
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        import htcondor
 except ImportError:
     logger.info("HTCondor python bindings not available on system. "
                 "Please install htcondor if available: "
@@ -230,7 +233,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
             pids = []
             status_list = []
 
-            
+
             with self.console.status(
                     "[bold green]Running...", spinner='dots'):
                 stdout_list = []
@@ -461,8 +464,8 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         Session.close()
         if status != "unknown":
             return status
-        
-    
+
+
         # Otherwhise we need more checks
 
         # Check if yaml file exists
@@ -494,7 +497,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
 class HTCondorExecutionHandler(RunExecutionHandler):
     """Class for excuting run as jobs through an HTCondor
     job submission system.
-    
+
     Reminder for HTcondor job status:
     0	Unexpanded 	U
     1	Idle 	I
@@ -596,7 +599,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         if info is None:
             return "unknown"
 
-        
+
         if ('launch_time' not in info):
             # Supposed that order of jobs is order of commands
             repertory = info['repertories'][0]
@@ -621,7 +624,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                 Session = self.session_maker()
                 if Session.query(RunOfAnExperiment).filter(
                         RunOfAnExperiment.id == self.run.id).first().launched is None:
-                    
+
                     Session.query(RunOfAnExperiment).filter(
                             RunOfAnExperiment.id == self.run.id).update(
                                     {'launched': launch_time})
@@ -675,13 +678,13 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                     # We haven't found the cluster so it must be in history
                     query = list(
                         schedd.history(
-                            constraint=f"ClusterId == {cluster_id}", 
+                            constraint=f"ClusterId == {cluster_id}",
                             projection=["JobStatus"]))
                 status_clusters.append(query[0]['JobStatus'])
-                    
+
             except IndexError:
                 status_clusters.append(0)
-                
+
 
         # If all jobs are finished, we can update the status
         # to finished
