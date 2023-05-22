@@ -912,6 +912,28 @@ def update_run_finish_time(session: Session, run_id: int,
         {"finished": new_finish_time})
     session.commit()
 
+
+def update_run_start_time(session: Session, run_id: int,
+                          new_start_time: datetime = None) -> None:
+    """Update the start time of a run in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param run_id: The id of the run.
+    :type run_id: int
+
+    :param new_start_time: The new start time of the run.
+    :type new_start_time: datetime.datetime
+    """
+    if new_start_time is None:
+        return
+    session.query(RunOfAnExperiment).filter(
+        RunOfAnExperiment.id == run_id).update(
+        {"launched": new_start_time})
+    session.commit()
+
+
 # ------------------------------------------------------------
 # Useful lookup functions
 # ------------------------------------------------------------

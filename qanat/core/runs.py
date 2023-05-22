@@ -25,6 +25,7 @@ from .database import (
         get_experiment_of_run, RunOfAnExperiment,
         fetch_groupofparameters_of_run,
         update_run_status, update_run_finish_time,
+        update_run_start_time
 )
 from ..utils.logging import setup_logger
 from ..utils.misc import reverse_readline
@@ -32,7 +33,15 @@ from ..utils.parsing import parse_group_parameters
 logger = setup_logger()
 
 try:
+    import warnings
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
     import htcondor
+    from htcondor import (
+        JobEventLog,
+        JobEventType
+    )
+
 except ImportError:
     logger.info("HTCondor python bindings not available on system. "
                 "Please install htcondor if available: "
@@ -230,7 +239,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
             pids = []
             status_list = []
 
-            
+
             with self.console.status(
                     "[bold green]Running...", spinner='dots'):
                 stdout_list = []
@@ -461,10 +470,8 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         Session.close()
         if status != "unknown":
             return status
-        
-    
-        # Otherwhise we need more checks
 
+        # Otherwhise we need more checks
         # Check if yaml file exists
         if not os.path.exists(os.path.join(self.run.storage_path,
                                            'info.yaml')):
@@ -494,7 +501,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
 class HTCondorExecutionHandler(RunExecutionHandler):
     """Class for excuting run as jobs through an HTCondor
     job submission system.
-    
+
     Reminder for HTcondor job status:
     0	Unexpanded 	U
     1	Idle 	I
@@ -595,122 +602,103 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         info = self.parse_yaml_file()
         if info is None:
             return "unknown"
+        elif info['status'] == 'finished':
+            return "finished"
+        elif info['status'] == 'cancelled':
+            return "cancelled"
 
-        
-        if ('launch_time' not in info):
-            # Supposed that order of jobs is order of commands
-            repertory = info['repertories'][0]
-            found_launch_time = False
-            if os.path.exists(os.path.join(repertory, 'log.txt')):
-                with open(os.path.join(repertory, 'log.txt'), 'r') as f:
-                    for line in f:
-                        if 'Job executing on host:' in line and not found_launch_time:
-                            time_str = line.split(")")[1].split("Job")[0].strip()
-                            # Time format is like 2023-05-17 18:55:23
-                            launch_time = datetime.strptime(time_str,
-                                                                "%Y-%m-%d %H:%M:%S")
-                            found_launch_time = True
-                            break
+        # Get the log files events for
+        # each job
+        status_list = ['unknown' for _ in info['cluster_ids']]
+        launch_times = [None for _ in info['cluster_ids']]
+        finish_times = [None for _ in info['cluster_ids']]
+        for i, repertory in enumerate(info['repertories']):
 
-            if found_launch_time:
-                # Update the YAML file
-                info['launch_time'] = launch_time
-                self.update_yaml_file(info)
+            log_file = os.path.join(repertory, 'log.txt')
+            if not os.path.exists(log_file):
+                continue
+            events = [event for event in JobEventLog(log_file).events(stop_after=0)]
+            last_event = events[-1]
 
-                # Update database with first launch time only if not already done
-                Session = self.session_maker()
-                if Session.query(RunOfAnExperiment).filter(
-                        RunOfAnExperiment.id == self.run.id).first().launched is None:
-                    
-                    Session.query(RunOfAnExperiment).filter(
-                            RunOfAnExperiment.id == self.run.id).update(
-                                    {'launched': launch_time})
-                    Session.commit()
-                Session.close()
+            # Adapt status in function of last event
+            if last_event.type == JobEventType.SUBMIT:
+                status = 'not_started'
+            elif last_event.type == JobEventType.EXECUTE:
+                status = 'running'
+            elif last_event.type == JobEventType.JOB_TERMINATED:
+                status = 'finished'
+            elif last_event.type == JobEventType.JOB_HELD:
+                status = 'held'
+            elif last_event.type == JobEventType.JOB_RELEASED:
+                status = 'running'
+            elif last_event.type == JobEventType.JOB_ABORTED:
+                status = 'cancelled'
+            else:
+                status = 'unknown'
 
-        if 'finish_time' not in info and info['status'] == 'finished':
-            # Supposed that order of jobs is order of commands
-            repertory = info['repertories'][-1]
-            found_finish_time = False
-            for line in reverse_readline(os.path.join(repertory, 'log.txt')):
-                if 'Job terminated.' in line and not found_finish_time:
-                    time_str = line.split(")")[1].split("Job")[0].strip()
-                    # Time format is like 2023-05-17 18:55:23
-                    finish_time = datetime.strptime(time_str,
-                                                        "%Y-%m-%d %H:%M:%S")
-                    found_finish_time = True
+            status_list[i] = status
+
+            # Get launch time
+            for event in events:
+                if event.type == JobEventType.EXECUTE:
+                    launch_times[i] = datetime.fromtimestamp(event.timestamp)
                     break
 
-            if found_finish_time:
-                # Update the YAML file
-                info['finish_time'] = finish_time
-                self.update_yaml_file(info)
+            # Get the finish time
+            for event in events:
+                if event.type == JobEventType.JOB_TERMINATED or \
+                     event.type == JobEventType.JOB_ABORTED:
+                    finish_times[i] = datetime.fromtimestamp(event.timestamp)
+                    break
 
-                # Update database with first launch time only if not already done
-                Session = self.session_maker()
-                Session.query(RunOfAnExperiment).filter(
-                        RunOfAnExperiment.id == self.run.id).update(
-                                {'finished': finish_time})
-                Session.commit()
-                Session.close()
-
-
-        # Don't do stuff if already checked
-        if info['status'] in ['finished', 'cancelled']:
-            return info['status']
-
-        # If htcondor available on system, we can't really
-        # check status
-        if not self.htcondor_available:
-            status = "unknown"
-            return status
-
-        # Check if clusters are running
-        schedd = htcondor.Schedd()
-        status_clusters = []
-        for cluster_id in info['cluster_ids']:
-            try:
-                query = schedd.query(f'ClusterId == {cluster_id}')
-                if len(query) == 0:
-                    # We haven't found the cluster so it must be in history
-                    query = list(
-                        schedd.history(
-                            constraint=f"ClusterId == {cluster_id}", 
-                            projection=["JobStatus"]))
-                status_clusters.append(query[0]['JobStatus'])
-                    
-            except IndexError:
-                status_clusters.append(0)
-                
-
-        # If all jobs are finished, we can update the status
-        # to finished
-        if all(status == 4 for status in status_clusters):
-            info['status'] = 'finished'
-            self.update_yaml_file(info)
-
-            # We also update the database
-            Session = self.session_maker()
-            update_run_status(Session, self.run_id,
-                              'finished')
-            Session.close()
-            status = "finished"
-
-        elif any(status == 5 for status in status_clusters):
-            status = "held"
-
-        elif all(status == 1 for status in status_clusters):
-            status = "not_started"
-
-        elif any(status == 3 for status in status_clusters):
-            status = "cancelled"
-
-        elif any(status == 2 for status in status_clusters):
-            status = "running"
-
+        # Update global status according to status of jobs
+        if any([status == 'running' for status in status_list]):
+            global_status = 'running'
+        elif all([status == 'finished' for status in status_list]):
+            global_status = 'finished'
+        elif any([status == 'cancelled' for status in status_list]):
+            global_status = 'cancelled'
+        elif any([status == 'held' for status in status_list]):
+            global_status = 'held'
+        elif all([status == 'not_started' for status in status_list]):
+            global_status = 'not_started'
         else:
-            status = "unknown"
-        return status
+            global_status = 'unknown'
+
+        # Get first launch time
+        launch_times = [launch_time for launch_time in launch_times
+                        if launch_time is not None]
+        if len(launch_times) > 0:
+            launch_time = min(launch_times)
+        else:
+            launch_time = None
+
+        # Get last finish time if all jobs are finished
+        if global_status == 'finished':
+            finish_times = [finish_time for finish_time in finish_times
+                            if finish_time is not None]
+            finish_time = max(finish_times)
+        else:
+            finish_time = None
+
+        # Update the database
+        Session = self.session_maker()
+        update_run_status(Session, self.run_id,
+                          global_status)
+        if launch_time is not None:
+            update_run_start_time(Session, self.run_id,
+                                  launch_time)
+        if finish_time is not None:
+            update_run_finish_time(Session, self.run_id,
+                                   finish_time)
+        Session.commit()
+        Session.close()
+
+        # Update the YAML file
+        info['status'] = global_status
+        self.update_yaml_file(info)
+
+        return global_status
 
     def cancel_experiment(self):
         """Cancel a run of the experiment."""
