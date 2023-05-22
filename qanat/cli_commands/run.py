@@ -29,10 +29,8 @@ from ..core.runs import (
         LocalMachineExecutionHandler, HTCondorExecutionHandler)
 from ..utils.logging import setup_logger
 from ..utils.parsing import (
-    parse_positional_optional_arguments,
     parse_args_cli
 )
-import numpy as np
 
 logger = setup_logger()
 
@@ -123,7 +121,7 @@ def delete_run(experiment_name: str, run_id: int):
                     if session.is_active:
                         session.close()
                     session = Session()
-            
+
             else:
                 execution_handler(Session, run.id).cancel_experiment()
                 logger.info(
@@ -198,6 +196,28 @@ def launch_run_experiment(experiment_name: str,
     :return: The id of the run.
     :rtype: int
     """
+
+    if runner == 'htcondor':
+        try:
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                import htcondor
+            schedd = htcondor.Schedd()
+            # check if the schedd is available
+            schedd.xquery('true', [])
+
+        except ImportError:
+            logger.error(
+                    "You need to install htcondor to use the htcondor runner.")
+            return -1
+
+        except htcondor.HTCondorLocateError:
+            logger.error(
+                    "The htcondor scheduler is not available. "
+                    "Please check your configuration.")
+            return -1
+
 
     # Opening database
     engine, Base, Session = open_database('.qanat/database.db')

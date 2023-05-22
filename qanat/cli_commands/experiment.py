@@ -55,7 +55,7 @@ def command_action(experiment_name: str, action_name: str,
     :param run_id: ID of the run
     :param type: int
     """
-    
+
     engine, Base, session = open_database('.qanat/database.db')
 
     # Check if action_name is associated with the experiment
@@ -80,7 +80,7 @@ def command_action(experiment_name: str, action_name: str,
 
     # Execute action
     action_handler = ActionExecutionHandler(
-        session, run_id, action_name, experiment_name)    
+        session, run_id, action_name, experiment_name)
     action_handler.execute_action(ctx)
 
 
@@ -712,7 +712,7 @@ def command_status(experiment_name: str,
                 execution_handler = HTCondorExecutionHandler(
                         session, run.id)
             run.status = execution_handler.check_status()
-        
+
         # Fetch all runs again
         runs = fetch_runs_of_experiment(Session, experiment_name)
         for run in runs:
