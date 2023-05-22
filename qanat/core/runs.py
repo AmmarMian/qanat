@@ -722,10 +722,13 @@ class HTCondorExecutionHandler(RunExecutionHandler):
 
         # Updating YAML file
         info["status"] = "cancelled"
+        info["finish_time"] = datetime.now()
         self.update_yaml_file(info)
 
         # Update database
         Session = self.session_maker()
         update_run_status(Session, self.run_id,
-                            'cancelled')
+                          'cancelled')
+        update_run_finish_time(Session, self.run_id,
+                               datetime.now())
         Session.close()
