@@ -157,57 +157,56 @@ def delete_run(experiment_name: str, run_id: int):
     logger.info(f"  - storage_path {run.storage_path}")
     if rich.prompt.Confirm.ask("Are you sure?"):
 
-        # rich status bar
         console = rich.console.Console()
-        with console.status('Deleting run', spinner='dots'):
-            # Cancel the run if running
-            if run.status == "running":
-                wait_finish = False
 
-                # Get the execution handler
-                execution_handler = parse_executionhandler(
-                    run.runner)
+        # Cancel the run if running
+        if run.status == "running":
+            wait_finish = False
 
-                # Cancel the run
-                if run.runner == "local":
-                    # Since the main process is somewhere else, we need to
-                    # do stuff here.
-                    # TODO: try to integrate in execution_handler
-                    info = execution_handler(Session, run.id).parse_yaml_file()
+            # Get the execution handler
+            execution_handler = parse_executionhandler(
+                run.runner)
 
-                    # Kill main pid
-                    try:
-                        if 'main_pid' in info:
-                            os.kill(info['main_pid'], signal.SIGTERM)
-                            wait_finish = True
-                    except ProcessLookupError:
-                        logger.debug(f"Process {info['main_pid']} not found")
+            # Cancel the run
+            if run.runner == "local":
+                # Since the main process is somewhere else, we need to
+                # do stuff here.
+                # TODO: try to integrate in execution_handler
+                info = execution_handler(Session, run.id).parse_yaml_file()
 
-                    # Wait for signal that run has been canceled
-                    if wait_finish:
-                        session.close()
-                        console = rich.console.Console()
-                        with console.status(
-                                "[bold green]Waiting for run to finish gracefully..."):
-                            cancel_done = False
-                            while not cancel_done:
-                                session = Session()
-                                run = session.query(RunOfAnExperiment).filter_by(
-                                    experiment_id=experiment_id, id=run_id).first()
-                                time.sleep(0.5)
-                                cancel_done = run.status == "cancelled"
-                                session.close()
-                        # Close the database if not closed
-                        if session.is_active:
+                # Kill main pid
+                try:
+                    if 'main_pid' in info:
+                        os.kill(info['main_pid'], signal.SIGTERM)
+                        wait_finish = True
+                except ProcessLookupError:
+                    logger.debug(f"Process {info['main_pid']} not found")
+
+                # Wait for signal that run has been canceled
+                if wait_finish:
+                    session.close()
+                    with console.status(
+                            "[bold green]Waiting for run to finish gracefully..."):
+                        cancel_done = False
+                        while not cancel_done:
+                            session = Session()
+                            run = session.query(RunOfAnExperiment).filter_by(
+                                experiment_id=experiment_id, id=run_id).first()
+                            time.sleep(0.5)
+                            cancel_done = run.status == "cancelled"
                             session.close()
-                        session = Session()
+                    # Close the database if not closed
+                    if session.is_active:
+                        session.close()
+                    session = Session()
 
             else:
                 execution_handler(Session, run.id).cancel_experiment()
                 logger.info(
                         f"Run {run_id} of experiment {experiment_name} canceled")
 
-        delete_run_from_id(session, run_id)
+            with console.status('Deleting run in database and storage...'):
+                delete_run_from_id(session, run_id)
         logger.info(f"Run {run_id} of experiment {experiment_name} deleted")
     else:
         logger.info(
