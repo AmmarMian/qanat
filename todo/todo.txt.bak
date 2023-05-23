@@ -13,4 +13,4 @@ Templaing with either cookicutter or jinja2
 Beautiful docs
 High: Roadmap
 Halt/Cancel/Resume run
-Change htcondor status tracking with jobevent and log file
+x 2023-05-23 Run search with tag/description/params

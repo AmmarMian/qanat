@@ -5,3 +5,5 @@ x 2023-05-21 Parsing config.yaml and update database of experiments
 x 2023-05-21 qanat action
 x 2023-05-21 MUSTExecutionHandler
 x 2023-05-21 parallel execution with a queue list with regards to available cpus
+x 2023-05-23 Change htcondor status tracking with jobevent and log file
+x 2023-05-23 Run search with tag/description/params

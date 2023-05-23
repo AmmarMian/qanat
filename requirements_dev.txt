@@ -12,6 +12,7 @@ rich
 SQLAlchemy
 GitPython
 pyyaml
+simple-term-menu
 
 pytest>=6.2.4
 black>=22.3.0

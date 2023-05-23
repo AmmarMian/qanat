@@ -11,17 +11,19 @@
 import os
 import time
 import signal
+import sqlalchemy
 import yaml
 import rich_click as click
 import rich
 import git
+from simple_term_menu import TerminalMenu
 from sqlalchemy import func
 from functools import partial
 from ._constants import (
         get_run_status_emoji,
         RUN_LAUNCH_DATE, PARAMETERS,
         ID, DESCRIPTION, PATH, TAGS,
-        STATUS, RUNNER
+        STATUS, RUNNER, COMMIT, RUN_METRIC
 )
 from ..core.database import (
      open_database,
@@ -30,7 +32,8 @@ from ..core.database import (
      find_experiment_id,
      delete_run_from_id,
      fetch_tags_of_run,
-     fetch_groupofparameters_of_run
+     fetch_groupofparameters_of_run,
+     fetch_runs_of_experiment
     )
 from ..core.runs import (
         parse_executionhandler, RunExecutionHandler,
@@ -41,6 +44,269 @@ from ..utils.parsing import (
 )
 
 logger = setup_logger()
+
+
+def create_menu_entry(session: sqlalchemy.orm.Session, run: RunOfAnExperiment) -> str:
+    """Create a menu entry for a run.
+
+    :param session: The database session.
+    :type session: sqlalchemy.orm.Session
+
+    :param run: The run to create the menu entry for.
+    :type run: RunOfAnExperiment
+
+    :return: The menu entry.
+    :rtype: str
+    """
+    return f"{run.id} - {run.launched} - {run.status} - " + \
+           " ".join(fetch_tags_of_run(session, run.id))
+
+
+def parse_menu_entry(menu_entry: str) -> int:
+    """Parse a menu entry to get the run id.
+
+    :param menu_entry: The menu entry.
+    :type menu_entry: str
+
+    :return: The run id.
+    :rtype: int
+    """
+    return int(menu_entry.split("-")[0].strip())
+
+
+def run_selection_menu(session: sqlalchemy.orm.Session, experiment_name: str,
+                       runs: list):
+    """Display a menu to select a run. Preview as well, run information.
+
+    :param session: The database session.
+    :type session: sqlalchemy.orm.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :param runs: The list of runs to display.
+    :type runs: list
+    """
+
+    if len(runs) == 0:
+        rich.print(f"[red]No run found for experiment {experiment_name} "
+                   "Corresponding to the current filter")
+        return
+
+    def output_command(menu_entry):
+        """Output the command to run the run."""
+        run_id = parse_menu_entry(menu_entry)
+        # Find run in list with id
+        run = None
+        for run in runs:
+            if run.id == run_id:
+                break
+        if run is None:
+            return "Run not found"
+
+        tags = fetch_tags_of_run(session, run.id)
+        string_preview = f"Run ID: {run.id}\n" + \
+                         f"Run Description: {run.description}\n" + \
+                         f"Run launched: {run.launched}\n" + \
+                         f"Run status: {run.status}\n" + \
+                         f"Run tags: {', '.join(tags)}\n" + \
+                         f"Run commit: {run.commit_sha}\n" + \
+                         f"Run runner: {run.runner}\n"
+        if run.finished is not None:
+            string_preview += f"Run finished: {run.finished}\n"
+        if run.metric is not None:
+            string_preview += f"Run metric: {run.metric}\n"
+
+        groupofparameters = fetch_groupofparameters_of_run(session, run.id)
+        string_preview += "Run parameters: " + \
+                          f"({len(groupofparameters)} group(s))\n"
+        for parameter in groupofparameters:
+            line = "    "
+            for key, value in parameter.values.items():
+                line += f"{key} {value} "
+            string_preview += line + "\n"
+        return string_preview
+
+    # Create the menu
+    menu_entries = [create_menu_entry(session, run) for run in runs]
+    menu = TerminalMenu(menu_entries, preview_command=output_command,
+                        title="Select a run",
+                        preview_size=0.5)
+    run_index = menu.show()
+    if run_index is None:
+        return
+    explore_run(experiment_name, runs[run_index].id)
+
+
+def search_runs(session: sqlalchemy.orm.Session, experiment_name: str, runs: list):
+    """Search for runs.
+
+    :param session: The database session.
+    :type session: sqlalchemy.orm.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :param runs: The list of runs to search from.
+    :type runs: list
+    """
+
+    runs_selected = runs
+    current_filter = {
+        "tags": [],
+        "description": [],
+        "status": [],
+        "runner": [],
+        "commit": [],
+        "parameters": []
+            }
+    while True:
+
+        # Menu to ask for tag, description, status, runner, commit, parameters
+        menu = TerminalMenu(["[a] Tag", "[b] Description", "[c] Status",
+                             "[d] Runner", "[e] Commit", "[f] Parameters",
+                             "[g] Menu with remaining runs",
+                             "[h] Reset filters",
+                             "[q] Exit"],
+                            title="Search runs prompt")
+        choice = menu.show()
+        if choice is None or choice == 8:
+            return
+
+        prompt = rich.prompt.Prompt()
+
+        # Tag
+        if choice == 0:
+            tags = prompt.ask("Tag to search for (separated by a comma)")
+            tags = tags.strip().split(",")
+            runs_selected = [run for run in runs_selected
+                             if any(tag
+                                    in fetch_tags_of_run(session, run.id)
+                                    for tag in tags)]
+            current_filter["tags"] = list(set(current_filer["tags"] + tags))
+
+        # Description
+        elif choice == 1:
+            description = prompt.ask("Description to search for")
+            runs_selected = [run for run in runs_selected
+                             if description in run.description]
+            current_filter["description"].append(description)
+
+        # Status
+        elif choice == 2:
+            status = prompt.ask("Status to search for")
+            runs_selected = [run for run in runs_selected
+                             if status == run.status]
+            current_filter["status"].append(status)
+
+        # Runner
+        elif choice == 3:
+            runner = prompt.ask("Runner to search for")
+            runs_selected = [run for run in runs_selected
+                             if runner == run.runner]
+            current_filter["runner"].append(runner)
+
+        # Commit
+        elif choice == 4:
+            commit = prompt.ask("Commit to search for")
+            runs_selected = [run for run in runs_selected
+                             if commit == run.commit_sha]
+            current_filter["commit"].append(commit)
+
+        # Parameters
+        elif choice == 5:
+            parameters = prompt.ask("Parameters to search for "
+                                    "(value or key:value "
+                                    "for checking optional parameters name)."
+                                    "\nPut multiple parameters"
+                                    " separated by a comma")
+            parameters = parameters.strip().split(",")
+
+            # Filter runs
+            compatible_runs = []
+            for i, run in enumerate(runs_selected):
+                groupofparameters = fetch_groupofparameters_of_run(session,
+                                                                   run.id)
+                for parameter in parameters:
+                    for parameter_group in groupofparameters:
+                        if ":" not in parameter:
+                            if parameter in parameter_group.values.values():
+                                compatible_runs.append(run)
+                                break
+                        else:
+                            key, value = parameter.split(":")
+                            if key in parameter_group.values.keys() and \
+                               value == parameter_group.values[key]:
+                                compatible_runs.append(run)
+                                break
+            runs_selected = compatible_runs
+            parameters_new = current_filter["parameters"] + parameters
+            current_filter["parameters"] = list(set(parameters_new))
+
+        elif choice == 6:
+            run_selection_menu(session, experiment_name, runs_selected)
+
+        elif choice == 7:
+            runs_selected = runs
+            current_filter = {
+                "tags": [],
+                "description": [],
+                "status": [],
+                "runner": [],
+                "commit": [],
+                "parameters": []
+                    }
+
+        filter_print = "Current filter: \n"
+        for filter_element, value in current_filter.items():
+            if len(value) > 0:
+                values_str = [str(v) for v in value]
+                filter_print += f" :black_medium_square: {filter_element} : " + \
+                    f"{', '.join(values_str)}\n"
+
+        rich.print(filter_print)
+        rich.print(f"Found [bold red]{len(runs_selected)}[/bold red] runs")
+
+
+def prompt_explore_runs(experiment_name: str):
+    """Prompt the user to search for a run of an experiment. And then explore it.
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+    """
+
+    # Opening database
+    engine, Base, Session = open_database('.qanat/database.db')
+    session = Session()
+
+    # Find the experiment id
+    experiment_id = find_experiment_id(session, experiment_name)
+    if experiment_id == -1:
+        logger.error("Experiment does not exist")
+        return
+
+    # Get all runs of the experiment
+    runs = fetch_runs_of_experiment(session, experiment_name)
+
+    # Print number of runs
+    rich.print(f"Experiment [bold yellow]{experiment_name}[/bold yellow] "
+               f"has [bold red]{len(runs)}[/bold red] runs.")
+
+    # If no runs, return
+    if len(runs) == 0:
+        return
+
+    # Menu to ask if user wants to explore a run by a menu or
+    # by doing a search
+    menu = TerminalMenu(["Search", "Menu"], title="How do you want to explore the runs?")
+    menu_entry = menu.show()
+
+    # If menu
+    if menu_entry == 1:
+        run_selection_menu(session, experiment_name, runs)
+    else:
+        search_runs(session, experiment_name, runs)
+    session.close()
 
 
 def explore_run(experiment_name: str, run_id: int):
@@ -85,12 +351,24 @@ def explore_run(experiment_name: str, run_id: int):
                f"[bold yellow]{experiment_name}[/bold yellow] informations:")
     rich.print(f"  - {ID} id: {run.id}")
     rich.print(f"  - {DESCRIPTION} description: {run.description}")
-    rich.print(f"  - {TAGS} tags: {tags}")
+    tags_string = f"  - {TAGS} Tags: "
+    for tag in tags:
+        tags_string += f"[bold green]{tag}[/bold green], "
+    tags_string = tags_string[:-2]
+    rich.print(tags_string)
+
     rich.print(f"  - {RUNNER} runner: {run.runner}")
+    if len(run.runner_params) > 0:
+        rich.print(f"  - {PARAMETERS} Runner parameters:")
+        for key, value in run.runner_params.items():
+            rich.print(f"        :black_medium-small_square: {key}: {value}")
     rich.print(f"  - {PATH} path: {run.storage_path}")
     rich.print(f"  - {STATUS} status: {get_run_status_emoji(run.status)}")
     rich.print(f"  - {RUN_LAUNCH_DATE} start time: {run.launched}")
     rich.print(f"  - {RUN_LAUNCH_DATE} end time: {run.finished}")
+    rich.print(f"  - {COMMIT} commit: {run.commit_sha}")
+    if run.metric is not None:
+        rich.print(f"  - {RUN_METRIC} metric: {run.metric}")
 
     # Show group of parameters
     grid = rich.table.Table.grid(padding=(0, 4))
@@ -105,7 +383,7 @@ def explore_run(experiment_name: str, run_id: int):
         else:
             repertory = os.path.join(run.storage_path, f"group_{i}")
         for key, value in group.values.items():
-            string_parameters += f"{key} {value}"
+            string_parameters += f"{key} {value} "
         grid.add_row(f"{i}", string_parameters, repertory)
     rich.print(f"  - {PARAMETERS} Parameters:")
     rich.print(grid)

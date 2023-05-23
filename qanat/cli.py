@@ -180,10 +180,14 @@ def experiment_run_delete(experiment_name, run_id):
 )
 @click.argument("experiment_name", type=click.STRING,
                 required=True)
-@click.argument("run_id", type=int, required=True)
+@click.argument("run_id", type=int, required=False,
+                default=None)
 def experiment_run_explore(experiment_name, run_id):
     """Explore run of an experiment."""
-    run.explore_run(experiment_name, run_id)
+    if run_id is not None:
+        run.explore_run(experiment_name, run_id)
+    else:
+        run.prompt_explore_runs(experiment_name)
 
 
 @experiment_main.command(
