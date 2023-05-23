@@ -173,6 +173,17 @@ def experiment_run_delete(experiment_name, run_id):
 
 
 @experiment_main.command(
+    name="run_explore",
+)
+@click.argument("experiment_name", type=click.STRING,
+                required=True)
+@click.argument("run_id", type=int, required=True)
+def experiment_run_explore(experiment_name, run_id):
+    """Explore run of an experiment."""
+    run.explore_run(experiment_name, run_id)
+
+
+@experiment_main.command(
     name="action",
     context_settings=dict(
         ignore_unknown_options=True,

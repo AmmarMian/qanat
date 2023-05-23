@@ -36,11 +36,11 @@ try:
     import warnings
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
-    import htcondor
-    from htcondor import (
-        JobEventLog,
-        JobEventType
-    )
+        import htcondor
+        from htcondor import (
+            JobEventLog,
+            JobEventType
+        )
 
 except ImportError:
     logger.info("HTCondor python bindings not available on system. "

@@ -17,12 +17,20 @@ import rich
 import git
 from sqlalchemy import func
 from functools import partial
+from ._constants import (
+        get_run_status_emoji,
+        RUN_LAUNCH_DATE, PARAMETERS,
+        ID, DESCRIPTION, PATH, TAGS,
+        STATUS, RUNNER
+)
 from ..core.database import (
      open_database,
      add_run,
      RunOfAnExperiment,
      find_experiment_id,
-     delete_run_from_id
+     delete_run_from_id,
+     fetch_tags_of_run,
+     fetch_groupofparameters_of_run
     )
 from ..core.runs import (
         parse_executionhandler, RunExecutionHandler,
@@ -33,6 +41,74 @@ from ..utils.parsing import (
 )
 
 logger = setup_logger()
+
+
+def explore_run(experiment_name: str, run_id: int):
+    """Explore a run of an experiment.
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :param run_id: The id of the run to explore.
+    :type run_id: int
+    """
+    # Opening database
+    engine, Base, Session = open_database('.qanat/database.db')
+    session = Session()
+
+    # Find the experiment id
+    experiment_id = find_experiment_id(session, experiment_name)
+    if experiment_id == -1:
+        logger.error("Experiment does not exist")
+        return
+
+    # Check if run exists
+    run = session.query(RunOfAnExperiment).filter_by(
+        experiment_id=experiment_id, id=run_id).first()
+    if run is None:
+        logger.error(
+                f"Run {run_id} of experiment {experiment_name} "
+                "does not exist")
+        return
+
+    # Show run informations
+    run = session.query(RunOfAnExperiment).filter_by(
+        experiment_id=experiment_id, id=run_id).first()
+
+    # Get Tags of the run
+    tags = fetch_tags_of_run(session, run_id)
+
+    # Get GroupOfParameters of the run
+    groupofparameters = fetch_groupofparameters_of_run(session, run_id)
+
+    rich.print(f"Run [bold red]{run_id}[/bold red] of experiment "
+               f"[bold yellow]{experiment_name}[/bold yellow] informations:")
+    rich.print(f"  - {ID} id: {run.id}")
+    rich.print(f"  - {DESCRIPTION} description: {run.description}")
+    rich.print(f"  - {TAGS} tags: {tags}")
+    rich.print(f"  - {RUNNER} runner: {run.runner}")
+    rich.print(f"  - {PATH} path: {run.storage_path}")
+    rich.print(f"  - {STATUS} status: {get_run_status_emoji(run.status)}")
+    rich.print(f"  - {RUN_LAUNCH_DATE} start time: {run.launched}")
+    rich.print(f"  - {RUN_LAUNCH_DATE} end time: {run.finished}")
+
+    # Show group of parameters
+    grid = rich.table.Table.grid(padding=(0, 4))
+    grid.add_column("Group", justify="center", style="cyan")
+    grid.add_column("Parameters", justify="left", style="magenta")
+    grid.add_column("Repertory", justify="left", style="green")
+    grid.add_row("Group", "Parameters", 'Repertory')
+    for i, group in enumerate(groupofparameters):
+        string_parameters = ""
+        if len(groupofparameters) == 1:
+            repertory = run.storage_path
+        else:
+            repertory = os.path.join(run.storage_path, f"group_{i}")
+        for key, value in group.values.items():
+            string_parameters += f"{key} {value}"
+        grid.add_row(f"{i}", string_parameters, repertory)
+    rich.print(f"  - {PARAMETERS} Parameters:")
+    rich.print(grid)
 
 
 def delete_run(experiment_name: str, run_id: int):

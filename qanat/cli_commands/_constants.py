@@ -24,6 +24,9 @@ HELP = ":question:"
 YES = ":white_check_mark:"
 NO = ":x:"
 PROMPT = ":pencil:"
+STATUS = ":magnifying_glass_tilted_left:"
+RUNNER = ":desktop_computer: "
+PARAMETERS = ":notebook: "
 
 # --------------------------------------------------------
 # Experiment CLI Constants
