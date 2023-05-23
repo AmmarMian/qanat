@@ -115,14 +115,14 @@ def parse_args_cli(ctx: click.Context, groups_of_parameters: list = [],
 
     # Parse the arguments of the range of parameters
     if len(range_of_parameters) >= 1:
-        new_parsed_parameters = []
         for range_param in range_of_parameters:
+            new_parsed_parameters = []
 
             values = range_param.strip().split(" ")
             if len(values) != 4:
                 raise ValueError(
                     f"Range parameter {range_param} not well formatted")
-            
+
             # Get the name of the parameter, the start, the end and the step
             name = values[0]
             start = float(values[1])
@@ -147,8 +147,6 @@ def parse_args_cli(ctx: click.Context, groups_of_parameters: list = [],
                     new_parsed_parameters.append(
                         {**parsed_param, name: str(value)}
                     )
-            
-        parsed_parameters = new_parsed_parameters
-
+            parsed_parameters = new_parsed_parameters
 
     return parsed_parameters, runner_params

@@ -653,7 +653,6 @@ def command_status(experiment_name: str,
         Session.close_all()
         return
 
-
     experiment = Session.query(Base.classes.experiments).filter_by(
             name=experiment_name).first()
     number_runs = count_number_runs_experiment(Session, experiment_name)
@@ -711,7 +710,11 @@ def command_status(experiment_name: str,
             elif run.runner == "htcondor":
                 execution_handler = HTCondorExecutionHandler(
                         session, run.id)
-            run.status = execution_handler.check_status()
+            try:
+                run.status = execution_handler.check_status()
+            except Exception as e:
+                logger.error(e)
+                run.status = "unknown"
 
         # Fetch all runs again
         runs = fetch_runs_of_experiment(Session, experiment_name)
@@ -738,13 +741,13 @@ def command_status(experiment_name: str,
 
             RUN_STATUS = get_run_status_emoji(run.status)
             grid.add_row(f"{EXPERIMENT_ID} {run.id}",
-                        f"{EXPERIMENT_DESCRIPTION} {run.description}",
-                        f"{EXPERIMENT_PATH} {run.storage_path}",
-                        f"{run.runner}",
-                        f"{RUN_LAUNCH_DATE} {run.launched}",
-                        f"{RUN_DURATION}  {duration}",
-                        f"{RUN_STATUS}",
-                        f"{tags}")
+                         f"{EXPERIMENT_DESCRIPTION} {run.description}",
+                         f"{EXPERIMENT_PATH} {run.storage_path}",
+                         f"{run.runner}",
+                         f"{RUN_LAUNCH_DATE} {run.launched}",
+                         f"{RUN_DURATION}  {duration}",
+                         f"{RUN_STATUS}",
+                         f"{tags}")
 
     rich.print(grid)
 

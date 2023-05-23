@@ -404,11 +404,9 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         # Check if run is running
         if self.check_status() != "running":
             logger.info("Run is not running. Nothing to cancel.")
-            return 0
         elif self.check_status() == "finished" or \
                 self.check_status() == "cancelled":
             logger.info(f"Run is {self.check_status()}. Nothing to cancel.")
-            return 0
 
         # Get the pids of the processes
         try:
@@ -434,7 +432,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                               "cancelled")
 
             # Update the YAML file
-            info['status'] = ['cancelled' for _ in info['status']]
+            info['status'] = ['cancelled' for _ in info['pids']]
             info['end_time'] = datetime.now()
             with open(os.path.join(self.run.storage_path,
                                    'info.yaml'), 'w') as f:
@@ -482,6 +480,12 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
             info = yaml.load(f, Loader=yaml.FullLoader)
 
         # Test wheter cancelled, running or finished
+        if info is None:
+            return "unknown"
+
+        if 'status' not in info.keys():
+            return "not_started"
+
         if any(status == "running" for status in info['status']):
             pids = info['pids']
 
