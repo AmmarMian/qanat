@@ -7,7 +7,6 @@
 # Brief: Manging execution of the runs
 # =========================================
 
-import time
 import sys
 import shutil
 import os
@@ -25,11 +24,13 @@ from .database import (
         get_experiment_of_run, RunOfAnExperiment,
         fetch_groupofparameters_of_run,
         update_run_status, update_run_finish_time,
-        update_run_start_time
+        update_run_start_time, fetch_datasets_of_experiment
 )
+from .containers import get_container_run_command
 from ..utils.logging import setup_logger
-from ..utils.misc import reverse_readline
-from ..utils.parsing import parse_group_parameters
+from ..utils.parsing import (
+        parse_group_parameters,
+        get_absolute_path)
 logger = setup_logger()
 
 try:
@@ -73,11 +74,13 @@ class RunExecutionHandler:
     * check_status(self)
     """
     def __init__(self, database_sessionmaker: sessionmaker,
-                 run_id: int):
+                 run_id: int,
+                 container_path: str = None):
         self.session_maker = database_sessionmaker
         self.run_id = run_id
         self.experiment = get_experiment_of_run(self.session_maker(),
                                                 run_id)
+        self.container_path = container_path
         Session = self.session_maker()
         self.run = Session.query(
                 RunOfAnExperiment).get(run_id)
@@ -193,8 +196,8 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
     """Handle the execution of the runs on the local machine."""
 
     def __init__(self, database_sessionmaker: sessionmaker,
-                 run_id: int, n_threads: int = 1):
-        super().__init__(database_sessionmaker, run_id)
+                 run_id: int, n_threads: int = 1, container_path: str = None):
+        super().__init__(database_sessionmaker, run_id, container_path)
         self.n_threads = n_threads
         self.process_pid = os.getpid()
         signal.signal(signal.SIGINT, self.sigint_handler)
@@ -205,6 +208,42 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         """Handle the SIGINT signal."""
         self.cancel_experiment()
 
+    def setUp(self):
+        """Set up the execution of the run. To be run before
+        calling run_experiment().
+        """
+        super().setUp()
+
+        print(self.commands)
+        # Managing container execution
+        if self.container_path is not None:
+            if os.path.exists(self.container_path):
+                bind_paths = {
+                        get_absolute_path(self.run.storage_path):
+                        get_absolute_path(self.run.storage_path)
+                }
+
+                # Get datasets paths`to bind as well
+                Session = self.session_maker()
+                datasets = fetch_datasets_of_experiment(
+                        Session, self.experiment.name)
+                Session.close()
+
+                for dataset in datasets:
+                    absolute_path = get_absolute_path(dataset.path)
+                    bind_paths[absolute_path] = absolute_path
+
+                self.commands = [get_container_run_command(
+                    self.container_path, command, bind_paths)
+                    for command in self.commands]
+            else:
+                raise FileNotFoundError(f"Container path {self.container_path}"
+                                        " does not exist")
+        print(self.commands)
+        # Update the yaml file
+        info = self.parse_yaml_file()
+        info['commands'] = self.commands
+        self.update_yaml_file(info)
 
     def run_experiment(self):
         """Launch the execution of the run as subprocesses.
@@ -238,7 +277,6 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
             processes = []
             pids = []
             status_list = []
-
 
             with self.console.status(
                     "[bold green]Running...", spinner='dots'):
@@ -517,8 +555,9 @@ class HTCondorExecutionHandler(RunExecutionHandler):
     """
 
     def __init__(self, database_sessionmaker, run_id,
-                 htcondor_submit_options=None):
-        super().__init__(database_sessionmaker, run_id)
+                 htcondor_submit_options=None,
+                 container_path: str = None):
+        super().__init__(database_sessionmaker, run_id, container_path)
 
         # Check wheter htcondor is available on system
         if not shutil.which('condor_submit'):

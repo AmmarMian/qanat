@@ -121,6 +121,8 @@ def experiment_update(name):
 @click.option("--runner", "-r", default="local",
               type=click.Choice(["local", "htcondor"]), show_default=True,
               help="Runner to use for experiment.")
+@click.option("--container", default=None, type=click.STRING,
+              help="Container to use for experiment.")
 @click.option("--group_param", "-g", default=None, type=click.STRING,
               help="Group of parameters to run.", multiple=True)
 @click.option("--range_param", "-r", default=None, type=click.STRING,
@@ -135,11 +137,12 @@ def experiment_update(name):
 # https://stackoverflow.com/questions/32944131/ ...
 # add-unspecified-options-to-cli-command-using-python-click
 def experiment_run(ctx, name, runner, group_param, range_param,
-                   storage_path, tag, description):
+                   storage_path, tag, description, container):
     """Run an experiment with additional positional and option args.\n
     [bold red]WARNING: The following options are not available
     for your executable command:[/bold red]\n
     * [bold yellow]--runner[/bold yellow] to specify runner\n
+    * [bold yellow]--container[/bold yellow] to specify container\n
     * [bold yellow]--n_threads[/bold yellow] for local runner, number of
     threads to use when several groups of parameters.\n
     * [bold yellow]--submit_template[/bold yellow] for htcondor runner,
@@ -158,7 +161,7 @@ def experiment_run(ctx, name, runner, group_param, range_param,
     """
     run.launch_run_experiment(
             name, ctx, group_param, range_param, runner,
-            storage_path, description, tag)
+            storage_path, description, tag, container)
 
 
 @experiment_main.command(

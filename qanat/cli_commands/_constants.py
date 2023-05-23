@@ -26,7 +26,7 @@ NO = ":x:"
 PROMPT = ":pencil:"
 STATUS = ":magnifying_glass_tilted_left:"
 RUNNER = ":desktop_computer: "
-PARAMETERS = ":notebook: "
+PARAMETERS = ":notebook:"
 
 # --------------------------------------------------------
 # Experiment CLI Constants

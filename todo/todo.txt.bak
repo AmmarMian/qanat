@@ -1,15 +1,10 @@
 Click autocompletion on all shell
 qanat experiment prompt
-x 2023-05-21 How to launch groups of parameters most simply from CLI ?
-x 2023-05-21 Parsing config.yaml and update database of experiments
 Git Annex handling
 Hnadle error with executable command
 qanat status check_status of runner to show actually running runs
-x 2023-05-21 qanat action
-x 2023-05-21 MUSTExecutionHandler
 run at previous version with commit sha
 re-rerun same
-x 2023-05-21 parallel execution with a queue list with regards to available cpus
 Addional info column in run to have leaway to store MUST submit info
 LOTS OF TESTS
 Coverage

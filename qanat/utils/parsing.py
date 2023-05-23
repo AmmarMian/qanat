@@ -1,5 +1,24 @@
-from .misc import float_range
+import os
 import rich_click as click
+from .misc import float_range
+
+
+def get_absolute_path(path: str) -> str:
+    """Get the absolute path of a path.
+    Verify if path is relative or absolute. If relative,
+    get the absolute path from the current working directory.
+
+    :param path: The path to get the absolute path.
+    :type path: str
+
+    :return: The absolute path.
+    :rtype: str
+    """
+
+    if not os.path.isabs(path):
+        return os.path.abspath(path)
+
+    return path
 
 
 def parse_group_parameters(group_parameters: dict) -> list:

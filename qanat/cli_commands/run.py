@@ -174,8 +174,9 @@ def delete_run(experiment_name: str, run_id: int):
 
                 # Kill main pid
                 try:
-                    os.kill(info['main_pid'], signal.SIGTERM)
-                    wait_finish = True
+                    if 'main_pid' in info:
+                        os.kill(info['main_pid'], signal.SIGTERM)
+                        wait_finish = True
                 except ProcessLookupError:
                     logger.debug(f"Process {info['main_pid']} not found")
 
@@ -241,7 +242,8 @@ def launch_run_experiment(experiment_name: str,
                           runner: str,
                           storage_path: str,
                           description: str = "",
-                          tags: list = []) -> int:
+                          tags: list = [],
+                          container_path: str = None) -> int:
     """Launch the run of the experiment with designated runner.
 
 
@@ -269,6 +271,9 @@ def launch_run_experiment(experiment_name: str,
     :param tags: The tags of the run.
     :type tags: list
 
+    :param container_path: The path to the container.
+    :type container_path: str
+
     :return: The id of the run.
     :rtype: int
     """
@@ -294,6 +299,10 @@ def launch_run_experiment(experiment_name: str,
                     "Please check your configuration.")
             return -1
 
+    if container_path is not None:
+        if not os.path.exists(container_path):
+            logger.error(f"Container {container_path} not found.")
+            return -1
 
     # Opening database
     engine, Base, Session = open_database('.qanat/database.db')
@@ -378,7 +387,8 @@ def launch_run_experiment(experiment_name: str,
         execution_handler = LocalMachineExecutionHandler(
                 database_sessionmaker=Session,
                 run_id=run_id,
-                n_threads=int(runner_params['--n_threads'])
+                n_threads=int(runner_params['--n_threads']),
+                container_path=container_path
         )
 
     elif runner == "htcondor":
@@ -411,7 +421,8 @@ def launch_run_experiment(experiment_name: str,
         execution_handler = HTCondorExecutionHandler(
                 database_sessionmaker=Session,
                 run_id=run_id,
-                htcondor_submit_options=submit_info)
+                htcondor_submit_options=submit_info,
+                container_path=container_path)
 
     else:
         raise NotImplementedError(f"Runner {runner} is not implemented yet.")
