@@ -133,6 +133,35 @@ class RunExecutionHandler:
             command += ['--storage_path', self.repertories[i]]
             self.commands.append(command)
 
+        # Managing container execution
+        if self.container_path is not None:
+            if os.path.exists(self.container_path):
+                bind_paths = {
+                        get_absolute_path(self.run.storage_path):
+                        get_absolute_path(self.run.storage_path)
+                }
+
+                # Get datasets paths`to bind as well
+                Session = self.session_maker()
+                datasets = fetch_datasets_of_experiment(
+                        Session, self.experiment.name)
+                Session.close()
+
+                for dataset in datasets:
+                    absolute_path = get_absolute_path(dataset.path)
+                    bind_paths[absolute_path] = absolute_path
+
+                self.commands = [get_container_run_command(
+                    self.container_path, command, bind_paths)
+                    for command in self.commands]
+            else:
+                raise FileNotFoundError(f"Container path {self.container_path}"
+                                        " does not exist")
+        # Update the yaml file
+        info = self.parse_yaml_file()
+        info['commands'] = self.commands
+        self.update_yaml_file(info)
+
         # Saving info about the run in a yaml file
         # To be able to resume the run later or check
         # the status of the run
@@ -207,43 +236,6 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
     def sigint_handler(self, signum, frame):
         """Handle the SIGINT signal."""
         self.cancel_experiment()
-
-    def setUp(self):
-        """Set up the execution of the run. To be run before
-        calling run_experiment().
-        """
-        super().setUp()
-
-        print(self.commands)
-        # Managing container execution
-        if self.container_path is not None:
-            if os.path.exists(self.container_path):
-                bind_paths = {
-                        get_absolute_path(self.run.storage_path):
-                        get_absolute_path(self.run.storage_path)
-                }
-
-                # Get datasets paths`to bind as well
-                Session = self.session_maker()
-                datasets = fetch_datasets_of_experiment(
-                        Session, self.experiment.name)
-                Session.close()
-
-                for dataset in datasets:
-                    absolute_path = get_absolute_path(dataset.path)
-                    bind_paths[absolute_path] = absolute_path
-
-                self.commands = [get_container_run_command(
-                    self.container_path, command, bind_paths)
-                    for command in self.commands]
-            else:
-                raise FileNotFoundError(f"Container path {self.container_path}"
-                                        " does not exist")
-        print(self.commands)
-        # Update the yaml file
-        info = self.parse_yaml_file()
-        info['commands'] = self.commands
-        self.update_yaml_file(info)
 
     def run_experiment(self):
         """Launch the execution of the run as subprocesses.
