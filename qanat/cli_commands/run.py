@@ -205,8 +205,8 @@ def delete_run(experiment_name: str, run_id: int):
                 logger.info(
                         f"Run {run_id} of experiment {experiment_name} canceled")
 
-            with console.status('Deleting run in database and storage...'):
-                delete_run_from_id(session, run_id)
+        with console.status('Deleting run in database and storage...'):
+            delete_run_from_id(session, run_id)
         logger.info(f"Run {run_id} of experiment {experiment_name} deleted")
     else:
         logger.info(
