@@ -183,7 +183,7 @@ def search_runs(session: sqlalchemy.orm.Session, experiment_name: str, runs: lis
                              if any(tag
                                     in fetch_tags_of_run(session, run.id)
                                     for tag in tags)]
-            current_filter["tags"] = list(set(current_filer["tags"] + tags))
+            current_filter["tags"] = list(set(current_filter["tags"] + tags))
 
         # Description
         elif choice == 1:
