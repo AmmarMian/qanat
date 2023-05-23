@@ -157,10 +157,6 @@ class RunExecutionHandler:
             else:
                 raise FileNotFoundError(f"Container path {self.container_path}"
                                         " does not exist")
-        # Update the yaml file
-        info = self.parse_yaml_file()
-        info['commands'] = self.commands
-        self.update_yaml_file(info)
 
         # Saving info about the run in a yaml file
         # To be able to resume the run later or check
@@ -589,10 +585,9 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                 f.write(f'cd {os.getcwd()}\n\n')
 
                 f.write(f'echo "Running command: {str_command}"\n')
-                f.write(str_command + '\n\n' )
+                f.write(str_command + '\n\n')
                 f.write('echo "Done."')
 
-            # TODO: bind paths of datasets and stuff...
             # TODO: Maybe not harcode some stuff...
             submit_dict = {
                 'executable': executable,
