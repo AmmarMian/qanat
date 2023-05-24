@@ -129,6 +129,7 @@ class RunOfAnExperiment(Base):
     runner = Column(String)
     container_path = Column(String)
     runner_params = Column(JSONEncodedDict)
+    progress = Column(String, server_default="")
 
 
 @dataclass
@@ -939,6 +940,25 @@ def update_run_start_time(session: Session, run_id: int,
     session.query(RunOfAnExperiment).filter(
         RunOfAnExperiment.id == run_id).update(
         {"launched": new_start_time})
+    session.commit()
+
+
+def update_run_progress(session: Session, run_id: int,
+                        new_progress: float) -> None:
+    """Update the progress of a run in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param run_id: The id of the run.
+    :type run_id: int
+
+    :param new_progress: The new progress of the run.
+    :type new_progress: float
+    """
+    session.query(RunOfAnExperiment).filter(
+        RunOfAnExperiment.id == run_id).update(
+        {"progress": f"{new_progress} %"})
     session.commit()
 
 

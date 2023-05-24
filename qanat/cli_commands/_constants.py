@@ -29,6 +29,7 @@ RUNNER = ":desktop_computer: "
 PARAMETERS = ":notebook:"
 COMMIT = ":bookmark_tabs:"
 CONTAINER = ":package:"
+PROGRESS = ":hourglass_flowing_sand:"
 
 # --------------------------------------------------------
 # Experiment CLI Constants

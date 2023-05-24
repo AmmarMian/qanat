@@ -24,7 +24,8 @@ from ..core.database import (
     fetch_datasets_of_experiment, fetch_runs_of_experiment,
     add_action, fetch_tags_of_run, add_tag,
     fetch_actions_of_experiment,
-    update_experiment, delete_action, Experiment)
+    update_experiment, delete_action, Experiment,
+    update_run_progress)
 from ._constants import (
     EXPERIMENT_NAME, EXPERIMENT_DESCRIPTION, EXPERIMENT_PATH,
     EXPERIMENT_EXECUTABLE, EXPERIMENT_EXECUTE_COMMAND, EXPERIMENT_TAGS,
@@ -39,11 +40,12 @@ from ..core.actions import ActionExecutionHandler
 
 logger = setup_logger()
 
+
 # --------------------------------------------------------
 # Command Action
 # --------------------------------------------------------
 def command_action(experiment_name: str, action_name: str,
-                   run_id: int, ctx: click.Context):
+                   run_id: int, ctx: click.Context = None):
     """Execute action on a run of an experiment.
 
     :param experiment_name: Name of the experiment
@@ -75,7 +77,7 @@ def command_action(experiment_name: str, action_name: str,
 
     if run_id not in run_ids:
         logger.error("Run is not associated with the experiment: "
-                     f"{experiment_name}"  )
+                     f"{experiment_name}")
         return
 
     # Execute action
@@ -636,7 +638,7 @@ def command_list():
 # Command status
 # -------------------------------------------------------
 def command_status(experiment_name: str,
-                 show_run_prompts: bool = False):
+                   show_run_prompts: bool = False):
     """Show information about an experiment.
 
     :param experiment_name: Name of the experiment
@@ -690,12 +692,13 @@ def command_status(experiment_name: str,
     grid.add_column(justify="left", header="Duration")
     grid.add_column(justify="center", header="Status", no_wrap=True)
     grid.add_column(justify="left", header="Tags", style="bold")
+    grid.add_column(justify="right", header="Progress")
     grid.add_row("[bold]ID[/bold]",
                  "[bold]Description[/bold]",
                  "[bold]Path[/bold]", "[bold]Runner[/bold]",
                  "[bold]Launch date[/bold]",
                  "[bold]Duration[/bold]", "[bold]Status[/bold]",
-                 "[bold]Tags[/bold]")
+                 "[bold]Tags[/bold]", "[bold]Progress[/bold]")
 
     console = Console()
     with console.status(
@@ -712,13 +715,17 @@ def command_status(experiment_name: str,
                         session, run.id)
             try:
                 run.status = execution_handler.check_status()
+                progress = execution_handler.check_progress()
+                if progress is not None:
+                    update_run_progress(Session, run.id, progress)
+
             except Exception as e:
                 logger.error(e)
                 run.status = "unknown"
 
         # Fetch all runs again
         runs = fetch_runs_of_experiment(Session, experiment_name)
-        for run in runs:
+        for i, run in enumerate(runs):
 
             tags = fetch_tags_of_run(Session, run.id)
             Session.close()
@@ -747,7 +754,8 @@ def command_status(experiment_name: str,
                          f"{RUN_LAUNCH_DATE} {run.launched}",
                          f"{RUN_DURATION}  {duration}",
                          f"{RUN_STATUS}",
-                         f"{tags}")
+                         f"{tags}",
+                         f"{run.progress}")
 
     rich.print(grid)
 

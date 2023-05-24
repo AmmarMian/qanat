@@ -29,7 +29,7 @@ from ._constants import (
         RUN_LAUNCH_DATE, PARAMETERS,
         ID, DESCRIPTION, PATH, TAGS,
         STATUS, RUNNER, COMMIT, RUN_METRIC,
-        CONTAINER
+        CONTAINER, PROGRESS
 )
 from ..core.database import (
      open_database,
@@ -313,6 +313,7 @@ def run_selection_menu(session: sqlalchemy.orm.Session, experiment_name: str,
                          f"Run Description: {run.description}\n" + \
                          f"Run launched: {run.launched}\n" + \
                          f"Run status: {run.status}\n" + \
+                         f"Run progress: {run.progress}\n" + \
                          f"Run tags: {', '.join(tags)}\n" + \
                          f"Run commit: {run.commit_sha}\n" + \
                          f"Run runner: {run.runner}\n" + \
@@ -569,6 +570,8 @@ def explore_run(experiment_name: str, run_id: int):
             rich.print(f"        :black_medium-small_square: {key}: {value}")
     rich.print(f"  - {PATH} Path: {run.storage_path}")
     rich.print(f"  - {STATUS} Status: {get_run_status_emoji(run.status)}")
+    if run.progress != "":
+        rich.print(f"  - {PROGRESS} Progress: {run.progress}")
     rich.print(f"  - {RUN_LAUNCH_DATE} Start time: {run.launched}")
     rich.print(f"  - {RUN_LAUNCH_DATE} End time: {run.finished}")
     rich.print(f"  - {COMMIT} Commit: {run.commit_sha}")
@@ -580,7 +583,6 @@ def explore_run(experiment_name: str, run_id: int):
     # Show run_explore_menu
     print('\n')
     run_explore_menu(session, experiment_name, run_id)
-
 
 
 def delete_run(experiment_name: str, run_id: int):

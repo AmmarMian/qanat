@@ -50,6 +50,30 @@ except ImportError:
                 "pip install htcondor")
 
 
+def get_progress(repertory_path: str) -> float:
+    """Get the progress of the run thanks to a progress.txt
+    file in the repertory.
+
+    :param repertory_path: The path to the repertory.
+    :type repertory_path: str
+
+    :return: The progress of the run in percent.
+    :rtype: float
+    """
+    progress_path = os.path.join(repertory_path, "progress.txt")
+    if not os.path.exists(progress_path):
+        return None
+
+    # First line to parse gives the total count
+    # Then each line gives a count progress
+    # Total is the sum of all counts
+    with open(progress_path, 'r') as f:
+        lines = f.readlines()
+        total = int(lines[0].split('count_total=')[1].strip())
+        counts = [int(line.split()[0]) for line in lines[1:]]
+    return sum(counts) / total * 100
+
+
 def parse_executionhandler(executionhandler: str):
     """Parse the execution handler from a string.
 
@@ -73,6 +97,7 @@ class RunExecutionHandler:
     * run_experiment(self)
     * cancel_experiment(self)
     * check_status(self)
+    * check_progress(self)
     """
     def __init__(self, database_sessionmaker: sessionmaker,
                  run_id: int,
@@ -241,6 +266,33 @@ class RunExecutionHandler:
         with open(os.path.join(self.run.storage_path,
                                'info.yaml'), 'w') as f:
             yaml.dump(info, f)
+
+    def check_progress(self) -> float:
+        """Check the progress of the run.
+
+        :return float: The progress of the run
+        """
+
+        info = self.parse_yaml_file()
+        if info is None:
+            return None
+
+        repertories = info['repertories']
+
+        # Check if all repertories have a progress file
+        for repertory in repertories:
+            if not os.path.exists(os.path.join(repertory, 'progress.txt')):
+                return None
+
+        progress = 0
+        for repertory in repertories:
+            try:
+                progress += get_progress(repertory)
+            except Exception as e:
+                logger.error(f"Error while getting progress of run"
+                             f" {self.run.id}: {e}")
+                return None
+        return progress / len(repertories)
 
     def run_experiment(self):
         """Run the run."""
