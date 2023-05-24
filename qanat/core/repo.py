@@ -84,7 +84,7 @@ class QanatRepertory:
         else:
             self.logger.info("Qanat repertory already exists.")
 
-        if not os.path.path.exists(
+        if not os.path.exists(
                 os.path.join(self.qanat_dir_path, "cache")):
             self.logger.info("Creating cache directory.")
             os.mkdir(os.path.join(self.qanat_dir_path, "cache"))

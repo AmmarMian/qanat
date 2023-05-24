@@ -28,6 +28,7 @@ STATUS = ":magnifying_glass_tilted_left:"
 RUNNER = ":desktop_computer: "
 PARAMETERS = ":notebook:"
 COMMIT = ":bookmark_tabs:"
+CONTAINER = ":package:"
 
 # --------------------------------------------------------
 # Experiment CLI Constants
@@ -52,6 +53,7 @@ RUN_LAUNCH_DATE = ":calendar:"
 RUN_DURATION = ":stopwatch:"
 RUN_IS_CANCELLED = ":x:"
 RUN_METRIC = ":chart:"
+
 
 
 def get_run_status_emoji(status):

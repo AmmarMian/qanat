@@ -23,7 +23,8 @@ from ._constants import (
         get_run_status_emoji,
         RUN_LAUNCH_DATE, PARAMETERS,
         ID, DESCRIPTION, PATH, TAGS,
-        STATUS, RUNNER, COMMIT, RUN_METRIC
+        STATUS, RUNNER, COMMIT, RUN_METRIC,
+        CONTAINER
 )
 from ..core.database import (
      open_database,
@@ -46,7 +47,8 @@ from ..utils.parsing import (
 logger = setup_logger()
 
 
-def create_menu_entry(session: sqlalchemy.orm.Session, run: RunOfAnExperiment) -> str:
+def create_menu_entry(
+        session: sqlalchemy.orm.Session, run: RunOfAnExperiment) -> str:
     """Create a menu entry for a run.
 
     :param session: The database session.
@@ -111,7 +113,8 @@ def run_selection_menu(session: sqlalchemy.orm.Session, experiment_name: str,
                          f"Run status: {run.status}\n" + \
                          f"Run tags: {', '.join(tags)}\n" + \
                          f"Run commit: {run.commit_sha}\n" + \
-                         f"Run runner: {run.runner}\n"
+                         f"Run runner: {run.runner}\n" + \
+                         f"Run container: {run.container_path}\n"
         if run.finished is not None:
             string_preview += f"Run finished: {run.finished}\n"
         if run.metric is not None:
@@ -138,7 +141,8 @@ def run_selection_menu(session: sqlalchemy.orm.Session, experiment_name: str,
     explore_run(experiment_name, runs[run_index].id)
 
 
-def search_runs(session: sqlalchemy.orm.Session, experiment_name: str, runs: list):
+def search_runs(
+        session: sqlalchemy.orm.Session, experiment_name: str, runs: list):
     """Search for runs.
 
     :param session: The database session.
@@ -349,7 +353,7 @@ def explore_run(experiment_name: str, run_id: int):
 
     rich.print(f"Run [bold red]{run_id}[/bold red] of experiment "
                f"[bold yellow]{experiment_name}[/bold yellow] informations:")
-    rich.print(f"  - {ID} id: {run.id}")
+    rich.print(f"  - {ID} Id: {run.id}")
     rich.print(f"  - {DESCRIPTION} description: {run.description}")
     tags_string = f"  - {TAGS} Tags: "
     for tag in tags:
@@ -357,18 +361,20 @@ def explore_run(experiment_name: str, run_id: int):
     tags_string = tags_string[:-2]
     rich.print(tags_string)
 
-    rich.print(f"  - {RUNNER} runner: {run.runner}")
+    rich.print(f"  - {RUNNER} Runner: {run.runner}")
     if len(run.runner_params) > 0:
         rich.print(f"  - {PARAMETERS} Runner parameters:")
         for key, value in run.runner_params.items():
             rich.print(f"        :black_medium-small_square: {key}: {value}")
-    rich.print(f"  - {PATH} path: {run.storage_path}")
-    rich.print(f"  - {STATUS} status: {get_run_status_emoji(run.status)}")
-    rich.print(f"  - {RUN_LAUNCH_DATE} start time: {run.launched}")
-    rich.print(f"  - {RUN_LAUNCH_DATE} end time: {run.finished}")
-    rich.print(f"  - {COMMIT} commit: {run.commit_sha}")
+    rich.print(f"  - {PATH} Path: {run.storage_path}")
+    rich.print(f"  - {STATUS} Status: {get_run_status_emoji(run.status)}")
+    rich.print(f"  - {RUN_LAUNCH_DATE} Start time: {run.launched}")
+    rich.print(f"  - {RUN_LAUNCH_DATE} End time: {run.finished}")
+    rich.print(f"  - {COMMIT} Commit: {run.commit_sha}")
     if run.metric is not None:
-        rich.print(f"  - {RUN_METRIC} metric: {run.metric}")
+        rich.print(f"  - {RUN_METRIC} Metric: {run.metric}")
+    if run.container_path is not None:
+        rich.print(f"  - {CONTAINER} Container path: {run.container_path}")
 
     # Show group of parameters
     grid = rich.table.Table.grid(padding=(0, 4))
@@ -433,6 +439,10 @@ def delete_run(experiment_name: str, run_id: int):
     logger.info(f"  - end_time: {run.finished}")
     logger.info(f"  - status: {run.status}")
     logger.info(f"  - storage_path {run.storage_path}")
+    logger.info(f"  - commit_sha: {run.commit_sha}")
+    logger.info(f"  - metric: {run.metric}")
+    logger.info(f"  - runner_params: {run.runner_params}")
+    logger.info(f"  - container_path: {run.container_path}")
     if rich.prompt.Confirm.ask("Are you sure?"):
 
         console = rich.console.Console()
@@ -524,7 +534,9 @@ def launch_run_experiment(experiment_name: str,
                           description: str = "",
                           tags: list = [],
                           container_path: str = None,
-                          commit_sha: str = None) -> int:
+                          commit_sha: str = None,
+                          parsed_parameters: list = None,
+                          runner_params: dict = None) -> int:
     """Launch the run of the experiment with designated runner.
 
 
@@ -544,7 +556,7 @@ def launch_run_experiment(experiment_name: str,
     :type runner: str
 
     :param storage_path: The path to the storage.
-    :type storage_path: str
+    :type storage_path: str"1.0", "--std": "0.0"}
 
     :param description: The description of the run.
     :type description: str
@@ -557,6 +569,12 @@ def launch_run_experiment(experiment_name: str,
 
     :param commit_sha: The commit sha at which the run is launched.
     :type commit_sha: str
+
+    :param parsed_parameters: The parsed parameters, for a rerun
+    :type parsed_parameters: dict
+
+    :param runner_params: The runner parameters for a rerun.
+    :type runner_params: dict
 
     :return: The id of the run.
     :rtype: int
@@ -636,9 +654,10 @@ def launch_run_experiment(experiment_name: str,
         commit_sha_dB = commit_sha
 
     # Get the parsed parameters
-    parsed_parameters, runner_params = \
-        parse_args_cli(ctx, groups_of_parameters,
-                       range_of_parameters)
+    if (parsed_parameters is None) or (runner_params is None):
+        parsed_parameters, runner_params = \
+            parse_args_cli(ctx, groups_of_parameters,
+                           range_of_parameters)
 
     # Check whether storage_path is not None
     if storage_path is None:
@@ -669,7 +688,8 @@ def launch_run_experiment(experiment_name: str,
     run = add_run(
             session, experiment_name, storage_path,
             commit_sha_dB, parsed_parameters, description,
-            tags, runner, runner_params)
+            tags, runner, container_path, runner_params
+            )
     run_id = run.id
 
     # Create the execution handler
@@ -733,3 +753,68 @@ def launch_run_experiment(experiment_name: str,
     # Run the experiment
     logger.info("Running the experiment...")
     execution_handler.run_experiment()
+
+
+def rerun_experiment(experiment_name: str,
+                     run_id: int):
+    """Rerun an experiment with the exact same conditions
+    as another run."""
+
+    # Opening database
+    engine, Base, Session = open_database('.qanat/database.db')
+    session = Session()
+
+    # Check if the experiment exists
+    experiment_id = find_experiment_id(Session(), experiment_name)
+    if experiment_id == -1:
+        logger.error(f"Experiment {experiment_name} does not exist.")
+        return -1
+
+    # Check if the run exists
+    run = session.query(RunOfAnExperiment).filter_by(id=run_id).first()
+    if run is None:
+        logger.error(f"Run {run_id} does not exist.")
+        return -1
+
+    # Check if run is associated to the experiment
+    if run.experiment_id != experiment_id:
+        logger.error(f"Run {run_id} is not associated to experiment "
+                     f"{experiment_name}.")
+        return -1
+
+    # Get the parsed parameters
+    parsed_parameters = [group.values for group in
+                         fetch_groupofparameters_of_run(session, run_id)]
+
+    # Get the runner and runner_params
+    runner = run.runner
+    runner_params = run.runner_params
+
+    # Get the commit_sha
+    commit_sha = run.commit_sha
+
+    # Get the storage_path
+    # Get last id of experiments in the database
+    storage_path = os.path.dirname(run.storage_path)
+    last_id = session.query(func.max(RunOfAnExperiment.id)).scalar()
+    if last_id is None:
+        last_id = 0
+    storage_path = os.path.join(
+            storage_path,
+            f"run_{last_id+1}"
+    )
+
+    # Get the description
+    description = run.description
+
+    # Get the container_path
+    container_path = run.container_path
+
+    # Get the tags
+    tags = fetch_tags_of_run(session, run_id)
+    tags += [f"rerun id {run_id}"]
+
+    # Launch the experiment
+    launch_run_experiment(experiment_name, None, None, None, runner,
+                          storage_path, description, tags, container_path,
+                          commit_sha, parsed_parameters, runner_params)

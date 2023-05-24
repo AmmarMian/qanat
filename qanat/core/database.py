@@ -127,6 +127,7 @@ class RunOfAnExperiment(Base):
     metric = Column(String)
     commit_sha = Column(String)
     runner = Column(String)
+    container_path = Column(String)
     runner_params = Column(JSONEncodedDict)
 
 
@@ -463,6 +464,7 @@ def add_run(session: Session,
             description: str = "",
             tags: list = [],
             runner: str = 'local',
+            container_path: str = None,
             runner_params: dict = {}) -> RunOfAnExperiment:
     """Add a run to the database.
 
@@ -491,6 +493,9 @@ def add_run(session: Session,
     :param runner: The name of the runner. Default is 'local'.
     :type runner: str
 
+    :param container_path: The path to the container of the runner.
+    :type container_path: str
+
     :param runner_params: The parameters of the runner. Default is {}.
     :type runner_params: dict
 
@@ -505,7 +510,8 @@ def add_run(session: Session,
     run = RunOfAnExperiment(experiment_id=experiment_id,
                             description=description, commit_sha=commit_sha,
                             storage_path=storage_path,
-                            runner=runner, runner_params=runner_params)
+                            runner=runner, runner_params=runner_params,
+                            container_path=container_path)
     session.add(run)
     session.commit()
 

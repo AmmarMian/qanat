@@ -75,6 +75,7 @@ def config_main():
     check_cwd_is_qanat()
     return 0
 
+
 @main.group(name="cache")
 def cache_main():
     """Cache management utility"""
@@ -128,6 +129,15 @@ def experiment_delete(name):
 def experiment_update(name):
     """Update experiment."""
     experiment.command_update(name)
+
+
+@experiment_main.command(name="rerun")
+@click.argument("name", type=click.STRING, required=True)
+@click.argument("run_id", type=click.INT, required=True)
+def experiment_rerun(name, run_id):
+    """Rerun a single run with exact same environment
+    and paraeters."""
+    run.rerun_experiment(name, run_id)
 
 
 @experiment_main.command(
