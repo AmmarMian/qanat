@@ -157,11 +157,14 @@ def experiment_rerun(name, run_id):
               help="Group of parameters to run.", multiple=True)
 @click.option("--range_param", "-r", default=None, type=click.STRING,
               help="Range for a single parameter.", multiple=True)
-@click.option("--storage_path", default=None, type=click.STRING)
+@click.option("--storage_path", default=None, type=click.STRING,
+              help="Path to store results.")
 @click.option("--tag", "-t", default=None, type=click.STRING,
               help="Tag to assing this run", multiple=True)
-@click.option("--description", default="", type=click.STRING)
-@click.option("--commit_sha", default=None, type=click.STRING)
+@click.option("--description", default="", type=click.STRING,
+              help="Description of this run.")
+@click.option("--commit_sha", default=None, type=click.STRING,
+              help="Commit sha to use for this run.")
 @click.pass_context
 # TODO: Debug this
 # fetched from:
@@ -184,7 +187,7 @@ def experiment_run(ctx, name, runner, group_param, range_param,
     to run as the same run.\n
     * [bold yellow]--range_param[/bold yellow] to specify to create groups of
     parameters as a range. Syntax is: -r '--param start end step'.\n
-    * [bold yellow] --storage_path[/bold yellow] to override storage path for
+    * [bold yellow]--storage_path[/bold yellow] to override storage path for
     the run of the experiment.\n
     * [bold yellow]--tag[/bold yellow] to add tag to the run of the
     experiment.\n
