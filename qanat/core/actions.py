@@ -30,7 +30,7 @@ class ActionExecutionHandler:
 
         if self.action_id == -1:
             raise AttributeError(f'Action {action_name} not found')
-        
+
         self.action = Session.query(Action).get(
             self.action_id
         )
@@ -43,7 +43,6 @@ class ActionExecutionHandler:
         self.command_base = [self.action.executable_command,
                              self.action.executable]
 
-
     def execute_action(self, ctx: click.Context):
         """Execute action with arguments.
 
@@ -54,7 +53,10 @@ class ActionExecutionHandler:
                     f'on run {self.run_id} of experiment '
                     f'{self.experiment.name}')
 
-        args = parse_group_parameters(parse_args_cli(ctx)[0][0])
+        if ctx is not None:
+            args = parse_group_parameters(parse_args_cli(ctx)[0][0])
+        else:
+            args = []
         storage_path_command = ["--storage_path", self.run.storage_path]
 
         logger.debug(f'Action arguments: {args}')

@@ -9,13 +9,18 @@
 # =========================================
 
 import os
+import pathlib
 import time
 import signal
 import sqlalchemy
 import yaml
 import rich_click as click
 import rich
+from rich.filesize import decimal
+from rich.markup import escape
+from rich.tree import Tree
 import git
+import subprocess
 from simple_term_menu import TerminalMenu
 from sqlalchemy import func
 from functools import partial
@@ -34,7 +39,8 @@ from ..core.database import (
      delete_run_from_id,
      fetch_tags_of_run,
      fetch_groupofparameters_of_run,
-     fetch_runs_of_experiment
+     fetch_runs_of_experiment,
+     fetch_actions_of_experiment
     )
 from ..core.runs import (
         parse_executionhandler, RunExecutionHandler,
@@ -43,6 +49,8 @@ from ..utils.logging import setup_logger
 from ..utils.parsing import (
     parse_args_cli
 )
+from .experiment import command_action
+from ..utils.misc import walk_directory
 
 logger = setup_logger()
 
@@ -74,6 +82,200 @@ def parse_menu_entry(menu_entry: str) -> int:
     :rtype: int
     """
     return int(menu_entry.split("-")[0].strip())
+
+
+def run_explore_menu(session: sqlalchemy.orm.Session, experiment_name: str,
+                     run_id: int):
+    """Display a menu on run explore command.
+
+    :param session: The database session.
+    :type session: sqlalchemy.orm.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :param run_id: The id of the run.
+    :type run_id: int
+    """
+
+    # Fetch run
+    run = session.query(RunOfAnExperiment).filter(
+        RunOfAnExperiment.id == run_id).first()
+
+    # Display menu
+    menu_entries = [
+            "[a] Show output(s)",
+            "[b] Show error(s)",
+            "[c] Show parameters",
+            "[d] Explore run directory"]
+
+    if run.runner == 'htcondor':
+        menu_entries.append(
+                f"[{chr(ord('a')+len(menu_entries))}] Show HTCondor log(s)")
+
+    # Fetch actions of experiment
+    actions = fetch_actions_of_experiment(session, experiment_name)
+
+    # Add delete run to menu
+    menu_entries.append(f"[{chr(ord('a')+len(menu_entries))}] Delete run")
+
+    # Add actions to menu
+    for action in actions:
+        menu_entries.append(
+                f"[{chr(ord('a')+len(menu_entries))}] Action: {action.name}")
+
+    # Preview of the menu
+    def preview_command(menu_entry):
+        if menu_entry == "Show output(s)":
+            return 'Show output(s) of the run with less'
+        elif menu_entry == "Show error(s)":
+            return 'Show error(s) of the run with less'
+        elif menu_entry == "Show parameters":
+            return 'Print parameters used for the run'
+        elif menu_entry == "Explore run directory":
+            return 'Explore run directory contents'
+        elif menu_entry == "Show HTCondor log(s)":
+            return 'Show HTCondor log(s) of the run with less'
+        elif menu_entry == "Delete run":
+            return 'Delete the run'
+        elif menu_entry.startswith("Action:"):
+            action_name = menu_entry.split(':')[1].strip()
+            action = None
+            for action in actions:
+                if action.name == action_name:
+                    break
+            description = action.description if action is not None else ""
+            return f"Run action {menu_entry.split(':')[1].strip()}:" \
+                   f" {description}"
+        else:
+            return menu_entry
+
+    # Create menu
+    while True:
+        menu = TerminalMenu(menu_entries, title=f"Run {run_id} of experiment "
+                            f"{experiment_name} - Explore menu",
+                            preview_command=preview_command)
+        choice = menu.show()
+        if choice is None:
+            break
+        res = parse_choice_explore_menu(session, experiment_name, run, actions,
+                                  menu_entries[choice])
+        if res == -1:
+            break
+
+
+def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
+                              experiment_name: str, run: RunOfAnExperiment,
+                              actions: list, menu_entry: str):
+    """Parse the choice of the explore menu.
+
+    :param session: The database session.
+    :type session: sqlalchemy.orm.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :param run: The run.
+    :type run: RunOfAnExperiment
+
+    :param action: The list of actions.
+    :type action: list
+
+    :param menu_entry: The menu entry.
+    :type menu_entry: str
+    """
+
+    menu_entry = menu_entry.strip().split(']')[1].strip()
+
+    # Show output(s)
+    if menu_entry == "Show output(s)":
+        logger.info(f"Show output(s) of run {run.id}")
+        storage_path = run.storage_path
+
+        # List subdirectories
+        subdirectories = [x for x in os.listdir(storage_path)
+                          if os.path.isdir(os.path.join(storage_path,x))]
+        if len(subdirectories) == 0:
+            wildcard = f"{storage_path}/stdout.txt"
+        else:
+            wildcard = f"{storage_path}/**/stdout.txt"
+        subprocess.run(f"less {wildcard}", shell=True)
+
+    # Show error(s)
+    elif menu_entry == "Show error(s)":
+        logger.info(f"Show error(s) of run {run.id}")
+        storage_path = run.storage_path
+        subdirectories = [x for x in os.listdir(storage_path)
+                          if os.path.isdir(os.path.join(storage_path,x))]
+        if len(subdirectories) == 0:
+            wildcard = f"{storage_path}/stderr.txt"
+        else:
+            wildcard = f"{storage_path}/**/stderr.txt"
+        subprocess.run(f"less {wildcard}", shell=True)
+
+    # Show parameters
+    elif menu_entry == "Show parameters":
+        groupofparameters = fetch_groupofparameters_of_run(session, run.id)
+
+        # Show group of parameters
+        grid = rich.table.Table.grid(padding=(0, 4))
+        grid.add_column("Group", justify="center", style="cyan")
+        grid.add_column("Parameters", justify="left", style="magenta")
+        grid.add_column("Repertory", justify="left", style="green")
+        grid.add_row("Group", "Parameters", 'Repertory')
+        for i, group in enumerate(groupofparameters):
+            string_parameters = ""
+            if len(groupofparameters) == 1:
+                repertory = run.storage_path
+            else:
+                repertory = os.path.join(run.storage_path, f"group_{i}")
+            for key, value in group.values.items():
+                string_parameters += f"{key} {value} "
+            grid.add_row(f"{i}", string_parameters, repertory)
+        rich.print(f"  - {PARAMETERS} Parameters:")
+        rich.print(grid)
+
+    # Explore run directory
+    elif menu_entry == "Explore run directory":
+        result_directory = pathlib.Path(run.storage_path)
+        tree = Tree(
+                f"[bold blue]:open_file_folder: "
+                f"[link file://{result_directory}]{escape(result_directory.name)}",
+                guide_style="bold bright_blue")
+        walk_directory(result_directory, tree)
+        rich.print(tree)
+
+    # Show HTCondor log(s)
+    elif menu_entry == "Show HTCondor log(s)":
+        logger.info(f"Show HTCondor log(s) of run {run.id}")
+        storage_path = run.storage_path
+        subdirectories = [x for x in os.listdir(storage_path)
+                          if os.path.isdir(os.path.join(storage_path,x))]
+        if len(subdirectories) == 0:
+            wildcard = f"{storage_path}/log.txt"
+        else:
+            wildcard = f"{storage_path}/**/log.txt"
+        subprocess.run(f"less {wildcard}", shell=True)
+
+    # Delete run
+    elif menu_entry == "Delete run":
+        logger.info(f"Delete run {run.id}")
+        delete_run(experiment_name, run.id)
+        return -1
+
+    # Run action
+    elif menu_entry.startswith("Action:"):
+
+        # Find action
+        action_name = menu_entry.split(':')[1].strip()
+
+        # Run action
+        # TODO: pass arguments to action with input
+        logger.info(f"Run action {action_name} on run {run.id}")
+        command_action(experiment_name, action_name, run.id, None)
+
+    else:
+        raise ValueError(f"Choice {menu_entry} not recognized")
 
 
 def run_selection_menu(session: sqlalchemy.orm.Session, experiment_name: str,
@@ -349,7 +551,6 @@ def explore_run(experiment_name: str, run_id: int):
     tags = fetch_tags_of_run(session, run_id)
 
     # Get GroupOfParameters of the run
-    groupofparameters = fetch_groupofparameters_of_run(session, run_id)
 
     rich.print(f"Run [bold red]{run_id}[/bold red] of experiment "
                f"[bold yellow]{experiment_name}[/bold yellow] informations:")
@@ -376,23 +577,10 @@ def explore_run(experiment_name: str, run_id: int):
     if run.container_path is not None:
         rich.print(f"  - {CONTAINER} Container path: {run.container_path}")
 
-    # Show group of parameters
-    grid = rich.table.Table.grid(padding=(0, 4))
-    grid.add_column("Group", justify="center", style="cyan")
-    grid.add_column("Parameters", justify="left", style="magenta")
-    grid.add_column("Repertory", justify="left", style="green")
-    grid.add_row("Group", "Parameters", 'Repertory')
-    for i, group in enumerate(groupofparameters):
-        string_parameters = ""
-        if len(groupofparameters) == 1:
-            repertory = run.storage_path
-        else:
-            repertory = os.path.join(run.storage_path, f"group_{i}")
-        for key, value in group.values.items():
-            string_parameters += f"{key} {value} "
-        grid.add_row(f"{i}", string_parameters, repertory)
-    rich.print(f"  - {PARAMETERS} Parameters:")
-    rich.print(grid)
+    # Show run_explore_menu
+    print('\n')
+    run_explore_menu(session, experiment_name, run_id)
+
 
 
 def delete_run(experiment_name: str, run_id: int):
