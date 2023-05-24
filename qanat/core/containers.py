@@ -75,6 +75,9 @@ def get_container_run_command(container_path: str,
     :param bind_paths: Paths to bind inside the container
     :type bind_paths: dict
 
+    :param rel_path_offset: Relative path offset to the bind_paths
+    :type rel_path_offset: str
+
     :return: The command to run the container
     :rtype: list
     """
@@ -83,7 +86,8 @@ def get_container_run_command(container_path: str,
     if container_technology in ["apptainer", "singularity"]:
         run_command = [container_technology, 'run']
         for bind_path in bind_paths:
-            run_command += ["--bind", f"{bind_path}:{bind_paths[bind_path]}"]
+            run_command += ["--bind",
+                            f"{bind_path}:{bind_paths[bind_path]}"]
         run_command += [container_path]
         run_command += command
     else:

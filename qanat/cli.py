@@ -6,7 +6,7 @@ import rich
 from .cli_commands.init import init_qanat
 from .cli_commands import (
         experiment, dataset, status, run,
-        config
+        config, cache
 )
 from .core.repo import check_directory_is_qanat
 
@@ -75,6 +75,26 @@ def config_main():
     check_cwd_is_qanat()
     return 0
 
+@main.group(name="cache")
+def cache_main():
+    """Cache management utility"""
+    check_cwd_is_qanat()
+    return 0
+
+
+# Subcommands: cache
+@cache_main.command(name="status")
+def cache_status():
+    """Show cache status."""
+    cache.command_status()
+
+
+@cache_main.command(name="clean")
+def cache_clean():
+    """Clean cache."""
+    cache.command_clean()
+
+
 # Subcommands: experiment
 @experiment_main.command(name="list")
 def experiment_list():
@@ -131,13 +151,15 @@ def experiment_update(name):
 @click.option("--tag", "-t", default=None, type=click.STRING,
               help="Tag to assing this run", multiple=True)
 @click.option("--description", default="", type=click.STRING)
+@click.option("--commit_sha", default=None, type=click.STRING)
 @click.pass_context
 # TODO: Debug this
 # fetched from:
 # https://stackoverflow.com/questions/32944131/ ...
 # add-unspecified-options-to-cli-command-using-python-click
 def experiment_run(ctx, name, runner, group_param, range_param,
-                   storage_path, tag, description, container):
+                   storage_path, tag, description, container,
+                   commit_sha):
     """Run an experiment with additional positional and option args.\n
     [bold red]WARNING: The following options are not available
     for your executable command:[/bold red]\n
@@ -158,10 +180,11 @@ def experiment_run(ctx, name, runner, group_param, range_param,
     experiment.\n
     * [bold yellow]--description[/bold yellow] to add description to the run of
     the experiment.\n
+    * [bold yellow]--commit_sha[/bold yellow] to run at a specific commit.\n
     """
     run.launch_run_experiment(
             name, ctx, group_param, range_param, runner,
-            storage_path, description, tag, container)
+            storage_path, description, tag, container, commit_sha)
 
 
 @experiment_main.command(

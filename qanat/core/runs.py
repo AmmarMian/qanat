@@ -7,6 +7,7 @@
 # Brief: Manging execution of the runs
 # =========================================
 
+import git
 import sys
 import shutil
 import os
@@ -75,9 +76,11 @@ class RunExecutionHandler:
     """
     def __init__(self, database_sessionmaker: sessionmaker,
                  run_id: int,
-                 container_path: str = None):
+                 container_path: str = None,
+                 commit_sha: str = None):
         self.session_maker = database_sessionmaker
         self.run_id = run_id
+        self.commit_sha = commit_sha
         self.experiment = get_experiment_of_run(self.session_maker(),
                                                 run_id)
         self.container_path = container_path
@@ -86,8 +89,41 @@ class RunExecutionHandler:
                 RunOfAnExperiment).get(run_id)
         Session.close()
 
+        #  Transfrom run storage_path to absolute path
+        self.run.storage_path = get_absolute_path(self.run.storage_path)
+        self.working_dir = os.getcwd()
+
+    def setup_specific_commit_run(self):
+        """Set up things if we are running a specific commit.
+        We create a copy of the git repository in .qanat/cache/commit_sha
+        and we checkout the specific commit.
+        """
+
+        if self.commit_sha is None:
+            return
+
+        # Create a copy of the git repository in .qanat/cache/commit_sha
+        # and checkout the specific commit
+        cache_path = os.path.join(os.getcwd(), '.qanat', 'cache')
+        logger.info(f"Setting up specific commit {self.commit_sha}"
+                    f"in {cache_path}")
+        if not os.path.exists(cache_path):
+            os.makedirs(cache_path)
+        repo_cwd = git.Repo(os.getcwd())
+        repo_path = os.path.join(cache_path, self.commit_sha)
+        if not os.path.exists(repo_path):
+            repo_commit = repo_cwd.clone(repo_path, no_checkout=True)
+        else:
+            repo_commit = git.Repo(repo_path)
+        logger.info(f"Checking out {self.commit_sha}")
+        repo_commit.git.checkout(self.commit_sha)
+        self.working_dir = repo_path
+
     def setUp(self):
         """Set up the execution of the run."""
+
+        # If we need to run a specific commit
+        self.setup_specific_commit_run()
 
         # Fetch parameters of the run
         Session = self.session_maker()
@@ -118,8 +154,7 @@ class RunExecutionHandler:
                     os.makedirs(path)
                 self.repertories.append(path)
 
-        # Constructing the commands to run as subprocesses for local
-        # execution
+        # Constructing the commands to run
         self.groups_of_parameters = [parameters.values for
                                      parameters in
                                      fetch_groupofparameters_of_run(
@@ -137,11 +172,11 @@ class RunExecutionHandler:
         if self.container_path is not None:
             if os.path.exists(self.container_path):
                 bind_paths = {
-                        get_absolute_path(self.run.storage_path):
-                        get_absolute_path(self.run.storage_path)
+                        self.run.storage_path:
+                        self.run.storage_path
                 }
 
-                # Get datasets paths`to bind as well
+                # Get datasets paths to bind as well
                 Session = self.session_maker()
                 datasets = fetch_datasets_of_experiment(
                         Session, self.experiment.name)
@@ -152,7 +187,8 @@ class RunExecutionHandler:
                     bind_paths[absolute_path] = absolute_path
 
                 self.commands = [get_container_run_command(
-                    self.container_path, command, bind_paths)
+                    get_absolute_path(self.container_path),
+                    command, bind_paths)
                     for command in self.commands]
             else:
                 raise FileNotFoundError(f"Container path {self.container_path}"
@@ -168,7 +204,13 @@ class RunExecutionHandler:
                 'storage_path': self.run.storage_path,
                 'commands': self.commands,
                 'groups_of_parameters': self.groups_of_parameters,
-                'repertories': self.repertories}
+                'repertories': self.repertories,
+                'working_direcotry': self.working_dir}
+        if self.commit_sha is not None:
+            info['commit_sha'] = self.commit_sha
+        else:
+            info['commit_sha'] = git.Repo(os.getcwd()).head.commit.hexsha
+
         with open(os.path.join(self.run.storage_path,
                                'info.yaml'), 'w') as f:
             yaml.dump(info, f)
@@ -221,8 +263,10 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
     """Handle the execution of the runs on the local machine."""
 
     def __init__(self, database_sessionmaker: sessionmaker,
-                 run_id: int, n_threads: int = 1, container_path: str = None):
-        super().__init__(database_sessionmaker, run_id, container_path)
+                 run_id: int, n_threads: int = 1, container_path: str = None,
+                 commit_sha: str = None):
+        super().__init__(database_sessionmaker, run_id, container_path,
+                         commit_sha)
         self.n_threads = n_threads
         self.process_pid = os.getpid()
         signal.signal(signal.SIGINT, self.sigint_handler)
@@ -283,7 +327,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                     repertories_one_sequence.append(self.repertories[i])
                     if (i+1) % self.n_threads == 0 or \
                         (i == len(self.commands)-1 and
-                        (len(self.commands)-i_start) <= self.n_threads):
+                         (len(self.commands)-i_start) <= self.n_threads):
                         commands_sequences.append(command_one_sequence)
                         repertories_sequences.append(repertories_one_sequence)
                         command_one_sequence = []
@@ -309,7 +353,8 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                         stderr_list.append(stderr_file)
                         process = subprocess.Popen(command,
                                                    stdout=stdout_file,
-                                                   stderr=stderr_file)
+                                                   stderr=stderr_file,
+                                                   cwd=self.working_dir)
                         pids.append(str(process.pid))
                         processes.append(process)
                         status_list.append('running')
@@ -384,7 +429,8 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                     stdout = open(stdout_file, 'w')
                     stderr = open(stderr_file, 'w')
                     process = subprocess.Popen(command, stdout=stdout,
-                                               stderr=stderr)
+                                               stderr=stderr,
+                                               cwd=self.working_dir)
 
                     pid = process.pid
                     status_list[i] = 'running'
@@ -544,8 +590,10 @@ class HTCondorExecutionHandler(RunExecutionHandler):
 
     def __init__(self, database_sessionmaker, run_id,
                  htcondor_submit_options=None,
-                 container_path: str = None):
-        super().__init__(database_sessionmaker, run_id, container_path)
+                 container_path: str = None,
+                 commit_sha: str = None):
+        super().__init__(database_sessionmaker, run_id, container_path,
+                         commit_sha)
 
         # Check wheter htcondor is available on system
         if not shutil.which('condor_submit'):
@@ -582,13 +630,13 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                 f.write('echo "Starting at: $(date)"\n\n')
 
                 f.write(f'echo "Moving to repertory {os.getcwd()}"\n')
-                f.write(f'cd {os.getcwd()}\n\n')
+                f.write(f'cd {self.working_dir}\n\n')
 
                 f.write(f'echo "Running command: {str_command}"\n')
                 f.write(str_command + '\n\n')
                 f.write('echo "Done."')
 
-            # TODO: Maybe not harcode some stuff...
+            # TODO: Maybe not hardcode some stuff...
             submit_dict = {
                 'executable': executable,
                 'output': os.path.join(repertory, 'stdout.txt'),
@@ -647,7 +695,8 @@ class HTCondorExecutionHandler(RunExecutionHandler):
             log_file = os.path.join(repertory, 'log.txt')
             if not os.path.exists(log_file):
                 continue
-            events = [event for event in JobEventLog(log_file).events(stop_after=0)]
+            events = [event for event in JobEventLog(log_file).events(
+                stop_after=0)]
             last_event = events[-1]
 
             # Adapt status in function of last event
@@ -736,8 +785,11 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         info = self.parse_yaml_file()
         if info is None:
             logger.warning(f"Run {self.run_id} doesn't have a info.yaml file")
-            logger.warning("Probably due to it being not started or some error")
-            logger.info("Try waiting for it to launch or delete the run altogether")
+            logger.warning(
+                    "Probably due to it being not started or some error")
+            logger.info(
+                    "Try waiting for it to launch or delete"
+                    " the run altogether")
             return
 
         # Removing jobs that are removable

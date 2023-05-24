@@ -81,10 +81,13 @@ class QanatRepertory:
         if not self.check_exists_qanat():
             self.logger.info("Creating Qanat repertory.")
             os.mkdir(self.qanat_dir_path)
-            return False
         else:
             self.logger.info("Qanat repertory already exists.")
-            return True
+
+        if not os.path.path.exists(
+                os.path.join(self.qanat_dir_path, "cache")):
+            self.logger.info("Creating cache directory.")
+            os.mkdir(os.path.join(self.qanat_dir_path, "cache"))
 
     def check_git(self):
         """Check if the repertory is a git repository.

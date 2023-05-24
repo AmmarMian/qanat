@@ -523,7 +523,8 @@ def launch_run_experiment(experiment_name: str,
                           storage_path: str,
                           description: str = "",
                           tags: list = [],
-                          container_path: str = None) -> int:
+                          container_path: str = None,
+                          commit_sha: str = None) -> int:
     """Launch the run of the experiment with designated runner.
 
 
@@ -553,6 +554,9 @@ def launch_run_experiment(experiment_name: str,
 
     :param container_path: The path to the container.
     :type container_path: str
+
+    :param commit_sha: The commit sha at which the run is launched.
+    :type commit_sha: str
 
     :return: The id of the run.
     :rtype: int
@@ -596,32 +600,40 @@ def launch_run_experiment(experiment_name: str,
 
     # Check whether cwd is a git repository and committed
     repo = git.Repo('.')
-    if repo.is_dirty() or len(repo.untracked_files) > 0:
-        logger.error(
-                "The repository is not clean. Please commit your changes.")
-        # Show the changes in the repository
-        logger.info("The following files have been modified:")
-        for file in repo.git.diff(None, name_only=True).split("\n"):
-            logger.info(file)
+    if commit_sha is None:
+        if repo.is_dirty() or len(repo.untracked_files) > 0:
+            logger.error(
+                    "The repository is not clean. Please commit your changes.")
+            # Show the changes in the repository
+            logger.info("The following files have been modified:")
+            for file in repo.git.diff(None, name_only=True).split("\n"):
+                logger.info(file)
 
-        # Show untracked files
-        logger.info("The following files are untracked:")
-        for file in repo.untracked_files:
-            logger.info(file)
+            # Show untracked files
+            logger.info("The following files are untracked:")
+            for file in repo.untracked_files:
+                logger.info(file)
 
-        if rich.prompt.Confirm.ask("Do you want me to commit the changes "
-                                   "for you?",
-                                   default=False):
-            repo.git.add(".")
-            commit_description = rich.prompt.Prompt.ask(
-                    "Please enter a description for the commit")
-            repo.git.commit("-m",
-                            "Automatic commit before running experiment "
-                            f"{experiment_name}: {commit_description}")
-        else:
+            if rich.prompt.Confirm.ask("Do you want me to commit the changes "
+                                       "for you?",
+                                       default=False):
+                repo.git.add(".")
+                commit_description = rich.prompt.Prompt.ask(
+                        "Please enter a description for the commit")
+                repo.git.commit("-m",
+                                "Automatic commit before running experiment "
+                                f"{experiment_name}: {commit_description}")
+            else:
+                return -1
+
+        commit_sha_dB = repo.head.commit.hexsha
+
+    else:
+        if commit_sha not in [commit.hexsha for commit in repo.iter_commits()]:
+            logger.error(
+                    f"Commit {commit_sha} not found in the repository.")
             return -1
-
-    commit_sha = repo.head.object.hexsha
+        commit_sha_dB = commit_sha
 
     # Get the parsed parameters
     parsed_parameters, runner_params = \
@@ -634,7 +646,7 @@ def launch_run_experiment(experiment_name: str,
         with open(".qanat/config.yaml", "r") as f:
             config = yaml.safe_load(f)
 
-        # Get las id of experiments in the database
+        # Get last id of experiments in the database
         last_id = session.query(func.max(RunOfAnExperiment.id)).scalar()
         if last_id is None:
             last_id = 0
@@ -656,7 +668,7 @@ def launch_run_experiment(experiment_name: str,
         tags = []
     run = add_run(
             session, experiment_name, storage_path,
-            commit_sha, parsed_parameters, description,
+            commit_sha_dB, parsed_parameters, description,
             tags, runner, runner_params)
     run_id = run.id
 
@@ -668,7 +680,8 @@ def launch_run_experiment(experiment_name: str,
                 database_sessionmaker=Session,
                 run_id=run_id,
                 n_threads=int(runner_params['--n_threads']),
-                container_path=container_path
+                container_path=container_path,
+                commit_sha=commit_sha
         )
 
     elif runner == "htcondor":
@@ -702,7 +715,8 @@ def launch_run_experiment(experiment_name: str,
                 database_sessionmaker=Session,
                 run_id=run_id,
                 htcondor_submit_options=submit_info,
-                container_path=container_path)
+                container_path=container_path,
+                commit_sha=commit_sha)
 
     else:
         raise NotImplementedError(f"Runner {runner} is not implemented yet.")

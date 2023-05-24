@@ -8,37 +8,15 @@
 # =========================================
 
 
-import os
 from rich.console import Console
 from ..utils.logging import setup_logger
+from ..utils.misc import get_size
 from ..core.database import open_database
 from ._constants import (
         STATUS_DATASET, STATUS_EXPERIMENT, STATUS_RUN,
         STATUS_DISKSIZE, STATUS_RUNNING)
 import yaml
 logger = setup_logger()
-
-
-def get_size(start_path='.') -> float:
-    """Compute size of a directory.
-    Fetched from https://stackoverflow.com/questions/1392413.
-    Accessed on 03/05/2021 at 15:46 GMT+2.
-
-    :param start_path: The path to the directory.
-    :type path: str
-
-    :return: The size of the directory.
-    :rtype: float
-    """
-    total_size = 0
-    for dirpath, dirnames, filenames in os.walk(start_path):
-        for f in filenames:
-            fp = os.path.join(dirpath, f)
-            # skip if it is symbolic link
-            if not os.path.islink(fp):
-                total_size += os.path.getsize(fp)
-
-    return total_size
 
 
 def command_status():
