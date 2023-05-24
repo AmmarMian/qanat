@@ -173,7 +173,9 @@ class RunExecutionHandler:
             if os.path.exists(self.container_path):
                 bind_paths = {
                         self.run.storage_path:
-                        self.run.storage_path
+                        self.run.storage_path,
+                        self.working_dir:
+                        self.working_dir
                 }
 
                 # Get datasets paths to bind as well
