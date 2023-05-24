@@ -184,10 +184,16 @@ def experiment_run_delete(experiment_name, run_id):
                 default=None)
 def experiment_run_explore(experiment_name, run_id):
     """Explore run of an experiment."""
-    if run_id is not None:
-        run.explore_run(experiment_name, run_id)
-    else:
-        run.prompt_explore_runs(experiment_name)
+    try:
+        if run_id is not None:
+            run.explore_run(experiment_name, run_id)
+        else:
+            run.prompt_explore_runs(experiment_name)
+    except ModuleNotFoundError:
+        rich.print("Sorry thois functionality does not work"
+                   " with your current terminal. Please use a linux"
+                   " compatible terminal (WSL on windows).")
+    sys.exit(-1)
 
 
 @experiment_main.command(
