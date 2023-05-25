@@ -1,6 +1,11 @@
 <a name="readme-top"></a>
 # Qanat (Work in progress)
 
+▒█▀▀█ █▀▀█ █▀▀▄ █▀▀█ ▀▀█▀▀ 
+▒█░▒█ █▄▄█ █░░█ █▄▄█ ░░█░░ 
+░▀▀█▄ ▀░░▀ ▀░░▀ ▀░░▀ ░░▀░░ 
+
+
 Qanat is a muinimal CLI based experiment tracking tool that allows to run, monitor and analyse command-line programs that accept arguments. It is still in construction.
 
 **Note:** This is actually very similar to [**Sumatra**](https://github.com/open-research/sumatra), which I didn't know about when I first started working on this package. Qanat is more tuned to my specific needs and has less functionalities than Sumatra so I'd recommand the later if you are interested in reproducible experiment tracking.

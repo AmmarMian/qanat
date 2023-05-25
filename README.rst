@@ -2,28 +2,6 @@
 Qanat
 =====
 
-
-.. image:: https://img.shields.io/pypi/v/qanat.svg
-        :target: https://pypi.python.org/pypi/qanat
-
-.. image:: https://img.shields.io/travis/ammarmian/qanat.svg
-        :target: https://travis-ci.com/ammarmian/qanat
-
-.. image:: https://readthedocs.org/projects/qanat/badge/?version=latest
-        :target: https://qanat.readthedocs.io/en/latest/?version=latest
-        :alt: Documentation Status
-
-
-'''
-                        .
-                       _|_
- .-.,  .-.  .--.  .-.   |
-(   | (   ) |  | (   )  |
- `-'|  `-'`-'  `- `-'`- `-'
-   -|-
-    '
-'''
-
 Qanat is a Minimal package to manage and reproduce research experiments.
 
 

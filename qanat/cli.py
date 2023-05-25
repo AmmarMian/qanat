@@ -2,6 +2,7 @@
 import sys
 import rich_click as click
 import rich
+import art
 
 from .cli_commands.init import init_qanat
 from .cli_commands import (
@@ -15,15 +16,14 @@ click.rich_click.SHOW_ARGUMENTS = True
 click.rich_click.GROUP_ARGUMENTS_OPTIONS = True
 click.rich_click.APPEND_METAVARS_HELP = True
 
-ASCII_ART_use = r"""
-                        .
-                       _|_
- .-.,  .-.  .--.  .-.   |
-(   | (   ) |  | (   )  |
- `-'|  `-'`-'  `- `-'`- `-'
-   -|-
-    '
-"""
+ASCII_ART_use = art.text2art("Qanat", font="tarty4")
+message_version = ASCII_ART_use + \
+        "\n\n%(prog)s, version %(version)s\n" + \
+        "Minimal experience management system.\n" + \
+        "Author: %s\n" % rich.markup.escape("Ammar Mian") + \
+        "License: %s\n" % rich.markup.escape("GNU AGPLv3") +\
+        "Source: %s\n" % rich.markup.escape(
+                "https://github.com/AmmarMian/qanat")
 
 
 def check_cwd_is_qanat():
@@ -34,7 +34,7 @@ def check_cwd_is_qanat():
 
 
 @click.group()
-@click.version_option(message=ASCII_ART_use + "%(prog)s, version %(version)s")
+@click.version_option(message=message_version, prog_name="Qanat")
 def main(args=None):
     """Minimal experience management system."""
     return 0
