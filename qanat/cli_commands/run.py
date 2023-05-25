@@ -272,7 +272,22 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
         # Run action
         # TODO: pass arguments to action with input
         logger.info(f"Run action {action_name} on run {run.id}")
-        command_action(experiment_name, action_name, run.id, None)
+        group_no = rich.prompt.Prompt.ask(
+                "Group number to run the action on "
+                "(default execute at run storage level)",
+                default=None, show_default=True)
+        if group_no is not None:
+            group_no = int(group_no)
+        arguments = rich.prompt.Prompt.ask("Arguments to pass to the action",
+                                           default=None, show_default=True)
+        if arguments is not None:
+            ctx = click.Context(click.Command(action_name), info_name=action_name)
+            ctx.args = arguments.split(' ')
+        else:
+            ctx = None
+
+        command_action(experiment_name, action_name,
+                       run.id, ctx, group_no)
 
     else:
         raise ValueError(f"Choice {menu_entry} not recognized")

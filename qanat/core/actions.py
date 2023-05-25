@@ -9,7 +9,6 @@ from .database import (
         find_action_id, Action, fetch_groupofparameters_of_run
 )
 from ..utils.logging import setup_logger
-from ..utils.parsing import parse_args_cli, parse_group_parameters
 
 logger = setup_logger()
 
@@ -97,7 +96,7 @@ class ActionExecutionHandler:
                         f'{self.experiment.name}')
 
         if ctx is not None:
-            args = parse_group_parameters(parse_args_cli(ctx)[0][0])
+            args = ctx.args
         else:
             args = []
 
