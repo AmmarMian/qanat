@@ -1,11 +1,11 @@
 import os
+import sys
 from sqlalchemy.orm import sessionmaker
 import subprocess
-import rich
 import rich_click as click
 from .database import (
         get_experiment_of_run, RunOfAnExperiment,
-        find_action_id, Action
+        find_action_id, Action, fetch_groupofparameters_of_run
 )
 from ..utils.logging import setup_logger
 from ..utils.parsing import parse_args_cli, parse_group_parameters
@@ -25,13 +25,25 @@ class ActionExecutionHandler:
         self.session_maker = database_sessionmaker
         self.experiment_name = experiment_name
         self.run_id = run_id
+
         self.group_no = group_no
         Session = self.session_maker()
         self.action_id = find_action_id(
             Session, action_name, experiment_name)
+        self.group_parameters = [group.values for group in
+                                 fetch_groupofparameters_of_run(
+                                  Session, run_id)]
+
+        if self.group_no is not None:
+            if self.group_no >= len(self.group_parameters):
+                logger.error(
+                    f'Group {self.group_no} not found')
+                sys.exit(-1)
 
         if self.action_id == -1:
-            raise AttributeError(f'Action {action_name} not found')
+            logger.error(
+                f'Action {action_name} not found')
+            sys.exit(-1)
 
         self.action = Session.query(Action).get(
             self.action_id
@@ -51,9 +63,18 @@ class ActionExecutionHandler:
         :param ctx: click context
         :type ctx: click.Context
         """
-        logger.info(f"Executing action '{self.action.name}' "
-                    f'on run {self.run_id} of experiment '
-                    f'{self.experiment.name}')
+
+        if self.group_no is not None:
+            params = self.group_parameters[self.group_no]
+            logger.info(f"Executing action '{self.action.name}' "
+                        f'on run {self.run_id} of experiment '
+                        f'{self.experiment.name} '
+                        f'for group {self.group_no}:\n'
+                        f'{params}')
+        else:
+            logger.info(f"Executing action '{self.action.name}' "
+                        f'on run {self.run_id} of experiment '
+                        f'{self.experiment.name}')
 
         if ctx is not None:
             args = parse_group_parameters(parse_args_cli(ctx)[0][0])
@@ -72,8 +93,8 @@ class ActionExecutionHandler:
 
         logger.debug(f'Action arguments: {args}')
         logger.info(
-            'Action command: '  + \
+            'Action command: ' +
             " ".join(self.command_base + args + storage_path_command))
 
-        subprocess.run(self.command_base + args + \
+        subprocess.run(self.command_base + args +
                        storage_path_command)
