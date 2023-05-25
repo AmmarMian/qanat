@@ -1,10 +1,12 @@
 <a name="readme-top"></a>
 # Qanat (Work in progress)
 
-▒█▀▀█ █▀▀█ █▀▀▄ █▀▀█ ▀▀█▀▀ 
-▒█░▒█ █▄▄█ █░░█ █▄▄█ ░░█░░ 
-░▀▀█▄ ▀░░▀ ▀░░▀ ▀░░▀ ░░▀░░ 
 
+```
+▒█▀▀█ █▀▀█ █▀▀▄ █▀▀█ ▀▀█▀▀
+▒█░▒█ █▄▄█ █░░█ █▄▄█ ░░█░░
+░▀▀█▄ ▀░░▀ ▀░░▀ ▀░░▀ ░░▀░░
+```
 
 Qanat is a muinimal CLI based experiment tracking tool that allows to run, monitor and analyse command-line programs that accept arguments. It is still in construction.
 
