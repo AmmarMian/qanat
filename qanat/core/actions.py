@@ -1,6 +1,7 @@
 import os
 import sys
 from sqlalchemy.orm import sessionmaker
+import git
 import subprocess
 import rich_click as click
 from .database import (
@@ -53,6 +54,25 @@ class ActionExecutionHandler:
         self.run = Session.query(
                 RunOfAnExperiment).get(run_id)
         Session.close()
+
+        # Check if action executable didn't change from
+        # when the run was created
+        run_commit = self.run.commit_sha
+        repo = git.Repo(os.getcwd())
+        repo_commit = repo.head.commit.hexsha
+        if run_commit != repo_commit:
+            logger.info(
+                f'Action executable changed from when '
+                f'the run was created. '
+                f'Run commit: {run_commit}, '
+                f'current commit: {repo_commit}'
+            )
+            # Show git diff on the action executable
+            diff = repo.git.diff(
+                run_commit, repo_commit,
+                self.action.executable
+            )
+            logger.info(f'Git diff:\n{diff}')
 
         self.command_base = [self.action.executable_command,
                              self.action.executable]
