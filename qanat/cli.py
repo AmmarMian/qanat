@@ -242,12 +242,17 @@ def experiment_run_explore(experiment_name, run_id):
 @click.argument("experiment_name", type=click.STRING, required=True)
 @click.argument("action_name", type=click.STRING, required=True)
 @click.argument("run_id", type=int, required=True)
+@click.option("--group_no", type=int, required=False, default=None,
+              help="Group number to run action on when "
+              "several groups are present in the run.")
 @click.pass_context
-def experiment_action(ctx, experiment_name, action_name, run_id):
+def experiment_action(ctx, experiment_name, action_name, run_id,
+                      group_no):
     """Run an action on a run of an experiment.
     Additional option args can be passed to the action after
     experiment and action name."""
-    experiment.command_action(experiment_name, action_name, run_id, ctx)
+    experiment.command_action(experiment_name, action_name, run_id, ctx,
+                              group_no)
 
 
 # Subcommands: dataset

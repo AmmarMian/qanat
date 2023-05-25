@@ -20,10 +20,12 @@ class ActionExecutionHandler:
 
     def __init__(self, database_sessionmaker: sessionmaker,
                  run_id: int, action_name: str,
-                 experiment_name: str):
+                 experiment_name: str,
+                 group_no: int = None,):
         self.session_maker = database_sessionmaker
         self.experiment_name = experiment_name
         self.run_id = run_id
+        self.group_no = group_no
         Session = self.session_maker()
         self.action_id = find_action_id(
             Session, action_name, experiment_name)
@@ -57,7 +59,16 @@ class ActionExecutionHandler:
             args = parse_group_parameters(parse_args_cli(ctx)[0][0])
         else:
             args = []
-        storage_path_command = ["--storage_path", self.run.storage_path]
+
+        if self.group_no is not None:
+            folder = os.path.join(
+                self.run.storage_path,
+                f'group_{self.group_no}'
+            )
+        else:
+            folder = self.run.storage_path
+
+        storage_path_command = ["--storage_path", folder]
 
         logger.debug(f'Action arguments: {args}')
         logger.info(

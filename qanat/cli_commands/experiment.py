@@ -45,7 +45,8 @@ logger = setup_logger()
 # Command Action
 # --------------------------------------------------------
 def command_action(experiment_name: str, action_name: str,
-                   run_id: int, ctx: click.Context = None):
+                   run_id: int, ctx: click.Context = None,
+                   group_no: int = None):
     """Execute action on a run of an experiment.
 
     :param experiment_name: Name of the experiment
@@ -55,6 +56,12 @@ def command_action(experiment_name: str, action_name: str,
     :param type: str
 
     :param run_id: ID of the run
+    :param type: int
+
+    :param ctx: Click context
+    :param type: click.Context
+
+    :param group_no: Group number
     :param type: int
     """
 
@@ -82,7 +89,8 @@ def command_action(experiment_name: str, action_name: str,
 
     # Execute action
     action_handler = ActionExecutionHandler(
-        session, run_id, action_name, experiment_name)
+        session, run_id, action_name, experiment_name,
+        group_no)
     action_handler.execute_action(ctx)
 
 
