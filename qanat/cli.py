@@ -104,9 +104,17 @@ def experiment_list():
 
 
 @experiment_main.command(name="new")
-def experiment_new():
+@click.option('--prompt', '-p', is_flag=True,
+              default=True, help='Prompt for adding experiment.')
+@click.option('--file', '-f', type=click.Path(exists=True),
+              required=False, help='Path to a YAML file'
+              'containing the experiment definition.')
+def experiment_new(prompt, file):
     """Create new experiment."""
-    experiment.command_add_prompt()
+    if file is not None:
+        experiment.command_new_experiment_from_yaml(file)
+    else:
+        experiment.command_add_prompt()
 
 
 @experiment_main.command(name="status")

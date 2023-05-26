@@ -15,6 +15,7 @@ from rich import prompt
 from rich.console import Console
 import rich_click as click
 import sqlalchemy
+import yaml
 from ..utils.logging import setup_logger
 from ..core.database import (
     open_database, add_experiment, find_experiment_id,
@@ -97,6 +98,83 @@ def command_action(experiment_name: str, action_name: str,
 # --------------------------------------------------------
 # Command Add
 # --------------------------------------------------------
+def command_new_experiment_from_yaml(yaml_file: str):
+    """Add new experiment to the database
+    from a yaml file.
+
+    :param yaml_file: Path to the yaml file
+    :param type: str
+    """
+    if not os.path.exists(yaml_file):
+        logger.error("Yaml file does not exist")
+        return
+
+    with open(yaml_file, 'r') as f:
+        experiment = yaml.safe_load(f)
+
+    engine, Base, session = open_database('.qanat/database.db')
+    Session = session()
+
+    # Check if experiment already exists
+    if find_experiment_id(Session, experiment['name']) != -1:
+        logger.error("Experiment already exists")
+        return
+
+    # Check if datasets exist
+    if 'datasets' in experiment:
+        for dataset in experiment['datasets']:
+            if find_dataset_id(Session, dataset) == -1:
+                logger.error(f"Dataset {dataset} does not exist")
+                return
+    else:
+        experiment['datasets'] = []
+
+    # Check if tags exist
+    if 'tags' in experiment:
+        for tag in experiment['tags']:
+            if find_tag_id(Session, tag) == -1:
+                logger.info(f'tag {tag} does not exist'
+                            ' and will be added to the database')
+                add_tag(Session, tag, "")
+                Session.commit()
+    else:
+        experiment['tags'] = []
+
+    # Add experiment
+    add_experiment(Session, experiment['path'], experiment['name'],
+                   experiment['description'], experiment['executable'],
+                   experiment['executable_command'], experiment['tags'],
+                   experiment['datasets'])
+    Session.commit()
+
+    logger.info("Experiment added successfully")
+
+    # Add actions
+    if 'actions' in experiment:
+        experiment_id = find_experiment_id(Session, experiment['name'])
+        for action in experiment['actions']:
+
+            # Check if action already exists for the experiment
+            if Session.query(Base.classes.Action).filter_by(
+                    name=action['name'],
+                    experiment_id=experiment_id).count() > 0:
+                logger.error(
+                        f"Action {action['name']} already "
+                        "exists for the experiment")
+                return
+
+        # Add action
+        add_action(Session, action['name'], action['command'],
+                   action['executable'], action['executable_command'],
+                   experiment['name'])
+        Session.commit()
+
+        logger.info("Actions added successfully")
+
+    Session.commit()
+    Session.close()
+
+
 def command_add_prompt():
     """Add experiment from prompt"""
 

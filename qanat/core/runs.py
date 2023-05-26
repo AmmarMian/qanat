@@ -19,7 +19,7 @@ import psutil
 import rich
 from rich.progress import (
         Progress, SpinnerColumn, BarColumn, TextColumn
-)
+        )
 import yaml
 from .database import (
         get_experiment_of_run, RunOfAnExperiment,
@@ -32,6 +32,7 @@ from ..utils.logging import setup_logger
 from ..utils.parsing import (
         parse_group_parameters,
         get_absolute_path)
+from ..utils.misc import reverse_readline
 logger = setup_logger()
 
 try:
@@ -63,6 +64,13 @@ def get_progress(repertory_path: str) -> float:
     progress_path = os.path.join(repertory_path, "progress.txt")
     if not os.path.exists(progress_path):
         return None
+
+    # If last line contains keyword "finished"
+    # then the run is finished
+    reader = reverse_readline(progress_path)
+    last_line = next(reader)
+    if 'finished' in last_line:
+        return 100
 
     # First line to parse gives the total count
     # Then each line gives a count progress
@@ -280,12 +288,16 @@ class RunExecutionHandler:
         repertories = info['repertories']
 
         # Check if all repertories have a progress file
+        repertories_with_progress = []
         for repertory in repertories:
-            if not os.path.exists(os.path.join(repertory, 'progress.txt')):
-                return None
+            if os.path.exists(os.path.join(repertory, 'progress.txt')):
+                repertories_with_progress.append(repertory)
+
+        if len(repertories_with_progress) == 0:
+            return None
 
         progress = 0
-        for repertory in repertories:
+        for repertory in repertories_with_progress:
             try:
                 progress += get_progress(repertory)
             except Exception as e:
@@ -685,7 +697,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
 
                 f.write(f'echo "Moving to repertory {self.working_dir}"\n')
                 f.write(f'cd {self.working_dir}\n\n')
-                f.write(f'pwd\n')
+                f.write('pwd\n')
 
                 f.write(f'echo "Running command: {str_command}"\n')
                 f.write(str_command + '\n\n')
