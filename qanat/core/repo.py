@@ -60,12 +60,6 @@ class QanatRepertory:
         self.path = path
         self.logger = setup_logger()
 
-        # Asking about result directory
-        Prompt = prompt.Prompt()
-        self.result_dir_path = Prompt.ask(
-                "Where do you want to store the results?",
-                default=os.path.join(self.path, "results"))
-
     def check_exists_qanat(self):
         """Check if the Qanat repertory exists.
 
@@ -99,8 +93,17 @@ class QanatRepertory:
         self.logger.info("Checking if repertory is a git repository.")
         return os.path.exists(os.path.join(self.path, ".git"))
 
-    def iniate_creation(self):
+    def iniate_creation(self, yes):
         """Initiate the creation of the Qanat repertory."""
+
+        # Asking about result directory
+        Prompt = prompt.Prompt()
+        if not yes:
+            self.result_dir_path = Prompt.ask(
+                "Where do you want to store the results?",
+                default=os.path.join(self.path, "results"))
+        else:
+            self.result_dir_path = os.path.join(self.path, "results")
 
         should_commit = False
 
@@ -118,7 +121,7 @@ class QanatRepertory:
         # .git repertory
         if not self.check_git():
             self.logger.warning("Repertory is not a git repository.")
-            if Confirm.ask("Do you want to create a git repository?"):
+            if yes or Confirm.ask("Do you want to create a git repository?"):
                 self.logger.info("Creating git repository.")
                 git.Repo.init(self.path)
                 should_gitignore = True
@@ -217,7 +220,7 @@ class QanatRepertory:
 
         # Commit the changes if user want to
         if should_commit:
-            if Confirm.ask("Do you want to commit the changes?"):
+            if yes or Confirm.ask("Do you want to commit the changes?"):
                 self.logger.info("Commiting the creation of qanat.")
                 repo = git.Repo(self.path)
                 repo.index.add([".gitignore"])

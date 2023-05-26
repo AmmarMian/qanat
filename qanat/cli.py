@@ -50,9 +50,10 @@ def status_main():
 
 @main.command()
 @click.argument("directory", type=click.Path(exists=True), required=True)
-def init(directory):
+@click.option('-y', '--yes', is_flag=True, help="Answer yes to all questions.")
+def init(directory, yes):
     """Initialize experiment directory."""
-    init_qanat(directory)
+    init_qanat(directory, yes)
 
 
 @main.group(name="experiment")

@@ -11,11 +11,14 @@ from ..core.repo import QanatRepertory, check_directory_is_qanat
 from ..utils.logging import setup_logger
 
 
-def init_qanat(path):
+def init_qanat(path, yes=False):
     """Initialize the Qanat repertory.
 
     :param path: The path to the Qanat repertory.
     :type path: str
+
+    :param yes: If True, the command will not ask for confirmation.
+    :type yes: bool
     """
     logger = setup_logger()
     if check_directory_is_qanat(path):
@@ -23,5 +26,5 @@ def init_qanat(path):
         return
     logger.info("Initializing Qanat repertory.")
     qanat_repo = QanatRepertory(path)
-    qanat_repo.iniate_creation()
+    qanat_repo.iniate_creation(yes=yes)
     logger.info("Qanat repertory initialized.")
