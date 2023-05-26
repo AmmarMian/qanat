@@ -167,11 +167,12 @@ def command_new_experiment_from_yaml(yaml_file: str):
                         "exists for the experiment")
                 return
 
-        # Add action
-        add_action(Session, action_info['name'], action_info['description'],
-                   action_info['executable'],
-                   action_info['executable_command'],
-                   experiment['name'])
+            # Add action
+            add_action(Session, action_info['name'],
+                       action_info['description'],
+                       action_info['executable'],
+                       action_info['executable_command'],
+                       experiment['name'])
         Session.commit()
 
         logger.info("Actions added successfully")
