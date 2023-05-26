@@ -25,7 +25,7 @@ from ..core.database import (
     fetch_datasets_of_experiment, fetch_runs_of_experiment,
     add_action, fetch_tags_of_run, add_tag,
     fetch_actions_of_experiment,
-    update_experiment, delete_action, Experiment,
+    update_experiment, delete_action, Experiment, Action,
     update_run_progress)
 from ._constants import (
     EXPERIMENT_NAME, EXPERIMENT_DESCRIPTION, EXPERIMENT_PATH,
@@ -154,9 +154,13 @@ def command_new_experiment_from_yaml(yaml_file: str):
         experiment_id = find_experiment_id(Session, experiment['name'])
         for action in experiment['actions']:
 
+            action_info = action.values()
+            action_info = list(action_info)
+            action_info = action_info[0]
+
             # Check if action already exists for the experiment
-            if Session.query(Base.classes.Action).filter_by(
-                    name=action['name'],
+            if Session.query(Action).filter_by(
+                    name=action_info['name'],
                     experiment_id=experiment_id).count() > 0:
                 logger.error(
                         f"Action {action['name']} already "
@@ -164,8 +168,9 @@ def command_new_experiment_from_yaml(yaml_file: str):
                 return
 
         # Add action
-        add_action(Session, action['name'], action['command'],
-                   action['executable'], action['executable_command'],
+        add_action(Session, action_info['name'], action_info['description'],
+                   action_info['executable'],
+                   action_info['executable_command'],
                    experiment['name'])
         Session.commit()
 
