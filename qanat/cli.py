@@ -29,7 +29,8 @@ message_version = ASCII_ART_use + \
 def check_cwd_is_qanat():
     """Check if current working directory is a Qanat repertory."""
     if not check_directory_is_qanat('./'):
-        click.echo("Current working directory is not a Qanat repertory.")
+        rich.print("[bold red] :warning: Current "
+                   "working directory is not a Qanat repertory.")
         sys.exit(1)
 
 
@@ -54,6 +55,19 @@ def status_main():
 def init(directory, yes):
     """Initialize experiment directory."""
     init_qanat(directory, yes)
+
+
+def get_autocomplete_experiment_command(ctx, args, incomplete):
+    """Get autocomplete for experiment command."""
+    commands = [('list', 'List all experiments.'),
+                ('new', 'Create new experiment.'),
+                ('status', 'Show status of all runs from an experiment.'),
+                ('delete', 'Delete experiment.'),
+                ('update', 'Update experiment.'),
+                ('run', 'Run experiment.'),
+                ('rerun', 'Rerun a single run with exact same environment')
+                ]
+    return [k for k, v in commands if incomplete in k]
 
 
 @main.group(name="experiment")
