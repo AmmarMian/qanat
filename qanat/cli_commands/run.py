@@ -47,7 +47,8 @@ from ..core.runs import (
         LocalMachineExecutionHandler, HTCondorExecutionHandler)
 from ..utils.logging import setup_logger
 from ..utils.parsing import (
-    parse_args_cli
+    parse_args_cli, parse_positional_optional_arguments,
+    parse_args_string, parse_yaml_command_file
 )
 from .experiment import command_action
 from ..utils.misc import walk_directory
@@ -740,6 +741,7 @@ def launch_run_experiment(experiment_name: str,
                           tags: list = [],
                           container_path: str = None,
                           commit_sha: str = None,
+                          param_file: str = None,
                           parsed_parameters: list = None,
                           runner_params: dict = None) -> int:
     """Launch the run of the experiment with designated runner.
@@ -774,6 +776,10 @@ def launch_run_experiment(experiment_name: str,
 
     :param commit_sha: The commit sha at which the run is launched.
     :type commit_sha: str
+
+    :param param_file: The path to the parameter file when groups of
+                       commands are given in a file.
+    :type param_file: str
 
     :param parsed_parameters: The parsed parameters, for a rerun
     :type parsed_parameters: dict
@@ -864,6 +870,10 @@ def launch_run_experiment(experiment_name: str,
             parse_args_cli(ctx, groups_of_parameters,
                            range_of_parameters)
 
+    # Deal with param_file which override the parsed parameters
+    if param_file is not None:
+        parsed_parameters = parse_yaml_command_file(param_file)
+
     # Check whether storage_path is not None
     if storage_path is None:
         # Get the storage path from the config.yaml
@@ -896,6 +906,7 @@ def launch_run_experiment(experiment_name: str,
             tags, runner, container_path, runner_params
             )
     run_id = run.id
+    logger.info(f"Run {run_id} created.")
 
     # Create the execution handler
     if runner == "local":

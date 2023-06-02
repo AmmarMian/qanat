@@ -176,6 +176,8 @@ def experiment_rerun(name, run_id):
               help="Runner to use for experiment.")
 @click.option("--container", default=None, type=click.STRING,
               help="Container to use for experiment.")
+@click.option("--param_file", "-f", default=None, type=click.STRING,
+              help="File containing params to run experiment (one per line).")
 @click.option("--group_param", "-g", default=None, type=click.STRING,
               help="Group of parameters to run.", multiple=True)
 @click.option("--range_param", "-r", default=None, type=click.STRING,
@@ -195,7 +197,7 @@ def experiment_rerun(name, run_id):
 # add-unspecified-options-to-cli-command-using-python-click
 def experiment_run(ctx, name, runner, group_param, range_param,
                    storage_path, tag, description, container,
-                   commit_sha):
+                   commit_sha, param_file):
     """Run an experiment with additional positional and option args.\n
     [bold red]WARNING: The following options are not available
     for your executable command:[/bold red]\n
@@ -206,6 +208,8 @@ def experiment_run(ctx, name, runner, group_param, range_param,
     * [bold yellow]--submit_template[/bold yellow] for htcondor runner,
     path to the submit template to use or name of the submit template in the
     config file.\n
+    * [bold yellow]--param_file[/bold yellow] to specify a file containing
+    parameters to run as a single run.\n
     * [bold yellow]--group_param[/bold yellow] to specify group of parameters
     to run as the same run.\n
     * [bold yellow]--range_param[/bold yellow] to specify to create groups of
@@ -220,7 +224,7 @@ def experiment_run(ctx, name, runner, group_param, range_param,
     """
     run.launch_run_experiment(
             name, ctx, group_param, range_param, runner,
-            storage_path, description, tag, container, commit_sha)
+            storage_path, description, tag, container, commit_sha, param_file)
 
 
 @experiment_main.command(

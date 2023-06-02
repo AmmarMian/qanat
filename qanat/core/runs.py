@@ -232,15 +232,18 @@ class RunExecutionHandler:
         # Saving info about the run in a yaml file
         # To be able to resume the run later or check
         # the status of the run
+        self.write_groups_info()
+
         info = {'run_id': self.run_id,
                 'experiment_id': self.experiment.id,
                 'executable': self.experiment.executable,
                 'executable_command': self.experiment.executable_command,
                 'storage_path': self.run.storage_path,
-                'commands': self.commands,
+                'commands': [" ".join([str(c) for c in command])
+                             for command in self.commands],
                 'groups_of_parameters': self.groups_of_parameters,
                 'repertories': self.repertories,
-                'working_direcotry': self.working_dir}
+                'working_directory': self.working_dir}
         if self.commit_sha is not None:
             info['commit_sha'] = self.commit_sha
         else:
@@ -250,6 +253,16 @@ class RunExecutionHandler:
                                'info.yaml'), 'w') as f:
             yaml.dump(info, f)
         Session.close()
+
+    def write_groups_info(self):
+        """Write group information in the repertory"""
+
+        for command, group_of_parameters, repertory in zip(
+                self.commands, self.groups_of_parameters, self.repertories):
+            group_info = {'command': " ".join([str(c) for c in command]),
+                          'parameters': group_of_parameters}
+            with open(os.path.join(repertory, 'group_info.yaml'), 'w') as f:
+                yaml.dump(group_info, f)
 
     def parse_yaml_file(self) -> dict:
         """Parse YAML info file
@@ -370,6 +383,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
             # Print list of commands
             rich.print('[bold]List of commands to run:[/bold]')
             for command in self.commands:
+                command = [str(c) for c in command]
                 rich.print('- [bold]'+' '.join(command)+'[/bold]')
 
             processes = []
@@ -407,10 +421,12 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                     logger.info(f"Running {i+1}/{len(commands_sequences)} "
                                 "sequence of commands:")
                     for command in command_sequence:
-                        logger.info("- " + " ".join(command))
+                        command_str = " ".join([str(c) for c in command])
+                        logger.info(f"- {command_str}")
 
                     for command, repertory in zip(command_sequence,
                                                   repertory_sequence):
+                        command = [str(c) for c in command]
                         stdout_file = open(os.path.join(repertory,
                                                         'stdout.txt'), 'w')
                         stderr_file = open(os.path.join(repertory,
@@ -482,7 +498,8 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
             with self.progress as progress:
                 task = progress.add_task("Running..", total=len(self.commands))
                 for i, command in enumerate(self.commands):
-                    logger.info("Running '" + " ".join(command) + "'")
+                    command_str = " ".join([str(x) for x in command])
+                    logger.info(f"Running '{command_str}'")
                     logger.warning("Do not close the terminal window. "
                                    "It will cancel the execution of the run.")
 
@@ -494,6 +511,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                                                'stderr.txt')
                     stdout = open(stdout_file, 'w')
                     stderr = open(stderr_file, 'w')
+                    command = [str(x) for x in command]
                     process = subprocess.Popen(command, stdout=stdout,
                                                stderr=stderr,
                                                cwd=self.working_dir)
@@ -686,7 +704,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         for command, repertory in zip(self.commands,
                                       self.repertories):
 
-            str_command = " ".join(command)
+            str_command = " ".join([str(x) for x in command])
 
             # Create new executable file
             executable = os.path.join(repertory, 'executable.sh')
