@@ -1007,13 +1007,16 @@ def launch_run_experiment(experiment_name: str,
         commit_sha_dB = commit_sha
 
     # Get the parsed parameters
-    if (parsed_parameters is None) or (runner_params is None):
+    if ctx is not None and \
+            ((parsed_parameters is None) or (runner_params is None)):
         parsed_parameters, runner_params = \
             parse_args_cli(ctx, groups_of_parameters,
                            range_of_parameters)
 
     # Deal with param_file which override the parsed parameters
-    if param_file is not None:
+    # For rerun no need as alredy parsed: we check ctx is None to know
+    # if it is a rerun
+    if (ctx is not None) and (param_file is not None):
         parsed_parameters = parse_yaml_command_file(param_file)
 
     # Check whether storage_path is not None
@@ -1175,4 +1178,4 @@ def rerun_experiment(experiment_name: str,
     # Launch the experiment
     launch_run_experiment(experiment_name, None, None, None, runner,
                           storage_path, description, tags, container_path,
-                          commit_sha, parsed_parameters, runner_params)
+                          commit_sha, None, parsed_parameters, runner_params)
