@@ -361,6 +361,8 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
         if run.comment_file is None or not os.path.exists(run.comment_file):
             if Confirm.ask("Comment file does not exist. Create it?"):
                 command_comment(experiment_name, run.id)
+                run.comment_file = os.path.join(
+                    run.storage_path, 'comment.md')
             else:
                 return
         console = Console()
