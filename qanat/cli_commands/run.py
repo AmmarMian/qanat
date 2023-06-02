@@ -358,7 +358,7 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
 
     # Show comment
     elif menu_entry == "Show comment":
-        if not os.path.exists(run.comment_file):
+        if run.comment_file is None or not os.path.exists(run.comment_file):
             if Confirm.ask("Comment file does not exist. Create it?"):
                 command_comment(experiment_name, run.id)
             else:
@@ -374,9 +374,9 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
     elif menu_entry == "Explore run directory":
         result_directory = pathlib.Path(run.storage_path)
         tree = Tree(
-                f"[bold blue]:open_file_folder: "
-                f"[link file://{result_directory}]{escape(result_directory.name)}",
-                guide_style="bold bright_blue")
+            f"[bold blue]:open_file_folder: "
+            f"[link file://{result_directory}]{escape(result_directory.name)}",
+            guide_style="bold bright_blue")
         walk_directory(result_directory, tree)
         rich.print(tree)
 
