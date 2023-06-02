@@ -358,7 +358,7 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
 
     # Show comment
     elif menu_entry == "Show comment":
-        if not os.path.isfile(run.comment_file):
+        if not os.path.exists(run.comment_file):
             if Confirm.ask("Comment file does not exist. Create it?"):
                 command_comment(experiment_name, run.id)
             else:
