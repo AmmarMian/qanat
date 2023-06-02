@@ -130,6 +130,7 @@ class RunOfAnExperiment(Base):
     container_path = Column(String)
     runner_params = Column(JSONEncodedDict)
     progress = Column(String, server_default="")
+    comment_file = Column(String)
 
 
 @dataclass

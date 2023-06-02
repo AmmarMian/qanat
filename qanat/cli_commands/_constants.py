@@ -30,6 +30,7 @@ PARAMETERS = ":notebook:"
 COMMIT = ":bookmark_tabs:"
 CONTAINER = ":package:"
 PROGRESS = ":hourglass_flowing_sand:"
+COMMENT = ":pencil:"
 
 # --------------------------------------------------------
 # Experiment CLI Constants

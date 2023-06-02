@@ -260,6 +260,17 @@ def experiment_run_explore(experiment_name, run_id):
 
 
 @experiment_main.command(
+    name="run_comment",
+)
+@click.argument("experiment_name", type=click.STRING,
+                required=True)
+@click.argument("run_id", type=int, required=True)
+def experiment_run_comment(experiment_name, run_id):
+    """Comment run of an experiment."""
+    run.command_comment(experiment_name, run_id)
+
+
+@experiment_main.command(
     name="action",
     context_settings=dict(
         ignore_unknown_options=True,
@@ -316,14 +327,17 @@ def show():
 
 
 @config_main.command()
-@click.argument("file", type=click.Path(exists=True))
+@click.argument("file", type=click.Path(exists=True),
+                required=False)
 def edit(file):
     """Edit configuration with YAML file."""
 
-    # Check whether YAML file
-    if not file.endswith(".yaml"):
-        rich.print("[bold red]Configuration file must be YAML file.")
-        return 1
+
+    if file is not None:
+        # Check whether YAML file
+        if not file.endswith(".yaml"):
+            rich.print("[bold red]Configuration file must be YAML file.")
+            return 1
     config.command_edit(file)
 
 

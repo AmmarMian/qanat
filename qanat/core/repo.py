@@ -93,6 +93,31 @@ class QanatRepertory:
         self.logger.info("Checking if repertory is a git repository.")
         return os.path.exists(os.path.join(self.path, ".git"))
 
+    def handle_default_editor(self, yes):
+        """Handle the default editor used for modifying comments/documents."""
+
+        if not yes:
+            # Asking about default editor
+            Prompt = prompt.Prompt()
+            if Confirm.ask("Do you want to set a default editor?"):
+                self.logger.info("Setting default editor.")
+                self.default_editor = Prompt.ask(
+                        "What is your default editor?",
+                        default="vim")
+            else:
+                self.logger.info("Not setting default editor.")
+                self.default_editor = None
+        else:
+            self.logger.info("Setting default editor to vim.")
+            self.default_editor = "vim"
+
+        # Writing to config.yaml
+        with open(os.path.join(self.qanat_dir_path, "config.yaml"), "r") as f:
+            config = yaml.safe_load(f)
+        config["default_editor"] = self.default_editor
+        with open(os.path.join(self.qanat_dir_path, "config.yaml"), "w") as f:
+            yaml.safe_dump(config, f)
+
     def iniate_creation(self, yes):
         """Initiate the creation of the Qanat repertory."""
 
@@ -182,6 +207,10 @@ class QanatRepertory:
                               "w") as f:
                         yaml.dump(config, f, default_flow_style=False)
 
+        # Ask about default editor
+        self.handle_default_editor(yes)
+
+        # Add results directory to git if needed
         if self.result_dir_path.startswith(self.path):
             should_add_results = True
 

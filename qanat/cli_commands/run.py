@@ -8,6 +8,7 @@
 #        qanat experiment
 # =========================================
 
+import sys
 import os
 import pathlib
 import time
@@ -16,7 +17,9 @@ import sqlalchemy
 import yaml
 import rich_click as click
 import rich
-from rich.filesize import decimal
+from rich.prompt import Confirm
+from rich.console import Console
+from rich.markdown import Markdown
 from rich.markup import escape
 from rich.tree import Tree
 import git
@@ -29,7 +32,7 @@ from ._constants import (
         RUN_LAUNCH_DATE, PARAMETERS,
         ID, DESCRIPTION, PATH, TAGS,
         STATUS, RUNNER, COMMIT, RUN_METRIC,
-        CONTAINER, PROGRESS
+        CONTAINER, PROGRESS, COMMENT
 )
 from ..core.database import (
      open_database,
@@ -56,6 +59,120 @@ from ..utils.misc import walk_directory
 logger = setup_logger()
 
 
+# ==============================
+# Run comments stuff
+# ==============================
+def create_comment_file(session: sqlalchemy.orm.Session,
+                        experiment_name: str,
+                        run: RunOfAnExperiment) -> str:
+    """Create a comment file for a run.
+
+    :param session: The database session.
+    :type session: sqlalchemy.orm.Session
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :param run: The run to create the comment file for.
+    :type run: RunOfAnExperiment
+
+    :return: The path to the comment file.
+    :rtype: str
+    """
+
+    comment_file = os.path.join(run.storage_path, "comment.md")
+    with open(comment_file, 'w') as f:
+        f.write(
+                f"# Comment for run {run.id} of "
+                f"experiment \"{experiment_name}\"\n"
+        )
+
+        # Horizontal line
+        f.write("\n---\n\n")
+
+        f.write(f"Launched on {run.launched}\n")
+        f.write(f"Tags: {' '.join(fetch_tags_of_run(session, run.id))}\n")
+        f.write(f"Description: {run.description}\n")
+        if run.finished is not None:
+            f.write(f"Finished on {run.finished}\n")
+        if run.metric is not None:
+            f.write(f"Metric: {run.metric}\n")
+
+        # Horizontal line
+        f.write("\n---\n\n")
+
+    # Add comment file to database
+    run.comment_file = comment_file
+    session.commit()
+
+    return comment_file
+
+
+def edit_comment_file(comment_file: str):
+    """Edit a comment file.
+
+    :param comment_file: The path to the comment file.
+    :type comment_file: str
+    """
+    with open('.qanat/config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    if 'default_editor' in config or config['default_editor'] is not None:
+        editor = config['default_editor']
+    else:
+        logger.error("No default editor found in config file")
+        logger.error("Before proceeding, please specify a default_editor "
+                     "in the config file: .qanat/config.yaml")
+        sys.exit(1)
+    subprocess.call([editor, comment_file])
+
+
+def command_comment(experiment_name: str, run_id: int):
+    """Command comment.
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :param run_id: The id of the run.
+    :type run_id: int
+    """
+    # Open database
+    engine, Base, Session = open_database(".qanat/database.db")
+    session = Session()
+
+    # Check if experiment exists
+    experiment_id = find_experiment_id(session, experiment_name)
+    if experiment_id == -1:
+        logger.error(f"Experiment {experiment_name} does not exist")
+        return
+
+    # Fetch run
+    run = session.query(RunOfAnExperiment).filter(
+        RunOfAnExperiment.id == run_id).first()
+
+    if run is None:
+        logger.error(f"Run {run_id} does not exist")
+        return
+
+    # Check if run belongs to experiment
+    if run.experiment_id != experiment_id:
+        logger.error(f"Run {run_id} does not belong to experiment "
+                     f"{experiment_name}")
+        return
+
+    # Create comment file if does not exist
+    comment_file = os.path.join(run.storage_path, "comment.md")
+    if not os.path.exists(comment_file):
+        logger.info(f'Creating comment file for run {run_id}')
+        comment_file = create_comment_file(session, experiment_name, run)
+    session.close()
+
+    # Edit comment file
+    edit_comment_file(comment_file)
+
+
+# ==============================
+# Exploring runs stuff
+# ==============================
 def create_menu_entry(
         session: sqlalchemy.orm.Session, run: RunOfAnExperiment) -> str:
     """Create a menu entry for a run.
@@ -108,7 +225,8 @@ def run_explore_menu(session: sqlalchemy.orm.Session, experiment_name: str,
             "[a] Show output(s)",
             "[b] Show error(s)",
             "[c] Show parameters",
-            "[d] Explore run directory"]
+            "[d] Show comment",
+            "[e] Explore run directory"]
 
     if run.runner == 'htcondor':
         menu_entries.append(
@@ -133,6 +251,8 @@ def run_explore_menu(session: sqlalchemy.orm.Session, experiment_name: str,
             return 'Show error(s) of the run with less'
         elif menu_entry == "Show parameters":
             return 'Print parameters used for the run'
+        elif menu_entry == "Show comment":
+            return 'Show comment of the run'
         elif menu_entry == "Explore run directory":
             return 'Explore run directory contents'
         elif menu_entry == "Show HTCondor log(s)":
@@ -160,7 +280,7 @@ def run_explore_menu(session: sqlalchemy.orm.Session, experiment_name: str,
         if choice is None:
             break
         res = parse_choice_explore_menu(session, experiment_name, run, actions,
-                                  menu_entries[choice])
+                                        menu_entries[choice])
         if res == -1:
             break
 
@@ -236,6 +356,20 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
         rich.print(f"  - {PARAMETERS} Parameters:")
         rich.print(grid)
 
+    # Show comment
+    elif menu_entry == "Show comment":
+        if not os.path.isfile(run.comment_file):
+            if Confirm.ask("Comment file does not exist. Create it?"):
+                command_comment(experiment_name, run.id)
+            else:
+                return
+        console = Console()
+        with open(run.comment_file, 'r') as f:
+            comment = f.read()
+        console.print('\n')
+        console.print(Markdown(comment))
+        console.print('\n')
+
     # Explore run directory
     elif menu_entry == "Explore run directory":
         result_directory = pathlib.Path(run.storage_path)
@@ -251,7 +385,7 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
         logger.info(f"Show HTCondor log(s) of run {run.id}")
         storage_path = run.storage_path
         subdirectories = [x for x in os.listdir(storage_path)
-                          if os.path.isdir(os.path.join(storage_path,x))]
+                          if os.path.isdir(os.path.join(storage_path, x))]
         if len(subdirectories) == 0:
             wildcard = f"{storage_path}/log.txt"
         else:
@@ -484,7 +618,8 @@ def search_runs(
         for filter_element, value in current_filter.items():
             if len(value) > 0:
                 values_str = [str(v) for v in value]
-                filter_print += f" :black_medium_square: {filter_element} : " + \
+                filter_print += \
+                    f" :black_medium_square: {filter_element} : " + \
                     f"{', '.join(values_str)}\n"
 
         rich.print(filter_print)
@@ -492,7 +627,8 @@ def search_runs(
 
 
 def prompt_explore_runs(experiment_name: str):
-    """Prompt the user to search for a run of an experiment. And then explore it.
+    """Prompt the user to search for a run of an experiment.
+    And then explore it.
 
     :param experiment_name: The name of the experiment.
     :type experiment_name: str
@@ -521,7 +657,9 @@ def prompt_explore_runs(experiment_name: str):
 
     # Menu to ask if user wants to explore a run by a menu or
     # by doing a search
-    menu = TerminalMenu(["Search", "Menu"], title="How do you want to explore the runs?")
+    menu = TerminalMenu(
+            ["Search", "Menu"],
+            title="How do you want to explore the runs?")
     menu_entry = menu.show()
 
     # If menu
@@ -595,6 +733,8 @@ def explore_run(experiment_name: str, run_id: int):
         rich.print(f"  - {RUN_METRIC} Metric: {run.metric}")
     if run.container_path is not None:
         rich.print(f"  - {CONTAINER} Container path: {run.container_path}")
+    if run.comment_file is not None:
+        rich.print(f"  - {COMMENT} Comment file: {run.comment_file}")
 
     # Show run_explore_menu
     print('\n')
