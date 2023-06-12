@@ -12,7 +12,7 @@ To install Qanat, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install qanat
+    $ pip install git+https://github.com/AmmarMian/qanat
 
 This is the preferred method to install Qanat, as it will always install the most recent stable release.
 
@@ -34,18 +34,10 @@ You can either clone the public repository:
 
     $ git clone git://github.com/ammarmian/qanat
 
-Or download the `tarball`_:
-
-.. code-block:: console
-
-    $ curl -OJL https://github.com/ammarmian/qanat/tarball/master
-
 Once you have a copy of the source, you can install it with:
 
 .. code-block:: console
 
     $ python setup.py install
 
-
 .. _Github repo: https://github.com/ammarmian/qanat
-.. _tarball: https://github.com/ammarmian/qanat/tarball/master
