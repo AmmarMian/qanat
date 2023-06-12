@@ -74,11 +74,12 @@ def get_arguments_yaml_file_content(
     arguments_range = []
     if "varying_args" in parameters_file_content:
         if "groups" in parameters_file_content["varying_args"]:
-            if type_arg in parameters_file_content["varying_args"][
+            arguments_groups = []
+            for group in parameters_file_content["varying_args"][
                     "groups"]:
-                arguments_groups = \
-                        parameters_file_content["varying_args"][
-                                "groups"][type_arg].items()
+                if type_arg in group:
+                    arguments_groups.append(
+                            group[type_arg].items())
 
         if "range" in parameters_file_content["varying_args"]:
             if type_arg in parameters_file_content["varying_args"][
@@ -104,17 +105,30 @@ def check_positional_arguments_compatibility(
     :rtype: bool
     """
 
-    positional_args_items = itertools.chain.from_iterable(
-            get_arguments_yaml_file_content(
-                parameters_file_content, "positional"))
-    positional_args_positions = [pos for pos, _ in positional_args_items]
-    if len(positional_args_positions) == 0:
-        return True
-    elif any([pos < 0 for pos in positional_args_positions]):
-        return False
-    else:
-        return len(positional_args_positions) == \
-                len(set(positional_args_positions))
+    arguments_fixed, arguments_groups, arguments_range = \
+        get_arguments_yaml_file_content(
+                parameters_file_content, "positional")
+
+    # For each group we don't exepct that the same positional
+    # argument is given than the others so we have to check
+    # compatibility between fixed, one group and all range
+    check_ok = True
+    for group in arguments_groups:
+        positional_args_items = itertools.chain.from_iterable(
+                [arguments_fixed, group, arguments_range])
+        positional_args_positions = [pos for pos, _ in positional_args_items]
+        if len(positional_args_positions) == 0:
+            continue
+        elif any([pos < 0 for pos in positional_args_positions]):
+            check_ok = False
+            break
+        else:
+            check_ok = len(positional_args_positions) == \
+                    len(set(positional_args_positions))
+            if not check_ok:
+                break
+
+    return check_ok
 
 
 def check_options_compatibility(
@@ -129,17 +143,30 @@ def check_options_compatibility(
              file content, False otherwise.
     :rtype: bool
     """
+    arguments_fixed, arguments_groups, arguments_range = \
+        get_arguments_yaml_file_content(
+                parameters_file_content, "options")
 
-    options_items = itertools.chain.from_iterable(
-            get_arguments_yaml_file_content(
-                parameters_file_content, "options"))
-    options_names = [name for name, _ in options_items]
-    if len(options_names) == 0:
-        return True
-    elif any([not name.startswith("--") for name in options_names]):
-        return False
-    else:
-        return len(options_names) == len(set(options_names))
+    # For each group we don't exepct that the same positional
+    # argument is given than the others so we have to check
+    # compatibility between fixed, one group and all range
+    check_ok = True
+    for group in arguments_groups:
+        options_items = itertools.chain.from_iterable(
+                [arguments_fixed, group, arguments_range])
+        options_names = [name for name, _ in options_items]
+
+        if len(options_names) == 0:
+            continue
+        elif any([not name.startswith("--") for name in options_names]):
+            check_ok = False
+            break
+        else:
+            check_ok = len(options_names) == len(set(options_names))
+            if not check_ok:
+                break
+
+    return check_ok
 
 
 def parse_yaml_command_file(param_file: str) -> list:
@@ -185,48 +212,38 @@ def parse_yaml_command_file(param_file: str) -> list:
                 logger.error("The range positional argument"
                              f" {pos} {pos_range} is not valid.")
                 sys.exit(1)
-            groups_pos_args.append((pos, list(float_range(*pos_range))))
 
-    # Get the order of the positional arguments (fixed and groups)
-    # by sorting on the position
-    fixed_pos_args_pos = {}
-    groups_pos_args_pos = {}
-    all_pos_args = sorted(fixed_pos_args + groups_pos_args,
-                          key=lambda x: x[0])
-    for i, (pos, _) in enumerate(all_pos_args):
-
-        # Check whether in the fixed positional arguments
-        if pos in [posi for posi, _ in fixed_pos_args]:
-            fixed_pos_args_pos[pos] = i
-
+        # Each combination of group and range added to the list
+        # of groups positional arguments
+        if len(groups_pos_args) == 0:
+            for pos, pos_range in range_pos_args:
+                for value in float_range(*pos_range):
+                    groups_pos_args.append([(pos, value)])
         else:
-            groups_pos_args_pos[pos] = i
+            new_groups_pos_args = []
+            for pos, pos_range in range_pos_args:
+                for value in float_range(*pos_range):
+                    for group in groups_pos_args:
+                        # group is a dict_items object
+                        new_group = {posi: value_group for posi, value_group
+                                     in group}
+                        new_group[pos] = value
+                        new_groups_pos_args.append(new_group.items())
+        groups_pos_args = new_groups_pos_args
 
     # Transform groups positional arguments to fixed positional arguments
     # By concatenating all the possible values of the groups positional
     # arguments using a Cartesian product
     if len(groups_pos_args) > 0:
-
-        # Get the Cartesian product of all the possible values of the
-        # groups positional arguments
-        cartesian_product_group_pos = itertools.product(
-                *[[(pos, value) for value
-                   in values]
-                  for pos, values in groups_pos_args]
-        )
-
         pos_args = []
-        for group_items in cartesian_product_group_pos:
-            group_values = {
-                f'pos_{fixed_pos_args_pos[pos]}': pos_values
-                for pos, pos_values in fixed_pos_args
-            }
-            for pos, value in group_items:
-                group_values[f'pos_{groups_pos_args_pos[pos]}'] = value
-            pos_args.append(group_values)
-
+        for group in groups_pos_args:
+            args_dict = {f'pos_{pos}': value for pos, value in
+                         fixed_pos_args}
+            args_dict.update({f'pos_{pos}': value for pos, value in
+                              group})
+            pos_args.append(args_dict)
     else:
-        pos_args = [{f'pos_{fixed_pos_args_pos[pos]}': value
+        pos_args = [{f'pos_{pos}': value
                      for pos, value in fixed_pos_args}]
 
     # Deal with options
@@ -241,28 +258,33 @@ def parse_yaml_command_file(param_file: str) -> list:
                 logger.error("The range option"
                              f" {opt} {opt_range} is not valid.")
                 sys.exit(1)
-            groups_opt_args.append((opt, list(float_range(*opt_range))))
+
+        # Each combination of group and range added to the list
+        # of groups options. Same as positional arguments
+        if len(groups_opt_args) == 0:
+            for opt, opt_range in range_opt_args:
+                for value in float_range(*opt_range):
+                    groups_opt_args.append([(opt, value)])
+        else:
+            new_groups_opt_args = []
+            for opt, opt_range in range_opt_args:
+                for value in float_range(*opt_range):
+                    for group in groups_opt_args:
+                        new_group = {opti: value_group for opti, value_group
+                                     in group}
+                        new_group[opt] = value
+                        new_groups_opt_args.append(new_group.items())
+            groups_opt_args = new_groups_opt_args
 
     # Transform groups options to fixed options by concatenating all the
     # possible values of the groups options using a Cartesian product
     if len(groups_opt_args) > 0:
 
-        cartesian_product_group_opt = itertools.product(
-                *[[(opt, value) for value
-                   in values]
-                  for opt, values in groups_opt_args]
-        )
-
         opt_args = []
-        for group_items in cartesian_product_group_opt:
-
-            group_values = {
-                opt: value
-                for opt, value in fixed_opt_args
-            }
-            for opt, value in group_items:
-                group_values[opt] = value
-            opt_args.append(group_values)
+        for group in groups_opt_args:
+            args_dict = {opt: value for opt, value in fixed_opt_args}
+            args_dict.update({opt: value for opt, value in group})
+            opt_args.append(args_dict)
 
     else:
         opt_args = [{opt: value
@@ -271,7 +293,7 @@ def parse_yaml_command_file(param_file: str) -> list:
     # Deal with both positional and options
     # We use a Cartesian product to get all the possible combinations
     # of the positional and options arguments
-    # --------------------------------
+    # ----------------------------------------------------------------
 
     # Get the Cartesian product of all the possible values of the
     # positional and options arguments
