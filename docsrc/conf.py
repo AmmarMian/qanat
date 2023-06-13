@@ -108,7 +108,7 @@ html_theme_options = {
         "<em>Qanat is currently in alpha. Use at your own risk.</em>",
     "source_repository": "https://github.com/AmmarMian/qanat",
     "source_branch": "main",
-    "source_directory": "docs/",
+    "source_directory": "docsrc/",
     "light_logo": "qanat_logo_light.svg",
     "dark_logo": "qanat_logo_dark.svg",
 }
