@@ -1,0 +1,1535 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html" /><link rel="search" title="Search" href="../../../search.html" />
+
+    <!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
+        <title>qanat.core.database - Qanat 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #eeffcc;
+  --color-code-foreground: black;
+  --font-stack: Roboto, sans-serif;
+  --font-stack--monospace: Open Sans, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     <em>Qanat is currently in alpha. Use at your own risk.</em> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">Qanat 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo only-light" src="../../../_static/qanat_logo_light.svg" alt="Light Logo"/>
+    <img class="sidebar-logo only-dark" src="../../../_static/qanat_logo_dark.svg" alt="Dark Logo"/>
+  </div>
+  
+  <span class="sidebar-brand-text">Qanat 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../readme.html">Qanat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../usage.html">Usage</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Usage</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage.vocabulary.html">Concepts and vocabulary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage.tutorials.basics.html">Basic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../usage.tutorials.advanced.html">Advanced tutorials</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../usage.cli_reference.html">CLI Reference</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of CLI Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../usage.cli_reference.init.html">qanat init</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../modules.html">qanat</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of qanat</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../qanat.html">qanat package</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of qanat package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../qanat.cli_commands.html">qanat.cli_commands package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../qanat.core.html">qanat.core package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../qanat.utils.html">qanat.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../history.html">History</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <h1>Source code for qanat.core.database</h1><div class="highlight"><pre>
+<span></span><span class="c1"># ========================================</span>
+<span class="c1"># FileName: database.py</span>
+<span class="c1"># Date: 20 avril 2023 - 16:15</span>
+<span class="c1"># Author: Ammar Mian</span>
+<span class="c1"># Email: ammar.mian@univ-smb.fr</span>
+<span class="c1"># GitHub: https://github.com/ammarmian</span>
+<span class="c1"># Brief: Internal database manegement</span>
+<span class="c1"># for Qanat.</span>
+<span class="c1"># =========================================</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="n">Column</span><span class="p">,</span> <span class="n">Integer</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">,</span> <span class="n">DateTime</span><span class="p">,</span>
+        <span class="n">create_engine</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.ext.automap</span> <span class="kn">import</span> <span class="n">automap_base</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm</span> <span class="kn">import</span> <span class="n">sessionmaker</span><span class="p">,</span> <span class="n">Session</span><span class="p">,</span> <span class="n">declarative_base</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.sql</span> <span class="kn">import</span> <span class="n">func</span>
+
+<span class="kn">from</span> <span class="nn">sqlalchemy.types</span> <span class="kn">import</span> <span class="n">TypeDecorator</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">rich.console</span> <span class="kn">import</span> <span class="n">Console</span>
+
+<span class="kn">from</span> <span class="nn">..utils.logging</span> <span class="kn">import</span> <span class="n">setup_logger</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">setup_logger</span><span class="p">()</span>
+
+
+<span class="c1"># ------------------------------------------------------------</span>
+<span class="c1"># Serialisation type for dicts</span>
+<span class="c1"># ------------------------------------------------------------</span>
+<div class="viewcode-block" id="JSONEncodedDict"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.JSONEncodedDict">[docs]</a><span class="k">class</span> <span class="nc">JSONEncodedDict</span><span class="p">(</span><span class="n">TypeDecorator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents an mutable structure as a json-encoded string.&quot;&quot;&quot;</span>
+
+    <span class="n">impl</span> <span class="o">=</span> <span class="n">String</span>
+
+<div class="viewcode-block" id="JSONEncodedDict.process_bind_param"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.JSONEncodedDict.process_bind_param">[docs]</a>    <span class="k">def</span> <span class="nf">process_bind_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">value</span></div>
+
+<div class="viewcode-block" id="JSONEncodedDict.process_result_value"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.JSONEncodedDict.process_result_value">[docs]</a>    <span class="k">def</span> <span class="nf">process_result_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">dialect</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span></div></div>
+
+
+<span class="c1"># ------------------------------------------------------------</span>
+<span class="c1"># Dataclasses for Qanat</span>
+<span class="c1"># ------------------------------------------------------------</span>
+<span class="n">Base</span> <span class="o">=</span> <span class="n">declarative_base</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Experiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.Experiment">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Experiment</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass for type of experiments.&quot;&quot;&quot;</span>
+
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;experiments&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">created</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">server_default</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="n">now</span><span class="p">())</span>
+    <span class="n">updated</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">server_default</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span> <span class="n">onupdate</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="n">now</span><span class="p">())</span>
+    <span class="n">executable</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">executable_command</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Dataset"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.Dataset">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Dataset</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass for eventual datasets used in the project.&quot;&quot;&quot;</span>
+
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;datasets&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">created</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">server_default</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="n">now</span><span class="p">())</span>
+    <span class="n">updated</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">server_default</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span> <span class="n">onupdate</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="n">now</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="Tags"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.Tags">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Tags</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass for tags for both experiments, runs and datasets.&quot;&quot;&quot;</span>
+
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;tags&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Action"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.Action">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Action</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass for actions performed on experiments.&quot;&quot;&quot;</span>
+
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;actions&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;experiments.id&quot;</span><span class="p">))</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">executable</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">executable_command</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">created</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">server_default</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="n">now</span><span class="p">())</span>
+    <span class="n">updated</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">,</span> <span class="n">server_default</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span> <span class="n">onupdate</span><span class="o">=</span><span class="n">func</span><span class="o">.</span><span class="n">now</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="RunOfAnExperiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.RunOfAnExperiment">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">RunOfAnExperiment</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass for runs of experiments.&quot;&quot;&quot;</span>
+
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;runs_of_experiments&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;experiments.id&quot;</span><span class="p">))</span>
+    <span class="n">launched</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">)</span>
+    <span class="n">finished</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">DateTime</span><span class="p">)</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="n">server_default</span><span class="o">=</span><span class="s2">&quot;Not started&quot;</span><span class="p">)</span>
+    <span class="n">storage_path</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">metric</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">commit_sha</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">runner</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">container_path</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
+    <span class="n">runner_params</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">JSONEncodedDict</span><span class="p">)</span>
+    <span class="n">progress</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="n">server_default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">comment_file</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">String</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunsTags"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.RunsTags">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">RunsTags</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass for the link between runs and tags.&quot;&quot;&quot;</span>
+
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;runs_tags&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;runs_of_experiments.id&quot;</span><span class="p">))</span>
+    <span class="n">tag_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;tags.id&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="GroupOfParametersOfARun"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.GroupOfParametersOfARun">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">GroupOfParametersOfARun</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass for groups of parameters used in the run of an</span>
+<span class="sd">    experiment.&quot;&quot;&quot;</span>
+
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;groups_of_parameters&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;runs_of_experiments.id&quot;</span><span class="p">))</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">JSONEncodedDict</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DatasetExperiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.DatasetExperiment">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">DatasetExperiment</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass for the link between experiments and datasets.&quot;&quot;&quot;</span>
+
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;datasets_experiments&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;experiments.id&quot;</span><span class="p">))</span>
+    <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;datasets.id&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ExperimentsTags"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.ExperimentsTags">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ExperimentsTags</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass for the link between experiments and tags.&quot;&quot;&quot;</span>
+
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;experiments_tags&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;experiments.id&quot;</span><span class="p">))</span>
+    <span class="n">tag_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;tags.id&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="DatasetsTags"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.DatasetsTags">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">DatasetsTags</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass for the link between datasets and tags.&quot;&quot;&quot;</span>
+
+    <span class="n">__tablename__</span> <span class="o">=</span> <span class="s2">&quot;datasets_tags&quot;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;datasets.id&quot;</span><span class="p">))</span>
+    <span class="n">tag_id</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">Integer</span><span class="p">,</span> <span class="n">ForeignKey</span><span class="p">(</span><span class="s2">&quot;tags.id&quot;</span><span class="p">))</span></div>
+
+
+<span class="c1"># ------------------------------------------------------------</span>
+<span class="c1"># Initialisation</span>
+<span class="c1"># ------------------------------------------------------------</span>
+<div class="viewcode-block" id="init_database"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.init_database">[docs]</a><span class="k">def</span> <span class="nf">init_database</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize a new database for qanat.</span>
+
+<span class="sd">    :param path: The path to the database.</span>
+<span class="sd">    :type path: str</span>
+
+<span class="sd">    :return: The engine of the database.</span>
+<span class="sd">    :rtype: sqlalchemy.engine.base.Engine</span>
+
+<span class="sd">    :return: The base of the database.</span>
+<span class="sd">    :rtype: sqlalchemy.ext.declarative.api.DeclarativeMeta</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Create the database</span>
+    <span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sqlite:///</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">engine</span><span class="p">,</span> <span class="n">Base</span></div>
+
+
+<div class="viewcode-block" id="open_database"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.open_database">[docs]</a><span class="k">def</span> <span class="nf">open_database</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Open an existing database for qanat.</span>
+
+<span class="sd">    :param path: The path to the database.</span>
+<span class="sd">    :type path: str</span>
+
+<span class="sd">    :return: The engine of the database.</span>
+<span class="sd">    :rtype: sqlalchemy.engine.base.Engine</span>
+
+<span class="sd">    :return: The base of the database.</span>
+<span class="sd">    :rtype: sqlalchemy.ext.declarative.api.DeclarativeMeta</span>
+
+<span class="sd">    :return: The session maker of the database.</span>
+<span class="sd">    :rtype: sqlalchemy.orm.session.sessionmaker</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Open the database with an engine</span>
+    <span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sqlite:///</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">Base</span> <span class="o">=</span> <span class="n">automap_base</span><span class="p">()</span>
+    <span class="n">Base</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">engine</span><span class="p">,</span> <span class="n">reflect</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Create a session maker for use</span>
+    <span class="n">Session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="n">engine</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">engine</span><span class="p">,</span> <span class="n">Base</span><span class="p">,</span> <span class="n">Session</span></div>
+
+
+<span class="c1"># ------------------------------------------------------------</span>
+<span class="c1"># Database filling and updating functions</span>
+<span class="c1"># ------------------------------------------------------------</span>
+<div class="viewcode-block" id="add_experiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.add_experiment">[docs]</a><span class="k">def</span> <span class="nf">add_experiment</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                   <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">executable</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                   <span class="n">executable_command</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;/usr/bin/bash&quot;</span><span class="p">,</span>
+                   <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">datasets</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[])</span> <span class="o">-&gt;</span> <span class="n">Experiment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add an experiment to the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param path: The path to the experiment.</span>
+<span class="sd">    :type path: str</span>
+
+<span class="sd">    :param name: The name of the experiment.</span>
+<span class="sd">    :type name: str</span>
+
+<span class="sd">    :param description: The description of the experiment.</span>
+<span class="sd">    :type description: str</span>
+
+<span class="sd">    :param executable: The path to the executable of the experiment.</span>
+<span class="sd">    :type executable: str</span>
+
+<span class="sd">    :param executable_command: The progrma to use to execute executable.</span>
+<span class="sd">                               Default is &quot;/usr/bin/bash&quot;.</span>
+<span class="sd">    :type executable_command: str.</span>
+
+<span class="sd">    :param tags: The tags (names) of the experiment. Default is [].</span>
+<span class="sd">    :type tags: list</span>
+
+<span class="sd">    :param datasets: The datasets (paths) of the experiment. Default is [].</span>
+<span class="sd">    :type datasets: list</span>
+
+<span class="sd">    :return: The experiment object.</span>
+<span class="sd">    :rtype: qanat.core.dataset.Experiment</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Check if the experiment already exists</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">experiment_id</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Experiment </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> already exists in the database.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Create the experiment</span>
+    <span class="n">experiment</span> <span class="o">=</span> <span class="n">Experiment</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+                            <span class="n">executable</span><span class="o">=</span><span class="n">executable</span><span class="p">,</span>
+                            <span class="n">executable_command</span><span class="o">=</span><span class="n">executable_command</span><span class="p">)</span>
+
+    <span class="c1"># Add the experiment to the database</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">experiment</span><span class="p">)</span>
+
+    <span class="c1"># Add the tags to the experiment</span>
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="n">tag_id</span> <span class="o">=</span> <span class="n">find_tag_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tag_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tag </span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2"> does not exist in the database.&quot;</span>
+                           <span class="s2">&quot; Adding it with no description.&quot;</span><span class="p">)</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="n">Tags</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">tag</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="n">tag_id</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">experiment_tag</span> <span class="o">=</span> <span class="n">ExperimentsTags</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                         <span class="n">tag_id</span><span class="o">=</span><span class="n">tag_id</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">experiment_tag</span><span class="p">)</span>
+
+    <span class="c1"># Add the datasets to the experiment</span>
+    <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
+        <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">find_dataset_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">dataset</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dataset_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset</span><span class="si">}</span><span class="s2"> does not exist in the database.&quot;</span>
+                           <span class="s2">&quot; Please add it to the database before adding it to&quot;</span>
+                           <span class="s2">&quot; the experiment.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">experiment_dataset</span> <span class="o">=</span> <span class="n">DatasetExperiment</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                                   <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">experiment_dataset</span><span class="p">)</span>
+
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">experiment</span></div>
+
+
+<div class="viewcode-block" id="add_dataset"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.add_dataset">[docs]</a><span class="k">def</span> <span class="nf">add_dataset</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[])</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a dataset to the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param path: The path to the dataset.</span>
+<span class="sd">    :type path: str</span>
+
+<span class="sd">    :param name: The name of the dataset.</span>
+<span class="sd">    :type name: str</span>
+
+<span class="sd">    :param description: The description of the dataset.</span>
+<span class="sd">    :type description: str</span>
+
+<span class="sd">    :param tags: The tags (names) of the dataset. Default is [].</span>
+<span class="sd">    :type tags: list</span>
+
+<span class="sd">    :return: The dataset object.</span>
+<span class="sd">    :rtype: qanat.core.dataset.Dataset</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Check if the dataset already exists in the database</span>
+    <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">find_dataset_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="c1"># If the dataset does not exist, add it to the database</span>
+    <span class="k">if</span> <span class="n">dataset_id</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> already exists in the database.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Create the dataset</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">Dataset</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">)</span>
+
+    <span class="c1"># Add the dataset to the database</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+    <span class="c1"># Add the tags to the dataset</span>
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="n">tag_id</span> <span class="o">=</span> <span class="n">find_tag_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tag_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="n">Tags</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">tag</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="n">tag_id</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">dataset_tag</span> <span class="o">=</span> <span class="n">DatasetsTags</span><span class="p">(</span><span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">tag_id</span><span class="o">=</span><span class="n">tag_id</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dataset_tag</span><span class="p">)</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">Dataset</span></div>
+
+
+<div class="viewcode-block" id="add_tag"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.add_tag">[docs]</a><span class="k">def</span> <span class="nf">add_tag</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tags</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a tag to the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param name: The name of the tag.</span>
+<span class="sd">    :type name: str</span>
+<span class="sd">    impl = sqlalchemy.Text(SIZE)</span>
+
+<span class="sd">    :param description: The description of the tag.</span>
+<span class="sd">    :type description: str</span>
+
+<span class="sd">    :return: The tag object.</span>
+<span class="sd">    :rtype: qanat.core.dataset.Tags</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Check if the tag already exists in the database</span>
+    <span class="n">tag_id</span> <span class="o">=</span> <span class="n">find_tag_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="c1"># If the tag does not exist, add it to the database</span>
+    <span class="k">if</span> <span class="n">tag_id</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tag </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> already exists in the database.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Create the tag</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="n">Tags</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">)</span>
+
+    <span class="c1"># Add the tag to the database</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">tag</span></div>
+
+
+<div class="viewcode-block" id="add_action"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.add_action">[docs]</a><span class="k">def</span> <span class="nf">add_action</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+               <span class="n">executable</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">executable_command</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+               <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Action</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add an action to the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param name: The name of the action.</span>
+<span class="sd">    :type name: str</span>
+
+<span class="sd">    :param description: The description of the action.</span>
+<span class="sd">    :type description: str</span>
+
+<span class="sd">    :param executable: The path to the executable of the action.</span>
+<span class="sd">    :type executable: str</span>
+
+<span class="sd">    :param executable_command: The command to run the executable.</span>
+<span class="sd">    :type executable_command: str</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment of the action.</span>
+<span class="sd">    :type experiment_path: str</span>
+
+<span class="sd">    :return: The action object.</span>
+<span class="sd">    :rtype: qanat.core.dataset.Action</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Check if the action already exists in the database</span>
+    <span class="n">action_id</span> <span class="o">=</span> <span class="n">find_action_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># If the action does not exist, add it to the database</span>
+    <span class="k">if</span> <span class="n">action_id</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Action </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> already exists in the database.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Find experiment_id through name</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># Create the action</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span> <span class="n">executable</span><span class="o">=</span><span class="n">executable</span><span class="p">,</span>
+                    <span class="n">executable_command</span><span class="o">=</span><span class="n">executable_command</span><span class="p">,</span>
+                    <span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">)</span>
+
+    <span class="c1"># Add the action to the database</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">action</span></div>
+
+
+<div class="viewcode-block" id="add_run"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.add_run">[docs]</a><span class="k">def</span> <span class="nf">add_run</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+            <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">storage_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">commit_sha</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">parameters_groups</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span>
+            <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[],</span>
+            <span class="n">runner</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;local&#39;</span><span class="p">,</span>
+            <span class="n">container_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">runner_params</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{})</span> <span class="o">-&gt;</span> <span class="n">RunOfAnExperiment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a run to the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param experiment_name: The naf of the experiment.</span>
+<span class="sd">    :type experiment_path: str</span>
+
+<span class="sd">    :param storage_path: The path to the storage of the run.</span>
+<span class="sd">    :type storage_path: str</span>
+
+<span class="sd">    :param commit_sha: The commit sha of the repo when running.</span>
+<span class="sd">    :type commit_sha: str</span>
+
+<span class="sd">    :param parameters_groups: The parameters groups (as dict) of the run.</span>
+<span class="sd">                              Default is [].</span>
+<span class="sd">    :type parameters_groups: list</span>
+
+<span class="sd">    :param description: The description of the run. Default is &quot;&quot;.</span>
+<span class="sd">    :type description: str</span>
+
+<span class="sd">    :param tags: The tags (names) of the run. Default is [].</span>
+<span class="sd">    :type tags: list</span>
+
+<span class="sd">    :param runner: The name of the runner. Default is &#39;local&#39;.</span>
+<span class="sd">    :type runner: str</span>
+
+<span class="sd">    :param container_path: The path to the container of the runner.</span>
+<span class="sd">    :type container_path: str</span>
+
+<span class="sd">    :param runner_params: The parameters of the runner. Default is {}.</span>
+<span class="sd">    :type runner_params: dict</span>
+
+<span class="sd">    :return: The run object.</span>
+<span class="sd">    :rtype: qanat.core.dataset.RunOfAnExperiment</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find experiment_id through name</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># Create the run</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">RunOfAnExperiment</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">,</span>
+                            <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span> <span class="n">commit_sha</span><span class="o">=</span><span class="n">commit_sha</span><span class="p">,</span>
+                            <span class="n">storage_path</span><span class="o">=</span><span class="n">storage_path</span><span class="p">,</span>
+                            <span class="n">runner</span><span class="o">=</span><span class="n">runner</span><span class="p">,</span> <span class="n">runner_params</span><span class="o">=</span><span class="n">runner_params</span><span class="p">,</span>
+                            <span class="n">container_path</span><span class="o">=</span><span class="n">container_path</span><span class="p">)</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="c1"># Create Group of parameters for the run</span>
+    <span class="k">for</span> <span class="n">parameters</span> <span class="ow">in</span> <span class="n">parameters_groups</span><span class="p">:</span>
+        <span class="n">group_parameters</span> <span class="o">=</span> <span class="n">GroupOfParametersOfARun</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span>
+                                                   <span class="n">run_id</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">group_parameters</span><span class="p">)</span>
+
+    <span class="c1"># Add the tags to the run</span>
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="n">tag_id</span> <span class="o">=</span> <span class="n">find_tag_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tag_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="n">Tags</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">tag</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="n">tag_id</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">run_tag</span> <span class="o">=</span> <span class="n">RunsTags</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">tag_id</span><span class="o">=</span><span class="n">tag_id</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">run_tag</span><span class="p">)</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">run</span></div>
+
+
+<div class="viewcode-block" id="delete_experiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.delete_experiment">[docs]</a><span class="k">def</span> <span class="nf">delete_experiment</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove an experiment from the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment.</span>
+<span class="sd">    :type experiment_name: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find the experiment</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># If the experiment does not exist, return</span>
+    <span class="k">if</span> <span class="n">experiment_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Experiment </span><span class="si">{</span><span class="n">experiment_name</span><span class="si">}</span><span class="s2"> does not exist in the &quot;</span>
+                       <span class="sa">f</span><span class="s2">&quot;database.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Rich console with status</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Removing experiment </span><span class="si">{</span><span class="n">experiment_name</span><span class="si">}</span><span class="s2"> from the database.&quot;</span><span class="p">)</span>
+    <span class="n">console</span> <span class="o">=</span> <span class="n">Console</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">console</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s2">&quot;[bold green]Removing experiment...&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">status</span><span class="p">:</span>
+
+        <span class="c1"># Find runs corresponding to the experiment</span>
+        <span class="n">runs</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">RunOfAnExperiment</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Removing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">runs</span><span class="p">)</span><span class="si">}</span><span class="s2"> runs of the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;experiment </span><span class="si">{</span><span class="n">experiment_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Remove the groups_of_parameters of runs corresponding to the</span>
+        <span class="c1"># experiment</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the groups of parameters of the runs.&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">runs</span><span class="p">:</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GroupOfParametersOfARun</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">GroupOfParametersOfARun</span><span class="o">.</span><span class="n">run_id</span> <span class="o">==</span> <span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="c1"># Remove the tags of runs in the experiment</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the tags of the runs.&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">runs</span><span class="p">:</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunsTags</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">RunsTags</span><span class="o">.</span><span class="n">run_id</span> <span class="o">==</span> <span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="c1"># Removing the directories of runs</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the directories of the runs.&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">runs</span><span class="p">:</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">storage_path</span><span class="p">)</span>
+
+        <span class="c1"># Remove the runs of the experiment</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the runs of the experiment.&quot;</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">RunOfAnExperiment</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="c1"># Remove the actions of the experiment</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the actions of the experiment.&quot;</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Action</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">Action</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="c1"># Remove the tags of the experiment</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the tags of the experiment.&quot;</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">ExperimentsTags</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">ExperimentsTags</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="c1"># Remove the datasets link of the experiment</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the datasets link of the experiment.&quot;</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">DatasetExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">DatasetExperiment</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="c1"># Remove the experiment</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the experiment.&quot;</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Experiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">Experiment</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="n">status</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[bold green]Experiment </span><span class="si">{</span><span class="n">experiment_name</span><span class="si">}</span><span class="s2"> removed.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="delete_dataset"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.delete_dataset">[docs]</a><span class="k">def</span> <span class="nf">delete_dataset</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a dataset from the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param dataset_name: The name of the dataset.</span>
+<span class="sd">    :type dataset_name: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">find_dataset_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">)</span>
+
+    <span class="c1"># If the dataset does not exist, return</span>
+    <span class="k">if</span> <span class="n">dataset_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2"> does not exist in the &quot;</span>
+                       <span class="sa">f</span><span class="s2">&quot;database.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Rich console with status</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Removing dataset </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2"> from the database.&quot;</span><span class="p">)</span>
+    <span class="n">console</span> <span class="o">=</span> <span class="n">Console</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">console</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="s2">&quot;[bold green]Removing dataset...&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">status</span><span class="p">:</span>
+
+        <span class="c1"># Remove the link between datasets and experiments</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the link between datasets and experiments.&quot;</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">DatasetExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">DatasetExperiment</span><span class="o">.</span><span class="n">dataset_id</span> <span class="o">==</span> <span class="n">dataset_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="c1"># Remove the tags of the dataset</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the tags of the dataset.&quot;</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">DatasetsTags</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">DatasetsTags</span><span class="o">.</span><span class="n">dataset_id</span> <span class="o">==</span> <span class="n">dataset_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="c1"># Remove the dataset</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;Removing the dataset.&quot;</span><span class="p">)</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Dataset</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">Dataset</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">dataset_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="n">status</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[bold green]Dataset </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2"> removed.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="delete_action"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.delete_action">[docs]</a><span class="k">def</span> <span class="nf">delete_action</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">action_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                  <span class="n">experiment_name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete an action from the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param action_name: The name of the action.</span>
+<span class="sd">    :type action_name: str</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment.</span>
+<span class="sd">    :type experiment_name: str</span>
+
+<span class="sd">    :return: True if the action has been deleted, False otherwise.</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find the experiment_id</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># If the experiment does not exist, return</span>
+    <span class="k">if</span> <span class="n">experiment_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Experiment </span><span class="si">{</span><span class="n">experiment_name</span><span class="si">}</span><span class="s2"> does not exist in the &quot;</span>
+                       <span class="sa">f</span><span class="s2">&quot;database.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Find the action_id</span>
+    <span class="n">action_id</span> <span class="o">=</span> <span class="n">find_action_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">action_name</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># If the action does not exist, return</span>
+    <span class="k">if</span> <span class="n">action_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Action </span><span class="si">{</span><span class="n">action_name</span><span class="si">}</span><span class="s2"> does not exist in the &quot;</span>
+                       <span class="sa">f</span><span class="s2">&quot;database.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># Deleting the action</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Action</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Action</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">action_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="delete_run_from_id"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.delete_run_from_id">[docs]</a><span class="k">def</span> <span class="nf">delete_run_from_id</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a run from the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param run_id: The id of the run.</span>
+<span class="sd">    :type run_id: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Get run from id</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">RunOfAnExperiment</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">run</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Run </span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2"> does not exist in the database.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Remove the groups_of_parameters of run corresponding to the</span>
+    <span class="c1"># run_id</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GroupOfParametersOfARun</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">GroupOfParametersOfARun</span><span class="o">.</span><span class="n">run_id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+    <span class="c1"># Remove the tags of run in the experiment</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunsTags</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">RunsTags</span><span class="o">.</span><span class="n">run_id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+    <span class="c1"># Removing the directories of runs</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">storage_path</span><span class="p">):</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">storage_path</span><span class="p">)</span>
+
+    <span class="c1"># Remove the run</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">RunOfAnExperiment</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="update_experiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.update_experiment">[docs]</a><span class="k">def</span> <span class="nf">update_experiment</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                      <span class="n">new_experiment_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">new_experiment_description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">new_experiment_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">new_experiment_executable</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">new_experiment_executable_command</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">new_experiment_tags</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">new_experiment_datasets</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">new_experiment_actions</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update an experiment in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment.</span>
+<span class="sd">    :type experiment_name: str</span>
+
+<span class="sd">    :param new_experiment_name: The new name of the experiment.</span>
+<span class="sd">    :type new_experiment_name: str</span>
+
+<span class="sd">    :param new_experiment_description: The new description of the experiment.</span>
+<span class="sd">    :type new_experiment_description: str</span>
+
+<span class="sd">    :param new_experiment_path: The new path of the experiment.</span>
+<span class="sd">    :type new_experiment_path: str</span>
+
+<span class="sd">    :param new_experiment_executable: The new executable of the experiment.</span>
+<span class="sd">    :type new_experiment_executable: str</span>
+
+<span class="sd">    :param new_experiment_executable_command: The new executable command of the</span>
+<span class="sd">        experiment.</span>
+<span class="sd">    :type new_experiment_executable_command: str</span>
+
+<span class="sd">    :param new_experiment_tags: The new tags of the experiment.</span>
+<span class="sd">    :type new_experiment_tags: list</span>
+
+<span class="sd">    :param new_experiment_datasets: The new datasets of the experiment.</span>
+<span class="sd">    :type new_experiment_datasets: list</span>
+
+<span class="sd">    :param new_experiment_actions: The new actions of the experiment.</span>
+<span class="sd">    :type new_experiment_actions: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find the id of the experiment</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># If the experiment does not exist, return</span>
+    <span class="k">if</span> <span class="n">experiment_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Experiment </span><span class="si">{</span><span class="n">experiment_name</span><span class="si">}</span><span class="s2"> does not exist in the &quot;</span>
+                       <span class="s2">&quot;database.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Update elements only if needed</span>
+    <span class="c1"># ------------------------------</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;path&quot;</span><span class="p">,</span> <span class="s2">&quot;executable&quot;</span><span class="p">,</span>
+             <span class="s2">&quot;executable_command&quot;</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">new_experiment_name</span><span class="p">,</span> <span class="n">new_experiment_description</span><span class="p">,</span>
+             <span class="n">new_experiment_path</span><span class="p">,</span> <span class="n">new_experiment_executable</span><span class="p">,</span>
+             <span class="n">new_experiment_executable_command</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">element</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="c1"># Update desired properties</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Experiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">Experiment</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">element</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">element</span><span class="p">[</span><span class="mi">1</span><span class="p">]})</span>
+
+    <span class="c1"># Update the tags of the experiment</span>
+    <span class="c1"># ---------------------------------</span>
+    <span class="c1"># Find the tags of the experiment</span>
+    <span class="n">experiment_tags</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Tags</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ExperimentsTags</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">ExperimentsTags</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">new_experiment_tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Delete the link between the experiment and the tags</span>
+        <span class="c1"># that are not in the new tags</span>
+        <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">experiment_tags</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tag</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">new_experiment_tags</span><span class="p">:</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">ExperimentsTags</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                    <span class="n">ExperimentsTags</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">,</span>
+                    <span class="n">ExperimentsTags</span><span class="o">.</span><span class="n">tag_id</span> <span class="o">==</span> <span class="n">tag</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="c1"># Adding new tags to the experiment</span>
+        <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">new_experiment_tags</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">experiment_tags</span><span class="p">]:</span>
+                <span class="n">tag_id</span> <span class="o">=</span> <span class="n">find_tag_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">tag_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tag </span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2"> does not exist in the &quot;</span>
+                                   <span class="s2">&quot;database.&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Creating tag </span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2"> in the database.&quot;</span><span class="p">)</span>
+                    <span class="n">tag</span> <span class="o">=</span> <span class="n">add_tag</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">tag</span><span class="p">)</span>
+                    <span class="n">tag_id</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">id</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ExperimentsTags</span><span class="p">(</span>
+                    <span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">,</span> <span class="n">tag_id</span><span class="o">=</span><span class="n">tag_id</span><span class="p">))</span>
+
+    <span class="c1"># Update the datasets of the experiment</span>
+    <span class="c1"># -------------------------------------</span>
+    <span class="c1"># Find the datasets of the experiment</span>
+    <span class="n">experiment_datasets</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Dataset</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">DatasetExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">DatasetExperiment</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">new_experiment_datasets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Delete the link between the experiment and the datasets</span>
+        <span class="c1"># that are not in the new datasets</span>
+        <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">experiment_datasets</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">new_experiment_datasets</span><span class="p">:</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">DatasetExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                    <span class="n">DatasetExperiment</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">,</span>
+                    <span class="n">DatasetExperiment</span><span class="o">.</span><span class="n">dataset_id</span> <span class="o">==</span> <span class="n">dataset</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="c1"># Adding new datasets to the experiment</span>
+        <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">new_experiment_datasets</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dataset</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">experiment_datasets</span><span class="p">]:</span>
+                <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">find_dataset_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">dataset</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">dataset_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset</span><span class="si">}</span><span class="s2"> does not exist in the &quot;</span>
+                                   <span class="s2">&quot;database. Please add it first using &quot;</span>
+                                   <span class="s2">&quot; &#39;qanat dataset new&#39;.&quot;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">DatasetExperiment</span><span class="p">(</span>
+                    <span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">))</span>
+
+    <span class="c1"># Update the actions of the experiment</span>
+    <span class="c1"># ------------------------------------</span>
+    <span class="c1"># Find the actions of the experiment</span>
+    <span class="n">experiment_actions</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Action</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">Action</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">new_experiment_actions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Delete the actions not in the new actions</span>
+        <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">experiment_actions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">new_experiment_actions</span><span class="p">]:</span>
+                <span class="n">delete_action</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+        <span class="c1"># Add the new actions</span>
+        <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">new_experiment_actions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">experiment_actions</span><span class="p">]:</span>
+                <span class="n">add_action</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">,</span>
+                           <span class="n">action</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">command</span><span class="p">,</span>
+                           <span class="n">action</span><span class="o">.</span><span class="n">arguments</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="update_run_status"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.update_run_status">[docs]</a><span class="k">def</span> <span class="nf">update_run_status</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                      <span class="n">new_status</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the status of a run in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param run_id: The id of the run.</span>
+<span class="sd">    :type run_id: int</span>
+
+<span class="sd">    :param new_status: The new status of the run.</span>
+<span class="sd">    :type new_status: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">RunOfAnExperiment</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">new_status</span><span class="p">})</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="update_run_finish_time"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.update_run_finish_time">[docs]</a><span class="k">def</span> <span class="nf">update_run_finish_time</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                           <span class="n">new_finish_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the finish time of a run in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param run_id: The id of the run.</span>
+<span class="sd">    :type run_id: int</span>
+
+<span class="sd">    :param new_finish_time: The new finish time of the run.</span>
+<span class="sd">    :type new_finish_time: datetime.datetime</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">new_finish_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">new_finish_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+    <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">RunOfAnExperiment</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;finished&quot;</span><span class="p">:</span> <span class="n">new_finish_time</span><span class="p">})</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="update_run_start_time"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.update_run_start_time">[docs]</a><span class="k">def</span> <span class="nf">update_run_start_time</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                          <span class="n">new_start_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the start time of a run in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param run_id: The id of the run.</span>
+<span class="sd">    :type run_id: int</span>
+
+<span class="sd">    :param new_start_time: The new start time of the run.</span>
+<span class="sd">    :type new_start_time: datetime.datetime</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">new_start_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">RunOfAnExperiment</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;launched&quot;</span><span class="p">:</span> <span class="n">new_start_time</span><span class="p">})</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="update_run_progress"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.update_run_progress">[docs]</a><span class="k">def</span> <span class="nf">update_run_progress</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                        <span class="n">new_progress</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the progress of a run in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param run_id: The id of the run.</span>
+<span class="sd">    :type run_id: int</span>
+
+<span class="sd">    :param new_progress: The new progress of the run.</span>
+<span class="sd">    :type new_progress: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">RunOfAnExperiment</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">new_progress</span><span class="si">}</span><span class="s2"> %&quot;</span><span class="p">})</span>
+    <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span></div>
+
+
+<span class="c1"># ------------------------------------------------------------</span>
+<span class="c1"># Useful lookup functions</span>
+<span class="c1"># ------------------------------------------------------------</span>
+<div class="viewcode-block" id="find_tag_id"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.find_tag_id">[docs]</a><span class="k">def</span> <span class="nf">find_tag_id</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">tag_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find the id of a tag in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param tag_name: The name of the tag.</span>
+<span class="sd">    :type tag_name: str</span>
+
+<span class="sd">    :return: The id of the tag.</span>
+<span class="sd">    :rtype: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Query the database for the tag</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Tags</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Tags</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">tag_name</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+
+    <span class="c1"># If the tag does not exist, return -1</span>
+    <span class="k">if</span> <span class="n">tag</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">tag_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tag_id</span> <span class="o">=</span> <span class="n">tag</span><span class="o">.</span><span class="n">id</span>
+    <span class="k">return</span> <span class="n">tag_id</span></div>
+
+
+<div class="viewcode-block" id="find_experiment_id"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.find_experiment_id">[docs]</a><span class="k">def</span> <span class="nf">find_experiment_id</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find the id of an experiment in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment.</span>
+<span class="sd">    :type experiment_name: str</span>
+
+<span class="sd">    :return: The id of the experiment.</span>
+<span class="sd">    :rtype: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Query the database for the experiment</span>
+    <span class="n">experiment</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Experiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">Experiment</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">experiment_name</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+
+    <span class="c1"># If the experiment does not exist, return -1</span>
+    <span class="k">if</span> <span class="n">experiment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">experiment_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">experiment</span><span class="o">.</span><span class="n">id</span>
+    <span class="k">return</span> <span class="n">experiment_id</span></div>
+
+
+<div class="viewcode-block" id="find_dataset_id"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.find_dataset_id">[docs]</a><span class="k">def</span> <span class="nf">find_dataset_id</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find the id of a dataset in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param dataset_name: The name of the dataset.</span>
+<span class="sd">    :type dataset_path: str</span>
+
+<span class="sd">    :return: The id of the dataset.</span>
+<span class="sd">    :rtype: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Query the database for the dataset</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Dataset</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">Dataset</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">dataset_name</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+
+    <span class="c1"># If the dataset does not exist, return -1</span>
+    <span class="k">if</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dataset_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">id</span>
+    <span class="k">return</span> <span class="n">dataset_id</span></div>
+
+
+<div class="viewcode-block" id="find_action_id"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.find_action_id">[docs]</a><span class="k">def</span> <span class="nf">find_action_id</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">action_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                   <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find the id of an action in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param action_name: The name of the action.</span>
+<span class="sd">    :type action_name: str</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment.</span>
+<span class="sd">    :type experiment_name: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find experiment_id through name</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># Query the database for the action</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Action</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">Action</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">action_name</span><span class="p">,</span>
+            <span class="n">Action</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+
+    <span class="c1"># If the action does not exist, return -1</span>
+    <span class="k">if</span> <span class="n">action</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">action_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">action_id</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="n">id</span>
+    <span class="k">return</span> <span class="n">action_id</span></div>
+
+
+<div class="viewcode-block" id="count_number_runs_experiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.count_number_runs_experiment">[docs]</a><span class="k">def</span> <span class="nf">count_number_runs_experiment</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                                 <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Count the number of runs of an experiment in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment.</span>
+<span class="sd">    :type experiment_path: str</span>
+
+<span class="sd">    :return: The number of runs of the experiment.</span>
+<span class="sd">    :rtype: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find experiment_id through name</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># Query the database for the number of runs</span>
+    <span class="n">number_runs</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">RunOfAnExperiment</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">number_runs</span></div>
+
+
+<div class="viewcode-block" id="fetch_tags_of_experiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.fetch_tags_of_experiment">[docs]</a><span class="k">def</span> <span class="nf">fetch_tags_of_experiment</span><span class="p">(</span><span class="n">Session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                             <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch the tags of an experiment in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment.</span>
+<span class="sd">    :type experiment_path: str</span>
+
+<span class="sd">    :return: The tags of the experiment.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find experiment_id through name</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">Session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># Query the database for the tags</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span>
+            <span class="n">Session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Tags</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">ExperimentsTags</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">ExperimentsTags</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">distinct</span><span class="p">()]</span>
+    <span class="k">return</span> <span class="n">tags</span></div>
+
+
+<div class="viewcode-block" id="fetch_tags_of_dataset"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.fetch_tags_of_dataset">[docs]</a><span class="k">def</span> <span class="nf">fetch_tags_of_dataset</span><span class="p">(</span><span class="n">Session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                          <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch the tags of a dataset in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param dataset_name: The name of the dataset.</span>
+<span class="sd">    :type dataset_path: str</span>
+
+<span class="sd">    :return: The tags of the dataset.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find dataset_id through name</span>
+    <span class="n">dataset_id</span> <span class="o">=</span> <span class="n">find_dataset_id</span><span class="p">(</span><span class="n">Session</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">)</span>
+
+    <span class="c1"># Query the database for the tags</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span>
+            <span class="n">Session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Tags</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DatasetsTags</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">DatasetsTags</span><span class="o">.</span><span class="n">dataset_id</span> <span class="o">==</span> <span class="n">dataset_id</span><span class="p">)</span><span class="o">.</span><span class="n">distinct</span><span class="p">()]</span>
+    <span class="k">return</span> <span class="n">tags</span></div>
+
+
+<div class="viewcode-block" id="fetch_datasets_of_experiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.fetch_datasets_of_experiment">[docs]</a><span class="k">def</span> <span class="nf">fetch_datasets_of_experiment</span><span class="p">(</span><span class="n">Session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                                 <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch the datasets of an experiment in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment.</span>
+<span class="sd">    :type experiment_path: str</span>
+
+<span class="sd">    :return: The datasets of the experiment.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find experiment_id through name</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">Session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># Query the database for the datasets</span>
+    <span class="n">datasets</span> <span class="o">=</span> <span class="n">Session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Dataset</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">DatasetExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">DatasetExperiment</span><span class="o">.</span><span class="n">experiment_id</span> <span class="o">==</span> <span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">distinct</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="fetch_actions_of_experiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.fetch_actions_of_experiment">[docs]</a><span class="k">def</span> <span class="nf">fetch_actions_of_experiment</span><span class="p">(</span><span class="n">Session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                                <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch the actions of an experiment in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment.</span>
+<span class="sd">    :type experiment_path: str</span>
+
+<span class="sd">    :return: The actions of the experiment.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find experiment_id through name</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">Session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># Query the database for the actions</span>
+    <span class="n">actions</span> <span class="o">=</span> <span class="n">Session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Action</span><span class="p">)</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span>
+            <span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">distinct</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">actions</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="fetch_runs_of_experiment"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.fetch_runs_of_experiment">[docs]</a><span class="k">def</span> <span class="nf">fetch_runs_of_experiment</span><span class="p">(</span><span class="n">Session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                             <span class="n">experiment_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch the runs of an experiment in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param experiment_name: The name of the experiment.</span>
+<span class="sd">    :type experiment_path: str</span>
+
+<span class="sd">    :return: The runs of the experiment.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Find experiment_id through name</span>
+    <span class="n">experiment_id</span> <span class="o">=</span> <span class="n">find_experiment_id</span><span class="p">(</span><span class="n">Session</span><span class="p">,</span> <span class="n">experiment_name</span><span class="p">)</span>
+
+    <span class="c1"># Query the database for the runs</span>
+    <span class="n">runs</span> <span class="o">=</span> <span class="n">Session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span>
+            <span class="n">experiment_id</span><span class="o">=</span><span class="n">experiment_id</span><span class="p">)</span><span class="o">.</span><span class="n">distinct</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">runs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="fetch_tags_of_run"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.fetch_tags_of_run">[docs]</a><span class="k">def</span> <span class="nf">fetch_tags_of_run</span><span class="p">(</span><span class="n">Session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                      <span class="n">run_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch the tags of a run in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param run_id: The id of the run.</span>
+<span class="sd">    :type run_id: int</span>
+
+<span class="sd">    :return: The tags of the run.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Query the database for the tags</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">tag</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span>
+            <span class="n">Session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Tags</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">RunsTags</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">RunsTags</span><span class="o">.</span><span class="n">run_id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">distinct</span><span class="p">()]</span>
+    <span class="k">return</span> <span class="n">tags</span></div>
+
+
+<div class="viewcode-block" id="fetch_groupofparameters_of_run"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.fetch_groupofparameters_of_run">[docs]</a><span class="k">def</span> <span class="nf">fetch_groupofparameters_of_run</span><span class="p">(</span>
+        <span class="n">Session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch the group of parameters of a run in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param run_id: The id of the run.</span>
+<span class="sd">    :type run_id: int</span>
+
+<span class="sd">    :return: The group of parameters of the run.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Query the database for the group of parameters</span>
+    <span class="n">groups_of_parameters</span> <span class="o">=</span> <span class="n">Session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GroupOfParametersOfARun</span><span class="p">)</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span>
+            <span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">distinct</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">groups_of_parameters</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_experiment_of_run"><a class="viewcode-back" href="../../../qanat.core.html#qanat.core.database.get_experiment_of_run">[docs]</a><span class="k">def</span> <span class="nf">get_experiment_of_run</span><span class="p">(</span><span class="n">Session</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                          <span class="n">run_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Experiment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the experiment of a run in the database.</span>
+
+<span class="sd">    :param session: The session of the database.</span>
+<span class="sd">    :type session: sqlalchemy.orm.session.Session</span>
+
+<span class="sd">    :param run_id: The id of the run.</span>
+<span class="sd">    :type run_id: int</span>
+
+<span class="sd">    :return: The experiment of the run.</span>
+<span class="sd">    :rtype: Experiment</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Query the database for the experiment</span>
+    <span class="n">experiment</span> <span class="o">=</span> <span class="n">Session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Experiment</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">RunOfAnExperiment</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">RunOfAnExperiment</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">experiment</span></div>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Ammar Mian
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/scripts/furo.js"></script>
+    </body>
+</html>
