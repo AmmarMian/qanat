@@ -28,7 +28,8 @@ Qanat is a muinimal CLI based experiment tracking tool that allows to run, monit
 
 ## Documentation
 
-TODO
+Documentation available at https://ammarmian.github.io/qanat/.
+**Still in progress**.
 
 ## Installation
 
