@@ -1,8 +1,8 @@
 <a name="readme-top"></a>
 # Qanat (Work in progress)
 
-![Qanat Logo](docs/_static/qanat_logo_light.svg#gh-light-mode-only)
-![Qanat Logo](docs/_static/qanat_logo_dark.svg#gh-dark-mode-only)
+![Qanat Logo](docsrc/_static/qanat_logo_light.svg#gh-light-mode-only)
+![Qanat Logo](docsrc/_static/qanat_logo_dark.svg#gh-dark-mode-only)
 
 Qanat is a muinimal CLI based experiment tracking tool that allows to run, monitor and analyse command-line programs that accept arguments. It is still in construction.
 
