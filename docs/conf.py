@@ -95,14 +95,22 @@ html_theme = 'furo'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
-html_logo = "logo.png"
 
 
 html_theme_options = {
     "light_css_variables": {
-        "font-stack": "Open sans, sans-serif",
-        "font-stack--monospace": "Open sans, monospace",
+        "font-stack": "Roboto, sans-serif",
+        "font-stack--monospace": "Open Sans, monospace",
+        # "color-brand-primary": "",
+        # "color-background-secondary": "#24038F"
     },
+    "announcement":
+        "<em>Qanat is currently in alpha. Use at your own risk.</em>",
+    "source_repository": "https://github.com/AmmarMian/qanat",
+    "source_branch": "main",
+    "source_directory": "docs/",
+    "light_logo": "qanat_logo_light.svg",
+    "dark_logo": "qanat_logo_dark.svg",
 }
 
 # -- Options for HTMLHelp output ---------------------------------------
