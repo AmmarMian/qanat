@@ -6,7 +6,7 @@ Qanat is a Minimal package to manage and reproduce research experiments.
 
 
 * Free software: GNU General Public License v3
-* Documentation: https://qanat.readthedocs.io.
+* Documentation: https://ammarmian.github.io/qanat.
 
 
 Features
