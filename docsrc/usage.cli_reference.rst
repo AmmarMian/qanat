@@ -2,7 +2,12 @@
 CLI Reference
 =================
 
+Here you can find the reference documentation for the CLI commands with a short description of each command and its options.
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    usage.cli_reference.init
+   usage.cli_reference.cache
+
+

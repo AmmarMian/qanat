@@ -37,12 +37,15 @@ class JSONEncodedDict(TypeDecorator):
     impl = String
 
     def process_bind_param(self, value, dialect):
+        """Serialise the value to a JSON-encoded string.
+        """
         if value is not None:
             value = json.dumps(value)
 
         return value
 
     def process_result_value(self, value, dialect):
+        """Deserialise the value from a JSON-encoded string."""
         if value is not None:
             value = json.loads(value)
         return value
@@ -382,7 +385,6 @@ def add_tag(session: Session, name: str, description: str) -> Tags:
 
     :param name: The name of the tag.
     :type name: str
-    impl = sqlalchemy.Text(SIZE)
 
     :param description: The description of the tag.
     :type description: str

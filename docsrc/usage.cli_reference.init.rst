@@ -2,6 +2,17 @@
 qanat init
 ====================================
 
+Command information
+----------------------
+
+.. click:: qanat.cli:init
+   :prog: qanat
+   :nested: full
+
+
+Command description
+----------------------
+
 The **init** command takes a directory path as argument and creates a new Qanat project in that directory. This means that a `.qanat/` directory will be created with the files:
 * `config.yaml`
 * `database.db`
