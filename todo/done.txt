@@ -1,9 +1,0 @@
-x 2023-04-27 qanat init
-x 2023-05-10 Finish database structure in link with dataclass for easy management
-x 2023-05-21 How to launch groups of parameters most simply from CLI ?
-x 2023-05-21 Parsing config.yaml and update database of experiments
-x 2023-05-21 qanat action
-x 2023-05-21 MUSTExecutionHandler
-x 2023-05-21 parallel execution with a queue list with regards to available cpus
-x 2023-05-23 Change htcondor status tracking with jobevent and log file
-x 2023-05-23 Run search with tag/description/params
