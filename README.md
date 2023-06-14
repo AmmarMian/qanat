@@ -4,7 +4,7 @@
 ![Qanat Logo](docsrc/_static/qanat_logo_light.svg#gh-light-mode-only)
 ![Qanat Logo](docsrc/_static/qanat_logo_dark.svg#gh-dark-mode-only)
 
-![Docs badge](https://img.shields.io/github/actions/workflow/status/ammarmian/qanat/documentation.yaml?label=Documentation&logo=Read%20the%20docs&style=flat-square) ![License badge](https://img.shields.io/github/license/ammarmian/qanat?style=flat-square)
+![Python version](https://img.shields.io/badge/Python-%3E%203.5-blue%20?style=flat-square&logo=python) ![Docs badge](https://img.shields.io/github/actions/workflow/status/ammarmian/qanat/documentation.yaml?label=Documentation&logo=Read%20the%20docs&style=flat-square) ![License badge](https://img.shields.io/github/license/ammarmian/qanat?style=flat-square) ![Code size badge](https://img.shields.io/github/languages/code-size/ammarmian/qanat?style=flat-square)
 
 Qanat is a muinimal CLI based experiment tracking tool that allows to run, monitor and analyse command-line programs that accept arguments. It is still in construction.
 
