@@ -785,6 +785,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
             last_event = events[-1]
 
             # Adapt status in function of last event
+            print(last_event.type)
             if last_event.type == JobEventType.SUBMIT:
                 status = 'not_started'
             elif last_event.type == JobEventType.EXECUTE:
@@ -793,7 +794,8 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                 status = 'finished'
             elif last_event.type == JobEventType.JOB_HELD:
                 status = 'held'
-            elif last_event.type == JobEventType.JOB_RELEASED:
+            elif last_event.type == JobEventType.JOB_RELEASED or \
+                    last_event.type == JobEventType.IMAGE_SIZE:
                 status = 'running'
             elif last_event.type == JobEventType.JOB_ABORTED:
                 status = 'cancelled'
@@ -814,6 +816,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                      event.type == JobEventType.JOB_ABORTED:
                     finish_times[i] = datetime.fromtimestamp(event.timestamp)
                     break
+        print(status_list)
 
         # Update global status according to status of jobs
         if any([status == 'running' for status in status_list]):
