@@ -507,3 +507,99 @@ def parse_args_cli(ctx: click.Context, groups_of_parameters: list = [],
             parsed_parameters = new_parsed_parameters
 
     return parsed_parameters, runner_params
+
+
+# Document file parsing
+# =====================
+def parse_document_file(document_file: str) -> dict:
+    """Parse the document file specified in YAML format.
+
+    :param document_file: The path to the document file.
+    :type document_file: str
+
+    :return: The dictionary of the document file.
+    :rtype: dict
+    """
+
+    with open(document_file, "r") as f:
+        document = yaml.load(f, Loader=yaml.FullLoader)
+
+    # Check the document file is well formatted
+    if "name" not in document:
+        raise ValueError("Document file must contain a name")
+
+    if "description" not in document:
+        raise ValueError("Document file must contain a description")
+
+    if "path" not in document:
+        raise ValueError("Document file must contain a path")
+
+    if "compile_script" not in document:
+        raise ValueError("Document file must contain a compile_script")
+
+    if "compile_command" not in document["compile"]:
+        logger.warning("No compile command specified in the document file. "
+                       "Defaulted as make")
+        document["compile_command"] = "make"
+
+    if "experiment_dependencies" in document:
+
+        # Check wheter a list
+        if not isinstance(document["experiment_dependencies"], list):
+            raise ValueError("Experiment dependencies must be a list")
+
+        # Check whether the dependencies are well formatted
+        for dependency in document["experiment_dependencies"]:
+
+            if "experiment_name" not in dependency:
+                raise ValueError("Experiment dependency must contain "
+                                 "an experiment name")
+
+            if "run_id" not in dependency or \
+                    "run_args" not in dependency:
+                experiment_name = dependency["experiment_name"]
+                raise ValueError(f"Experiment {experiment_name} dependency "
+                                 "must contain a run_id or run_args")
+
+            if "run_id" in dependency and "run_args" in dependency:
+                experiment_name = dependency["experiment_name"]
+                raise ValueError(f"Experiment {experiment_name} dependency "
+                                 "must contain a run_id or run_args, not both")
+            if "runner" not in dependency:
+                logger.warning("No runner specified for experiment "
+                               f"{experiment_name}. Defaulted as local")
+                document["runner"] = "local"
+
+            if "container" not in dependency:
+                document["container"] = None
+
+            if "runner_params" not in dependency:
+                dependency["runner_params"] = {}
+
+
+            if 'action_name' not in dependency:
+                dependency['action_name'] = None
+
+            if 'action_params' not in dependency:
+                dependency['action_params'] = ""
+
+            if "files_dependency" not in dependency:
+                dependency["files_dependency"] = []
+            else:
+                if not isinstance(dependency["files_dependency"], list):
+                    raise ValueError("Files dependency must be a list")
+                for file in dependency["files_dependency"]:
+                    if not isinstance(file, str):
+                        raise ValueError("Files dependency must be a list "
+                                         "of strings")
+
+    if "view_script" not in document:
+        logger.warning("No view_script specified in the document file.")
+        document["view_command"] = None
+
+    if "view_script" in document and \
+            "view_script_command" not in document["view_script"]:
+        raise ValueError(
+                "View script must be associated with a view_script_command")
+
+    return document

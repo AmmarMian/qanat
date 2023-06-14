@@ -7,7 +7,7 @@ import art
 from .cli_commands.init import init_qanat
 from .cli_commands import (
         experiment, dataset, status, run,
-        config, cache
+        config, cache, document
 )
 from .core.repo import check_directory_is_qanat
 
@@ -80,6 +80,13 @@ def experiment_main():
 @main.group(name="dataset")
 def dataset_main():
     """Dataset-level utility"""
+    check_cwd_is_qanat()
+    return 0
+
+
+@main.group(name="document")
+def document_main():
+    """Document-level utility"""
     check_cwd_is_qanat()
     return 0
 
@@ -291,6 +298,94 @@ def experiment_action(ctx, experiment_name, action_name, run_id,
     experiment and action name."""
     experiment.command_action(experiment_name, action_name, run_id, ctx,
                               group_no)
+
+
+# Subcommands: document
+@document_main.command(name="list")
+def document_list():
+    """Show list of documents in this repertory."""
+    document.command_list()
+
+
+@document_main.command(name="new")
+@click.argument("description_file", type=click.Path(exists=True),
+                required=False)
+def document_new(description_file):
+    """Create new document.
+
+    DESCRIPTION_FILE is a file containing the description of the document. If
+    not provided, a prompt will ask for the description.
+    """
+    if description_file is not None:
+        document.command_add_from_file(description_file)
+    document.command_add_prompt()
+
+
+@document_main.command(name="status")
+@click.argument("name", type=click.STRING, required=True)
+def document_status(name):
+    """Show status of document."""
+    document.command_status(name)
+
+
+@document_main.command(name="view")
+@click.argument("name", type=click.STRING, required=True)
+def document_view(name):
+    """View document."""
+    document.command_view(name)
+
+
+@document_main.command(name="compile")
+@click.argument("name", type=click.STRING, required=True)
+@click.pass_context
+def document_compile(ctx, name):
+    """Compile document."""
+    document.command_compile(name, ctx)
+
+
+@document_main.command(name="add_dependency")
+@click.argument("document_name", type=click.STRING, required=False)
+@click.argument("experiment_name", type=click.STRING, required=False)
+@click.argument("run_args_file", type=click.STRING, required=False)
+@click.argument("files", type=click.Path(exists=True), nargs=-1)
+@click.option("--runner", type=click.STRING, required=False,
+              help="Runner to use for running the experiment.",
+              default="local")
+@click.option("--runner_params", type=click.STRING, required=False,
+              default=None, help="Parameters to pass to the runner.")
+@click.option("--container", type=click.STRING, required=False,
+              help="Container to use for running the experiment.",
+              default=None)
+@click.option("--commit_sha", type=click.STRING, required=False,
+              help="Commit SHA to use for running the experiment.",
+              default=None)
+@click.option('--yes', is_flag=True, default=False,
+              help="Skip confirmation prompt.")
+def document_add_dependency(document_name, experiment_name, run_args_file,
+                            files, runner, runner_params, container,
+                            commit_sha, yes):
+    """Add dependency to document."""
+    if any([x is None for x in [document_name, experiment_name,
+                                run_args_file]]):
+        document.command_add_dependency_prompt()
+    else:
+        document.command_add_dependency(document_name, experiment_name,
+                                        run_args_file, files, runner,
+                                        runner_params, container, commit_sha,
+                                        yes)
+
+
+@document_main.command(name="delete")
+@click.argument("name", type=click.STRING, required=True)
+def document_delete(name):
+    """Delete document."""
+    document.command_delete(name)
+
+
+@document_main.command(name="update")
+def document_update():
+    """Update document."""
+    click.echo("TODO")
 
 
 # Subcommands: dataset

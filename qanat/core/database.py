@@ -88,6 +88,37 @@ class Dataset(Base):
 
 
 @dataclass
+class Document(Base):
+    """Dataclass for the documents of the project."""
+
+    __tablename__ = "documents"
+
+    id = Column(Integer, primary_key=True)
+    path = Column(String)
+    name = Column(String)
+    description = Column(String)
+    created = Column(DateTime, server_default=func.now())
+    updated = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    compile_script = Column(String)
+    compile_script_command = Column(String)
+    view_script = Column(String)
+    view_script_command = Column(String)
+    status = Column(String, server_default="Not compiled")
+    compiled = Column(DateTime)
+
+
+@dataclass
+class ExperimentResultFiles(Base):
+    """Dataclass to track Files that are results of experiments."""
+
+    __tablename__ = "experiment_result_files"
+
+    id = Column(Integer, primary_key=True)
+    experiment_id = Column(Integer, ForeignKey("experiments.id"))
+    path = Column(String, nullable=False)
+
+
+@dataclass
 class Tags(Base):
     """Dataclass for tags for both experiments, runs and datasets."""
 
@@ -160,6 +191,34 @@ class GroupOfParametersOfARun(Base):
 
 
 @dataclass
+class DocumentExperimentDependencies(Base):
+
+    __tablename__ = "documents_experiments_dependencies"
+
+    id = Column(Integer, primary_key=True)
+    document_id = Column(Integer, ForeignKey("documents.id"))
+    experiment_id = Column(Integer, ForeignKey("experiments.id"))
+    run_args_file = Column(String)
+    runner = Column(String)
+    runner_params = Column(JSONEncodedDict)
+    container = Column(String)
+    commit_sha = Column(String)
+    action_name = Column(String)
+    action_args = Column(String)
+
+
+@dataclass
+class DocumentExperimentFilesDependencies(Base):
+
+    __tablename__ = "documents_experiments_files_dependencies"
+
+    id = Column(Integer, primary_key=True)
+    document_id = Column(Integer, ForeignKey("documents.id"))
+    experiment_id = Column(Integer, ForeignKey("experiments.id"))
+    file_id = Column(Integer, ForeignKey("experiment_result_files.id"))
+
+
+@dataclass
 class DatasetExperiment(Base):
     """Dataclass for the link between experiments and datasets."""
 
@@ -189,6 +248,17 @@ class DatasetsTags(Base):
 
     id = Column(Integer, primary_key=True)
     dataset_id = Column(Integer, ForeignKey("datasets.id"))
+    tag_id = Column(Integer, ForeignKey("tags.id"))
+
+
+@dataclass
+class DocumentsTags(Base):
+    """Dataclass for the link between documents and tags."""
+
+    __tablename__ = "documents_tags"
+
+    id = Column(Integer, primary_key=True)
+    document_id = Column(Integer, ForeignKey("documents.id"))
     tag_id = Column(Integer, ForeignKey("tags.id"))
 
 
@@ -965,6 +1035,157 @@ def update_run_progress(session: Session, run_id: int,
     session.commit()
 
 
+def add_document(session: Session, name: str, path: str,
+                 compile_script: str, compile_script_command: str,
+                 description: str = "",
+                 view_script: str = "", view_script_command: str = "",
+                 experiment_dependencies: list = None,
+                 tags: list = None) -> None:
+
+    """Add a document to the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param name: The name of the document.
+    :type name: str
+
+    :param path: The path of the document.
+    :type path: str
+
+    :param compile_script: The path of the compile script.
+    :type compile_script: str
+
+    :param compile_script_command: The command of the compile script.
+    :type compile_script_command: str
+
+    :param description: The description of the document.
+    :type description: str
+
+    :param view_script: The path of the view script.
+    :type view_script: str
+
+    :param view_script_command: The command of the view script.
+    :type view_script_command: str
+
+    :param experiment_dependencies: The dependencies of the document.
+                                    list of dict with keys 'exepriment_name',
+                                    'run_args_file', 'files'
+    :type experiment_dependencies: list
+
+    :param tags: The tags of the document.
+    :type tags: list
+    """
+
+    # Create the document
+    document = Document(name=name, path=path,
+                        description=description,
+                        compile_script=compile_script,
+                        compile_script_command=compile_script_command,
+                        view_script=view_script,
+                        view_script_command=view_script_command)
+    session.add(document)
+    session.commit()
+
+    # Add the tags
+    if tags is not None:
+        for tag in tags:
+            add_tag(session, tag, "")
+            tag_id = find_tag_id(session, tag)
+
+            # Add the tag to the document
+            doctag = DocumentsTags(document_id=document.id, tag_id=tag_id)
+            session.add(doctag)
+        session.commit()
+
+    # Add the dependencies
+    if experiment_dependencies is not None:
+        for dependency in experiment_dependencies:
+            add_dependency_to_document(session, document.id,
+                                       dependency)
+
+
+def add_dependency_to_document(session: Session, document_name: str,
+                               dependency: dict) -> None:
+    """Add a dependency to a document in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param document_name: The name of the document.
+    :type document_name: str
+
+    :param dependency: The dependency to add. dict with keys 'exepriment_name',
+                        'run_args_file', 'files', "runner", "runner_params",
+                        "container", "commit_sha", "action_name", 'action_args'
+    :type dependency: dict
+    """
+
+    # Find the document id
+    document_id = find_document_id(session, document_name)
+
+    # Find the experiment id
+    experiment_id = find_experiment_id(session,
+                                       dependency["experiment_name"])
+
+    # Default values for the runner and container
+    if "runner" not in dependency:
+        dependency["runner"] = "local"
+    if "runner_params" not in dependency:
+        dependency["runner_params"] = {}
+    if "container" not in dependency:
+        dependency["container"] = None
+    if "commit_sha" not in dependency:
+        dependency["commit_sha"] = None
+    if "action_name" not in dependency:
+        dependency["action_name"] = None
+    if 'action_args' not in dependency:
+        dependency['action_args'] = ""
+
+    # Add the experiment dependency
+    experiment_dependency = DocumentExperimentDependencies(
+        document_id=document_id,
+        experiment_id=experiment_id,
+        run_args_file=dependency["run_args_file"],
+        runner=dependency["runner"],
+        runner_params=dependency["runner_params"],
+        container=dependency["container"],
+        commit_sha=dependency["commit_sha"],
+        action_name=dependency["action_name"],
+        action_args=dependency["action_args"])
+    session.add(experiment_dependency)
+
+    # Add the files
+    for file_name in dependency["files"]:
+
+        # Check if the file already exists for this experiment
+        file = session.query(ExperimentResultFiles).filter(
+            ExperimentResultFiles.path == file_name).filter(
+            ExperimentResultFiles.experiment_id ==
+            experiment_id).first()
+
+        # If the file does not exist, add it
+        if file is None:
+            file = ExperimentResultFiles(
+                    path=file_name,
+                    experiment_id=experiment_id)
+            session.add(file)
+            session.commit()
+
+            file.id = session.query(ExperimentResultFiles).filter(
+                ExperimentResultFiles.path == file.path).filter(
+                ExperimentResultFiles.experiment_id ==
+                experiment_id).first().id
+
+        # Add the file to the document/experiment dependency
+        dep = DocumentExperimentFilesDependencies(
+            document_id=document_id,
+            experiment_id=experiment_id,
+            file_id=file.id)
+        session.add(dep)
+    session.commit()
+
+
 # ------------------------------------------------------------
 # Useful lookup functions
 # ------------------------------------------------------------
@@ -1040,6 +1261,31 @@ def find_dataset_id(session: Session, dataset_name: str) -> int:
     else:
         dataset_id = dataset.id
     return dataset_id
+
+
+def find_document_id(session: Session, document_name: str) -> int:
+    """Find the id of a document in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param document_name: The name of the document.
+    :type document_name: str
+
+    :return: The id of the document.
+    :rtype: int
+    """
+
+    # Query the database for the document
+    document = session.query(Document).filter(
+            Document.name == document_name).first()
+
+    # If the document does not exist, return -1
+    if document is None:
+        document_id = -1
+    else:
+        document_id = document.id
+    return document_id
 
 
 def find_action_id(session: Session, action_name: str,
@@ -1141,6 +1387,30 @@ def fetch_tags_of_dataset(Session: Session,
     tags = [tag.name for tag in
             Session.query(Tags).join(DatasetsTags).filter(
                 DatasetsTags.dataset_id == dataset_id).distinct()]
+    return tags
+
+
+def fetch_tags_of_document(Session: Session,
+                           document_name: str) -> list:
+    """Fetch the tags of a document in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param document_name: The name of the document.
+    :type document_name: str
+
+    :return: The tags of the document.
+    :rtype: list
+    """
+
+    # Find document_id through name
+    document_id = find_document_id(Session, document_name)
+
+    # Query the database for the tags
+    tags = [tag.name for tag in
+            Session.query(Tags).join(DocumentsTags).filter(
+                DocumentsTags.document_id == document_id).distinct()]
     return tags
 
 
@@ -1272,3 +1542,139 @@ def get_experiment_of_run(Session: Session,
     experiment = Session.query(Experiment).join(RunOfAnExperiment).filter(
             RunOfAnExperiment.id == run_id).first()
     return experiment
+
+
+def get_dependencies_info_of_document(
+        Session: Session, document_id: int) -> tuple:
+    """Get the infos on the dependencies to a document in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param document_id: The id of the document.
+    :type document_id: int
+
+    :return: The info on the dependencies as lists.
+    :rtype: tuple
+    """
+
+    # Query the database for the dependecies
+    dependencies_info = Session.query(
+        DocumentExperimentDependencies).filter(
+            DocumentExperimentDependencies.document_id ==
+            document_id).distinct()
+    runner = [dependency.runner for dependency in dependencies_info]
+    runner_params = [
+            dependency.runner_params for dependency in dependencies_info]
+    run_args_file = [
+            dependency.run_args_file for dependency in dependencies_info]
+    commit_sha = [dependency.commit_sha for dependency in dependencies_info]
+    action_name = [dependency.action_name for dependency in dependencies_info]
+    action_args = [
+            dependency.action_args for dependency in dependencies_info]
+
+    ids = [dependency.experiment_id for dependency in dependencies_info]
+    experiments = [Session.query(Experiment).filter(
+        Experiment.id == id).first() for id in ids]
+    return runner, runner_params, run_args_file, commit_sha, action_name, \
+        action_args, experiments
+
+
+def get_files_document_experiment(
+        Session: Session, document_id: int, experiment_id: int) -> list:
+    """Get the files relative to a document and an experiment in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param document_id: The id of the document.
+    :type document_id: int
+
+    :param experiment_id: The id of the experiment.
+    :type experiment_id: int
+
+    :return: The files of the document and the experiment.
+    :rtype: list
+    """
+
+    # Check whether experiment_id is associated to document_id
+    experiments = get_dependencies_info_of_document(Session, document_id)[-1]
+    if experiment_id not in [experiment.id for experiment in experiments]:
+        logger.error(
+            "Experiment {} is not associated to document {}".format(
+                experiment_id, document_id))
+        return []
+
+    # Query the database for the files
+    files_ids = [
+            dependency.file_id for dependency in Session.query(
+                DocumentExperimentFilesDependencies).filter(
+                    DocumentExperimentFilesDependencies.document_id ==
+                    document_id).filter(
+                        DocumentExperimentFilesDependencies.experiment_id ==
+                        experiment_id).distinct()]
+
+    files = [Session.query(ExperimentResultFiles).filter(
+                ExperimentResultFiles.id == file_id).first().path
+             for file_id in files_ids]
+
+    return files
+
+
+def check_document_exists(
+        Session: Session, document_name: str) -> bool:
+    """Check whether a document exists in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param document_name: The name of the document.
+    :type document_name: str
+
+    :return: Whether the document exists or not.
+    :rtype: bool
+    """
+
+    # Query the database for the document
+    document = Session.query(Document).filter_by(name=document_name).first()
+    return document is not None
+
+
+def check_document_dependency_exists(
+        Session: Session, document_name: int, experiment_name: int,
+        run_args_file: str) -> bool:
+    """Check whether a document dependency exists in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param document_name: The name of the document.
+    :type document_name: str
+
+    :param experiment_name: The name of the experiment.
+    :type experiment_name: str
+
+    :param run_args_file: The run args file.
+    :type run_args_file: str
+
+    :return: Whether the dependency exists or not.
+    :rtype: bool
+    """
+
+    # Query the database for the document, experiment
+    document = Session.query(Document).filter_by(name=document_name).first()
+    experiment = Session.query(Experiment).filter_by(
+        name=experiment_name).first()
+
+    if document is None or experiment is None:
+        logger.error(
+            "Document {} or experiment {} does not exist".format(
+                document_name, experiment_name))
+        return False
+
+    # Query the tables for the dependency
+    dependency_doc_experiment = Session.query(
+            DocumentExperimentDependencies).filter_by(
+        document_id=document.id, experiment_id=experiment.id,
+        run_args_file=run_args_file).first()
+    return dependency_doc_experiment is not None

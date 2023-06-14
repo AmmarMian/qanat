@@ -31,6 +31,11 @@ COMMIT = ":bookmark_tabs:"
 CONTAINER = ":package:"
 PROGRESS = ":hourglass_flowing_sand:"
 COMMENT = ":pencil:"
+DOCUMENT = ":page_facing_up:"
+EXEC = ":gear:"
+VIEW = ":eye:"
+FILE = ":file_folder:"
+ACTION = ":hammer_and_wrench:"
 
 # --------------------------------------------------------
 # Experiment CLI Constants
@@ -38,13 +43,13 @@ COMMENT = ":pencil:"
 EXPERIMENT_NAME = NAME
 EXPERIMENT_DESCRIPTION = DESCRIPTION
 EXPERIMENT_PATH = PATH
-EXPERIMENT_EXECUTABLE = ":gear: "
-EXPERIMENT_EXECUTE_COMMAND = ":gear: "
+EXPERIMENT_EXECUTABLE = EXEC
+EXPERIMENT_EXECUTE_COMMAND = EXEC
 EXPERIMENT_TAGS = TAGS
 EXPERIMENT_DATASETS = DATASET
 EXPERIMENT_ID = ID
 EXPERIMENT_RUNS = RUN
-EXPERIMENT_ACTION = ":hammer_and_wrench: "
+EXPERIMENT_ACTION = ACTION
 RUN_IS_RUNNING = ":play_button:"
 RUN_IS_FINISHED = ":checkered_flag:"
 RUN_IS_FAILED = ":x:"
@@ -96,3 +101,12 @@ STATUS_EXPERIMENT = EXPERIMENT
 STATUS_DATASET = DATASET
 STATUS_RUN = RUN
 STATUS_RUNNING = ":hourglass_not_done:"
+
+# --------------------------------------------------------
+# Available runners
+# --------------------------------------------------------
+RUNNER_LOCAL = "local"
+RUNNER_SLURM = "slurm"
+RUNNER_HTCONDOR = "htcondor"
+
+available_runners = [RUNNER_LOCAL, RUNNER_HTCONDOR]
