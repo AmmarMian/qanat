@@ -339,10 +339,11 @@ def document_view(name):
 
 @document_main.command(name="compile")
 @click.argument("name", type=click.STRING, required=True)
-@click.pass_context
-def document_compile(ctx, name):
+@click.option("--options", type=click.STRING, required=False,
+              help="Options to pass to the compiler as str.")
+def document_compile(name, options):
     """Compile document."""
-    document.command_compile(name, ctx)
+    document.command_compile(name, options)
 
 
 @document_main.command(name="add_dependency")
@@ -377,6 +378,16 @@ def document_add_dependency(document_name, experiment_name, run_args_file,
                                         yes)
 
 
+@document_main.command(name="delete_dependency")
+@click.argument("document_name", type=click.STRING, required=False)
+@click.argument("experiment_name", type=click.STRING, required=False)
+@click.argument("run_args_file", type=click.STRING, required=False)
+def document_delete_dependency(document_name, experiment_name,
+                               run_args_file):
+    """Delete dependency from document."""
+    click.echo("Not implemented yet.")
+
+
 @document_main.command(name="delete")
 @click.argument("name", type=click.STRING, required=True)
 def document_delete(name):
@@ -385,9 +396,10 @@ def document_delete(name):
 
 
 @document_main.command(name="update")
-def document_update():
+@click.argument("name", type=click.STRING, required=True)
+def document_update(name):
     """Update document."""
-    click.echo("TODO")
+    document.command_update(name)
 
 
 # Subcommands: dataset

@@ -21,7 +21,8 @@ from ..core.database import (
         check_document_exists, check_document_dependency_exists,
         add_dependency_to_document, add_document,
         fetch_tags_of_document, get_dependencies_info_of_document,
-        get_files_document_experiment
+        get_files_document_experiment, update_document,
+        delete_document
 )
 from ..core.documents import DocumentCompiler
 from ..utils.logging import setup_logger
@@ -45,17 +46,17 @@ def command_view(document_name: str):
 # Functions relative Document compiling
 # ========================================
 def command_compile(document_name: str,
-                    compile_options: dict):
+                    compile_options: str):
     """Compile a document.
 
     :param document_name: Name of the document to compile
     :param type: str
 
     :param compile_options: Options to pass to the compiler
-    :param type: dict
+    :param type: str
     """
     compiler = DocumentCompiler(document_name)
-    compiler.compile(compile_options)
+    compiler.compile_document(compile_options)
 
 
 # ========================================
@@ -256,7 +257,8 @@ def command_add_dependency_prompt():
         experiment = session.query(
                 Experiment).filter_by(name=experiment_name).first()
 
-    commit_sha = prompt.ask(f"{RUNNER} Commit sha of run (enter for current)",
+    commit_sha = prompt.ask(f"{RUNNER} Commit sha of run "
+                            "(enter for always current)",
                             default=None)
 
     # Check if the commit sha exists in this git repository
@@ -415,8 +417,7 @@ def command_add_prompt():
     document_tags = prompt.ask(f"{TAGS} Document tags (separated by a comma)")
     document_tags = document_tags.strip().split(",")
     document_compile_script = prompt.ask(f"{EXEC} Document compile script",
-                                         default=os.path.join(document_path,
-                                                              "compile.sh"))
+                                         default="compile.sh")
     document_compile_command = prompt.ask(f"{EXEC} Document compile command",
                                           default="bash")
     document_view_script = prompt.ask(f"{VIEW} Document view script",
@@ -454,20 +455,116 @@ def command_add_prompt():
                  document_view_command, tags=document_tags)
     logger.info(f"Document '{document_name}' added to the database")
 
-    console.print("To add a dependency to this document, use the command:")
-    console.print("[bold green]qanat document add_dependency")
+    # Asking for dependencies
+    while confirm.ask("[bold red]Do you want to add a dependency?"):
+        command_add_dependency_prompt(session, document_name)
+
     session.close()
 
 
 # ========================================
 # Functions relative Document edition
 # ========================================
-def command_update():
-    print("TODO")
+def command_update(document_name: str):
+    """Update a document
+
+    :param document_name: Name of the document to update
+    :type document_name: str
+    """
+
+    engine, Base, Session = open_database('.qanat/database.db')
+    session = Session()
+
+    # Check if the document exists in the database
+    document = session.query(Document).filter_by(name=document_name).first()
+    if document is None:
+        logger.error(f"Document {document_name} does not exist")
+        return
+
+    console = rich.console.Console()
+    prompt = rich.prompt.Prompt()
+
+    console.print(f"{DOCUMENT} Document update prompt:")
+    command_status(document_name)
+
+    # Asking what to update
+    choices = [
+        "Name", "Description", "Path", "Compile script", "Compile command",
+        "View script", "View command", "Tags", "Dependencies", "Exit"]
+    choice = prompt.ask(f"{DOCUMENT} What do you want to update?",
+                        choices=choices)
+
+    while choice != "Exit":
+
+        new_name, new_description, new_path, new_compile_script, \
+            new_compile_command, new_view_script, new_view_command, \
+            new_tags = None, None, None, None, None, None, \
+            None, None
+
+        if choice == "Name":
+            new_name = prompt.ask(f"{NAME} New name")
+        elif choice == "Description":
+            new_description = prompt.ask(f"{DESCRIPTION} New description")
+        elif choice == "Path":
+            new_path = prompt.ask(f"{PATH} New path (from project root)")
+            while not os.path.isdir(new_path):
+                console.print(f"{PATH} Directory {new_path} does not exist")
+                new_path = prompt.ask(f"{PATH} New path (from project root)")
+        elif choice == "Compile script":
+            new_compile_script = prompt.ask(f"{EXEC} New compile script")
+        elif choice == "Compile command":
+            new_compile_command = prompt.ask(f"{EXEC} New compile command")
+        elif choice == "View script":
+            new_view_script = prompt.ask(f"{VIEW} New view script")
+        elif choice == "View command":
+            new_view_command = prompt.ask(f"{VIEW} New view command")
+        elif choice == "Tags":
+            new_tags = prompt.ask(f"{TAGS} New tags (separated by a comma)")
+            new_tags = new_tags.strip().split(",")
+        elif choice == "Dependencies":
+            console.print("Sorry, this feature is not implemented yet"
+                          " You can delete the dependency with the command"
+                          " 'qanat document delete_dependency'"
+                          " and add it again with the command"
+                          " 'qanat document add_dependency'")
+
+        # Update
+        update_document(session, document_name, new_name=new_name,
+                        new_description=new_description,
+                        new_path=new_path,
+                        new_compile_script=new_compile_script,
+                        new_compile_script_command=new_compile_command,
+                        new_view_script=new_view_script,
+                        new_view_script_command=new_view_command,
+                        new_tags=new_tags)
+
+        choice = prompt.ask(f"{DOCUMENT} What do you want to update?",
+                            choices=choices)
+
+    session.close()
 
 
 # ========================================
 # Functions relative Document deletion
 # ========================================
 def command_delete(document_name):
-    print("TODO")
+    """Delete a document
+
+    :param document_name: Name of the document to delete
+    :type document_name: str
+    """
+
+    confirm = rich.prompt.Confirm()
+
+    logger.info(f"Deleting document '{document_name}'")
+    logger.warning("This action is irreversible")
+
+    command_status(document_name)
+
+    if not confirm.ask("[bold red]Are you sure?"):
+        return
+
+    engine, Base, Session = open_database('.qanat/database.db')
+    session = Session()
+    delete_document(session, document_name)
+    session.close()

@@ -995,7 +995,7 @@ def launch_run_experiment(experiment_name: str,
                                 "Automatic commit before running experiment "
                                 f"{experiment_name}: {commit_description}")
             else:
-                return -1
+                sys.exit(-1)
 
         commit_sha_dB = repo.head.commit.hexsha
 

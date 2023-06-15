@@ -815,6 +815,56 @@ def delete_run_from_id(session: Session, run_id: int):
     session.commit()
 
 
+def delete_document(session: Session, document_name: str):
+    """Delete a document from the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param document_name: The name of the document.
+    :type document_name: str
+    """
+
+    # Find the document_id
+    document_id = find_document_id(session, document_name)
+
+    # If the document does not exist, return
+    if document_id == -1:
+        logger.warning(f"Document {document_name} does not exist in the "
+                       f"database.")
+        return
+
+    # Deleting the Tags association
+    session.query(DocumentsTags).filter(
+        DocumentsTags.document_id == document_id).delete()
+
+    # Deleteing the Experiment and file dependencies
+    logger.info(f"Deleting the experiment and file dependencies of "
+                f"document {document_name}.")
+    file_ids = session.query(
+            DocumentExperimentFilesDependencies.file_id).filter(
+        DocumentExperimentFilesDependencies.document_id == document_id).all()
+
+    session.query(
+            DocumentExperimentFilesDependencies).filter(
+      DocumentExperimentFilesDependencies.document_id == document_id).delete()
+
+    for file_id in file_ids:
+        session.query(ExperimentResultFiles).filter(
+            ExperimentResultFiles.id == file_id[0]).delete()
+
+    session.query(DocumentExperimentDependencies).filter(
+        DocumentExperimentDependencies.document_id == document_id).delete()
+
+    # Deleting the document
+    logger.info(f"Deleting document {document_name}.")
+    session.query(Document).filter(
+        Document.id == document_id).delete()
+    session.commit()
+
+    logger.info(f"Document {document_name} deleted.")
+
+
 def update_experiment(session: Session, experiment_name: str,
                       new_experiment_name: str = None,
                       new_experiment_description: str = None,
@@ -960,6 +1010,104 @@ def update_experiment(session: Session, experiment_name: str,
     session.commit()
 
 
+def update_document(session: Session, document_name: str,
+                    new_name: str = None,
+                    new_description: str = None,
+                    new_path: str = None,
+                    new_compile_script: str = None,
+                    new_compile_script_command: str = None,
+                    new_view_script: str = None,
+                    new_view_script_command: str = None,
+                    new_tags: list = None) -> None:
+    """Update a document in the database.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param document_name: The name of the document.
+    :type document_name: str
+
+    :param new_name: The new name of the document.
+    :type new_name: str
+
+    :param new_description: The new description of the document.
+    :type new_description: str
+
+    :param new_path: The new path of the document.
+    :type new_path: str
+
+    :param new_compile_script: The new compile script of the
+    :type new_compile_script: str
+
+    :param new_compile_script_command: The new compile script command
+    :type new_compile_script_command: str
+
+    :param new_view_script: The new view script of the document.
+    :type new_view_script: str
+
+    :param new_view_script_command: The new view script command of
+    :type new_view_script_command: str
+
+    :param new_tags: The new tags of the document.
+    :type new_tags: list
+    """
+
+    # Find the document
+    document = session.query(Document).filter(
+        Document.name == document_name).first()
+
+    to_update = []
+    # Update the properties of the document
+    if new_name is not None:
+        document.name = new_name
+        to_update.append("name")
+    if new_description is not None:
+        document.description = new_description
+        to_update.append("description")
+    if new_path is not None:
+        document.path = new_path
+        to_update.append("path")
+    if new_compile_script is not None:
+        document.compile_script = new_compile_script
+        to_update.append("compile_script")
+    if new_compile_script_command is not None:
+        document.compile_script_command = new_compile_script_command
+        to_update.append("compile_script_command")
+    if new_view_script is not None:
+        document.view_script = new_view_script
+        to_update.append("view_script")
+    if new_view_script_command is not None:
+        document.view_script_command = new_view_script_command
+        to_update.append("view_script_command")
+
+    # Update the tags of the document
+    # ------------------------------------
+    # Find the tags of the document
+    if new_tags is not None:
+        document_tags = fetch_tags_of_document(session, document_name)
+
+        # Delete the tags not in the new tags
+        for tag in document_tags:
+            if tag.name not in new_tags:
+                session.query(DocumentsTags).filter(
+                    DocumentsTags.document_id == document.id,
+                    DocumentsTags.tag_id == tag.id).delete()
+
+        # Add the new tags
+        for tag in new_tags:
+            add_tag(session, tag, "")
+            tag_id = find_tag_id(session, tag)
+
+            # Add the tag to the document
+            doctag = DocumentsTags(document_id=document.id, tag_id=tag_id)
+            session.add(doctag)
+
+    logger.info(f"Updating document {document_name} in the database.\n"
+                f"Properties updated: {to_update}")
+
+    session.commit()
+
+
 def update_run_status(session: Session, run_id: int,
                       new_status: str) -> None:
     """Update the status of a run in the database.
@@ -1084,6 +1232,10 @@ def add_document(session: Session, name: str, path: str,
     :param tags: The tags of the document.
     :type tags: list
     """
+
+    # Check if the document already exists
+    if find_document_id(session, name) != -1:
+        raise ValueError(f"The document {name} already exists.")
 
     # Create the document
     document = Document(name=name, path=path,
