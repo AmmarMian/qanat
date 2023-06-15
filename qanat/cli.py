@@ -215,6 +215,8 @@ def experiment_run(ctx, name, runner, group_param, range_param,
     * [bold yellow]--submit_template[/bold yellow] for htcondor runner,
     path to the submit template to use or name of the submit template in the
     config file.\n
+    * [bold yellow]--wait[/bold yellow] for htcondor runner, wait for the
+    experiment to finish.\n
     * [bold yellow]--param_file[/bold yellow] to specify a file containing
     parameters to run as a single run.\n
     * [bold yellow]--group_param[/bold yellow] to specify group of parameters

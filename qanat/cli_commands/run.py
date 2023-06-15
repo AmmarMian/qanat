@@ -1048,8 +1048,9 @@ def launch_run_experiment(experiment_name: str,
     run = add_run(
             session, experiment_name, storage_path,
             commit_sha_dB, parsed_parameters, description,
-            tags, runner, container_path, runner_params
-            )
+            tags, runner, container_path, runner_params,
+            param_file
+        )
     run_id = run.id
     logger.info(f"Run {run_id} created.")
 
@@ -1092,12 +1093,20 @@ def launch_run_experiment(experiment_name: str,
                                      f"{runner_params['--submit_template']} "
                                      "not found in config.yaml nor is a file")
 
+        # Wait or not end of execution
+        if "--wait" in runner_params:
+            wait = runner_params["--wait"].lower() in [
+                    "true", "yes", "1", "y"]
+        else:
+            wait = False
+
         execution_handler = HTCondorExecutionHandler(
                 database_sessionmaker=Session,
                 run_id=run_id,
                 htcondor_submit_options=submit_info,
                 container_path=container_path,
-                commit_sha=commit_sha)
+                commit_sha=commit_sha,
+                wait=wait)
 
     else:
         raise NotImplementedError(f"Runner {runner} is not implemented yet.")

@@ -10,6 +10,7 @@
 import git
 import sys
 import shutil
+import time
 import os
 import signal
 from sqlalchemy.orm import sessionmaker
@@ -49,6 +50,9 @@ except ImportError:
     logger.info("HTCondor python bindings not available on system. "
                 "Please install htcondor if available: "
                 "pip install htcondor")
+
+
+WAIT_TIME_INTERVAL_CHECK = 5  # seconds
 
 
 def get_progress(repertory_path: str) -> float:
@@ -675,7 +679,8 @@ class HTCondorExecutionHandler(RunExecutionHandler):
     def __init__(self, database_sessionmaker, run_id,
                  htcondor_submit_options=None,
                  container_path: str = None,
-                 commit_sha: str = None):
+                 commit_sha: str = None,
+                 wait: bool = False):
         super().__init__(database_sessionmaker, run_id, container_path,
                          commit_sha)
 
@@ -687,6 +692,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
             self.htcondor_available = True
 
         self.htcondor_submit_options = htcondor_submit_options
+        self.wait = wait
 
     def run_experiment(self):
         """Run the experiment."""
@@ -756,7 +762,29 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         info['submit_dicts'] = submit_dicts
         self.update_yaml_file(info)
 
+        self.cluster_ids = cluster_ids
+
         logger.info("Jobs submitted to clusters " + " ".join(str(cluster_ids)))
+
+        if self.wait:
+            self.wait_end()
+
+    def wait_end(self):
+        """Wait until all jobs are finished."""
+
+        logger.info("Wait flag has been activated.")
+        console = rich.console.Console()
+        with console.status("Waiting for jobs to finish...",
+                            spinner="dots") as status:
+            while self.check_status() == "running":
+                time.sleep(WAIT_TIME_INTERVAL_CHECK)
+                progress = self.check_progress()
+                if progress is not None:
+                    status.update(status=f"Waiting for jobs to finish... "
+                                         f"{progress}%")
+            status.update(status="Jobs finished")
+
+        logger.info(f"Jobs finished with status {self.check_status()}")
 
     def check_status(self):
         """Check the status of the run."""

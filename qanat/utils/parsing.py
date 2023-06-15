@@ -418,7 +418,8 @@ def parse_positional_optional_arguments(
 def parse_args_cli(ctx: click.Context, groups_of_parameters: list = [],
                    range_of_parameters: list = [],
                    runner_params_to_get: list =
-                   ["--n_threads", "--submit_template"]) -> tuple:
+                   ["--n_threads", "--submit_template",
+                    "--wait"]) -> tuple:
     """Parse the arguments of the CLI and return a list of dictionary of them.
     The arguments are parsed from the context of the CLI and the groups
     of parameters.

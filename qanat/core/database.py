@@ -24,6 +24,8 @@ from sqlalchemy.types import TypeDecorator
 import json
 from rich.console import Console
 
+from typing import Tuple, List
+
 from ..utils.logging import setup_logger
 logger = setup_logger()
 
@@ -165,6 +167,7 @@ class RunOfAnExperiment(Base):
     runner_params = Column(JSONEncodedDict)
     progress = Column(String, server_default="")
     comment_file = Column(String)
+    param_file = Column(String)
 
 
 @dataclass
@@ -539,7 +542,8 @@ def add_run(session: Session,
             tags: list = [],
             runner: str = 'local',
             container_path: str = None,
-            runner_params: dict = {}) -> RunOfAnExperiment:
+            runner_params: dict = {},
+            param_file: str = None) -> RunOfAnExperiment:
     """Add a run to the database.
 
     :param session: The session of the database.
@@ -573,6 +577,9 @@ def add_run(session: Session,
     :param runner_params: The parameters of the runner. Default is {}.
     :type runner_params: dict
 
+    :param param_file: The path to the parameter file. Default is None.
+    :type param_file: str
+
     :return: The run object.
     :rtype: qanat.core.dataset.RunOfAnExperiment
     """
@@ -585,7 +592,8 @@ def add_run(session: Session,
                             description=description, commit_sha=commit_sha,
                             storage_path=storage_path,
                             runner=runner, runner_params=runner_params,
-                            container_path=container_path)
+                            container_path=container_path,
+                            param_file=param_file)
     session.add(run)
     session.commit()
 
@@ -1678,3 +1686,42 @@ def check_document_dependency_exists(
         document_id=document.id, experiment_id=experiment.id,
         run_args_file=run_args_file).first()
     return dependency_doc_experiment is not None
+
+
+def get_document_info_from_name(
+        Session: Session, document_name: str) -> Tuple[
+                Document, List[DocumentExperimentDependencies],
+                List[DocumentExperimentFilesDependencies]]:
+    """Get the info of a document from its name.
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :param document_name: The name of the document.
+    :type document_name: str
+
+    :return: The info of the document.
+    :rtype: Document
+
+    :return: The info of the document experiment dependencies.
+    :rtype: list of DocumentExperimentDependencies
+
+    :return: The info of the document experiment files dependencies.
+    :rtype: list of DocumentExperimentFilesDependencies
+    """
+
+    # Get document from its name
+    document = Session.query(Document).filter_by(name=document_name).first()
+
+    # Get document experiment dependencies from document
+    dependencies = [
+            x for x in Session.query(DocumentExperimentDependencies).filter_by(
+                document_id=document.id).all()]
+
+    # Get document experiment files dependencies from document
+    file_dependencies = [
+            x for x in Session.query(
+                DocumentExperimentFilesDependencies).filter_by(
+                    document_id=document.id).all()]
+
+    return document, dependencies, file_dependencies

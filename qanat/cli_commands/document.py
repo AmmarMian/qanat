@@ -23,6 +23,7 @@ from ..core.database import (
         fetch_tags_of_document, get_dependencies_info_of_document,
         get_files_document_experiment
 )
+from ..core.documents import DocumentCompiler
 from ..utils.logging import setup_logger
 from ..utils.parsing import parse_document_file
 logger = setup_logger()
@@ -53,7 +54,8 @@ def command_compile(document_name: str,
     :param compile_options: Options to pass to the compiler
     :param type: dict
     """
-    print("TODO")
+    compiler = DocumentCompiler(document_name)
+    compiler.compile(compile_options)
 
 
 # ========================================
