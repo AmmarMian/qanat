@@ -776,12 +776,20 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         console = rich.console.Console()
         with console.status("Waiting for jobs to finish...",
                             spinner="dots") as status:
-            while self.check_status() == "running":
+            last_status = self.check_status()
+            while last_status in ["running", "unknown",
+                                          "not_started"]:
                 time.sleep(WAIT_TIME_INTERVAL_CHECK)
                 progress = self.check_progress()
                 if progress is not None:
-                    status.update(status=f"Waiting for jobs to finish... "
-                                         f"{progress}%")
+                    status.update(status=f"Waiting for jobs to finish... Status: "
+                                         f"{last_status}. "
+                                         f"Progress: {progress}%")
+                else:
+                    status.update(status=f"Waiting for jobs to finish... Status: "
+                                         f"{last_status}.")
+
+                last_status = self.check_status()
             status.update(status="Jobs finished")
 
         logger.info(f"Jobs finished with status {self.check_status()}")
