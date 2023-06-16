@@ -62,11 +62,18 @@ The term **comment** refers to a comment that can be added to a run of an experi
 Document
 ---------
 
-.. warning::
-    This is not implemented yet
-
 The term **document** refers to a document that is relevant to the project such as a paper, report, website. It can be linked to experiments, dependency style, with a specific set run options that are expected to produce some output. If any expected output from a dependency is not existing, the experiment will be run with the saved options and then the document will be compiled.
 
+
+.. _runner:
+
+Runner
+-------
+
+The ter **runner** refers to a specific way to execute your experiment run script. Either on the machine launching the execution (runner = 'local') or through a job scheduling system (runner = 'htcondor' or runner = 'slurm'). It is associated with parameters. See (todo) for more details on parameters for specific runners.
+
+.. warning::
+    slurm is not implemented yet.
 
 
 .. _container:

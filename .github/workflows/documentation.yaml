@@ -11,7 +11,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements_dev.txt;
-          pip install sphinx furo sphinx_click
+          pip install sphinx furo sphinx_click sphinx-copybutton
       - name: Sphinx build
         run: |
           sphinx-build docsrc docs/

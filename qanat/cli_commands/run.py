@@ -1,4 +1,4 @@
-# ========================================
+
 # FileName: run.py
 # Date: 09 mai 2023 - 14:38
 # Author: Ammar Mian
@@ -822,7 +822,8 @@ def delete_run(experiment_name: str, run_id: int):
                 if wait_finish:
                     session.close()
                     with console.status(
-                            "[bold green]Waiting for run to finish gracefully..."):
+                            "[bold green]Waiting for run to "
+                            "finish gracefully..."):
                         cancel_done = False
                         while not cancel_done:
                             session = Session()

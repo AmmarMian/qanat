@@ -283,6 +283,12 @@ class RunExecutionHandler:
             logger.error(f"No info.yaml file found for run {self.run.id}.")
             return None
 
+        except yaml.YAMLError as exc:
+            logger.error(f"Error while parsing info.yaml file for run "
+                         f"{self.run.id}.")
+            logger.error(exc)
+            return None
+
     def update_yaml_file(self, info: dict):
         """Update YAML info file
 

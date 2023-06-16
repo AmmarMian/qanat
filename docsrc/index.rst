@@ -7,12 +7,13 @@ Welcome to Qanat's documentation!
 
    readme
    installation
-   usage
+   usage/index
+   tutorials/index
    modules
    contributing
    authors
    history
-
+ 
 Indices and tables
 ==================
 * :ref:`genindex`

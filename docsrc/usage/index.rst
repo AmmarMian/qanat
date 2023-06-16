@@ -36,23 +36,12 @@ Qanat is based on a few concepts that are important to understand in order to us
 .. toctree::
     :maxdepth: 2
 
-    usage.vocabulary
+    vocabulary
 
-
-Tutorials
-=========
-
-Below are some tutorials to get you started with qanat.
-
-.. toctree::
-    :maxdepth: 2
-
-    usage.tutorials.basics
-    usage.tutorials.advanced
 
 CLI reference
 =============
 .. toctree::
     :maxdepth: 2
 
-    usage.cli_reference
+    cli_reference/index

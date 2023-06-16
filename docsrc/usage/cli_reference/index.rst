@@ -7,7 +7,7 @@ Here you can find the reference documentation for the CLI commands with a short 
 .. toctree::
    :maxdepth: 1
 
-   usage.cli_reference.init
-   usage.cli_reference.cache
+   init
+   cache
 
 
