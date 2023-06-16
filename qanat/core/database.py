@@ -1261,7 +1261,7 @@ def add_document(session: Session, name: str, path: str,
     # Add the dependencies
     if experiment_dependencies is not None:
         for dependency in experiment_dependencies:
-            add_dependency_to_document(session, document.id,
+            add_dependency_to_document(session, document.name,
                                        dependency)
 
 
@@ -1283,6 +1283,9 @@ def add_dependency_to_document(session: Session, document_name: str,
 
     # Find the document id
     document_id = find_document_id(session, document_name)
+    if document_id == -1:
+        logger.error(f"The document {document_name} does not exist.")
+        return
 
     # Find the experiment id
     experiment_id = find_experiment_id(session,
@@ -1303,6 +1306,8 @@ def add_dependency_to_document(session: Session, document_name: str,
         dependency['action_args'] = ""
 
     # Add the experiment dependency
+    logger.info(f"Adding dependency {dependency['experiment_name']} to "
+                f"document {document_name}")
     experiment_dependency = DocumentExperimentDependencies(
         document_id=document_id,
         experiment_id=experiment_id,

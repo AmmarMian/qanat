@@ -538,7 +538,7 @@ def parse_document_file(document_file: str) -> dict:
     if "compile_script" not in document:
         raise ValueError("Document file must contain a compile_script")
 
-    if "compile_command" not in document["compile"]:
+    if "compile_command" not in document:
         logger.warning("No compile command specified in the document file. "
                        "Defaulted as make")
         document["compile_command"] = "make"
@@ -555,17 +555,12 @@ def parse_document_file(document_file: str) -> dict:
             if "experiment_name" not in dependency:
                 raise ValueError("Experiment dependency must contain "
                                  "an experiment name")
+            experiment_name = dependency["experiment_name"]
 
-            if "run_id" not in dependency or \
-                    "run_args" not in dependency:
-                experiment_name = dependency["experiment_name"]
+            if "run_args_file" not in dependency:
                 raise ValueError(f"Experiment {experiment_name} dependency "
-                                 "must contain a run_id or run_args")
+                                 "must contain a run_args_file")
 
-            if "run_id" in dependency and "run_args" in dependency:
-                experiment_name = dependency["experiment_name"]
-                raise ValueError(f"Experiment {experiment_name} dependency "
-                                 "must contain a run_id or run_args, not both")
             if "runner" not in dependency:
                 logger.warning("No runner specified for experiment "
                                f"{experiment_name}. Defaulted as local")
@@ -575,8 +570,7 @@ def parse_document_file(document_file: str) -> dict:
                 document["container"] = None
 
             if "runner_params" not in dependency:
-                dependency["runner_params"] = {}
-
+                dependency["runner_params"] = ""
 
             if 'action_name' not in dependency:
                 dependency['action_name'] = None
@@ -584,12 +578,12 @@ def parse_document_file(document_file: str) -> dict:
             if 'action_params' not in dependency:
                 dependency['action_params'] = ""
 
-            if "files_dependency" not in dependency:
-                dependency["files_dependency"] = []
+            if "files" not in dependency:
+                dependency["files"] = []
             else:
-                if not isinstance(dependency["files_dependency"], list):
+                if not isinstance(dependency["files"], list):
                     raise ValueError("Files dependency must be a list")
-                for file in dependency["files_dependency"]:
+                for file in dependency["files"]:
                     if not isinstance(file, str):
                         raise ValueError("Files dependency must be a list "
                                          "of strings")
@@ -599,7 +593,7 @@ def parse_document_file(document_file: str) -> dict:
         document["view_command"] = None
 
     if "view_script" in document and \
-            "view_script_command" not in document["view_script"]:
+            "view_script_command" not in document:
         raise ValueError(
                 "View script must be associated with a view_script_command")
 

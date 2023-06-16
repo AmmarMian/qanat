@@ -320,6 +320,7 @@ def document_new(description_file):
     """
     if description_file is not None:
         document.command_add_from_file(description_file)
+        return
     document.command_add_prompt()
 
 
