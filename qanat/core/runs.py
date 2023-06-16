@@ -347,12 +347,14 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
 
     def __init__(self, database_sessionmaker: sessionmaker,
                  run_id: int, n_threads: int = 1, container_path: str = None,
-                 commit_sha: str = None):
+                 commit_sha: str = None,
+                 only_check_status: bool = False):
         super().__init__(database_sessionmaker, run_id, container_path,
                          commit_sha)
         self.n_threads = n_threads
         self.process_pid = os.getpid()
-        signal.signal(signal.SIGINT, self.sigint_handler)
+        if not only_check_status:
+            signal.signal(signal.SIGINT, self.sigint_handler)
         self.console = rich.console.Console()
         self.progress = None
 

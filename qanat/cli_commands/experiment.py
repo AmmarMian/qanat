@@ -8,14 +8,17 @@
 # =========================================
 
 import os
+import time
 from datetime import datetime
 import rich
 from rich.table import Table
 from rich import prompt
 from rich.console import Console
+from rich.live import Live
 import rich_click as click
 import sqlalchemy
 import yaml
+from typing import List
 from ..utils.logging import setup_logger
 from ..core.database import (
     open_database, add_experiment, find_experiment_id,
@@ -26,13 +29,14 @@ from ..core.database import (
     add_action, fetch_tags_of_run, add_tag,
     fetch_actions_of_experiment,
     update_experiment, delete_action, Experiment, Action,
-    update_run_progress)
+    update_run_progress,
+    RunOfAnExperiment)
 from ._constants import (
     EXPERIMENT_NAME, EXPERIMENT_DESCRIPTION, EXPERIMENT_PATH,
     EXPERIMENT_EXECUTABLE, EXPERIMENT_EXECUTE_COMMAND, EXPERIMENT_TAGS,
     EXPERIMENT_DATASETS, EXPERIMENT_RUNS, EXPERIMENT_ID,
     EXPERIMENT_ACTION, get_run_status_emoji, EXIT,
-    RUN_LAUNCH_DATE, RUN_DURATION)
+    RUN_LAUNCH_DATE, RUN_DURATION, EXPERIMENT_LIVE_REFRESH)
 from ..core.runs import (
     LocalMachineExecutionHandler,
     HTCondorExecutionHandler
@@ -729,15 +733,144 @@ def command_list():
 # --------------------------------------------------------
 # Command status
 # -------------------------------------------------------
+def generate_grid_runs(sessionmaker: sqlalchemy.orm.sessionmaker,
+                       runs: List[RunOfAnExperiment]) -> Table:
+    """Generate rich grid of runs to render in the console.
+
+    :param sessionmaker: Sessionmaker of the database
+    :type sessionmaker: sqlalchemy.orm.sessionmaker
+
+    :param runs: List of runs
+    :type runs: List[RunOfAnExperiment]
+
+    :return: Table of runs
+    :rtype: Table
+    """
+    grid = Table.grid(expand=False, padding=(0, 4))
+    grid.add_column(justify="left", header="ID")
+    grid.add_column(justify="left", header="Description")
+    grid.add_column(justify="left", header="Path")
+    grid.add_column(justify="center", header="Runner")
+    grid.add_column(justify="left", header="Launch date")
+    grid.add_column(justify="left", header="Duration")
+    grid.add_column(justify="center", header="Status", no_wrap=True)
+    grid.add_column(justify="left", header="Tags", style="bold")
+    grid.add_column(justify="right", header="Progress")
+    grid.add_row("[bold]ID[/bold]",
+                 "[bold]Description[/bold]",
+                 "[bold]Path[/bold]", "[bold]Runner[/bold]",
+                 "[bold]Launch date[/bold]",
+                 "[bold]Duration[/bold]", "[bold]Status[/bold]",
+                 "[bold]Tags[/bold]", "[bold]Progress[/bold]")
+
+    Session = sessionmaker()
+    for i, run in enumerate(runs):
+
+        tags = fetch_tags_of_run(Session, run.id)
+        if len(tags) >= 1:
+            tags = f"{EXPERIMENT_TAGS} " +\
+                f", {EXPERIMENT_TAGS} ".join(fetch_tags_of_run(
+                                                Session, run.id))
+        else:
+            tags = ""
+
+        if run.launched is not None:
+            if run.status == "running":
+                duration = datetime.now() - run.launched
+            elif run.status == "finished" and run.finished is not None:
+                duration = run.finished - run.launched
+            else:
+                duration = "N/A"
+        else:
+            duration = "N/A"
+
+        RUN_STATUS = get_run_status_emoji(run.status)
+        grid.add_row(f"{EXPERIMENT_ID} {run.id}",
+                     f"{EXPERIMENT_DESCRIPTION} {run.description}",
+                     f"{EXPERIMENT_PATH} {run.storage_path}",
+                     f"{run.runner}",
+                     f"{RUN_LAUNCH_DATE} {run.launched}",
+                     f"{RUN_DURATION}  {duration}",
+                     f"{RUN_STATUS}",
+                     f"{tags}",
+                     f"{run.progress}")
+
+    Session.close()
+    return grid
+
+
+def fetch_status_runs(sessionmaker: sqlalchemy.orm.sessionmaker,
+                      experiment_name: str,
+                      animation: bool = False) -> List[RunOfAnExperiment]:
+    """Fetch the status of the runs of an experiment.
+
+    :param sessionmaker: Sessionmaker of the database
+    :type sessionmaker: sqlalchemy.orm.sessionmaker
+
+    :param experiment_name: Name of the experiment
+    :type experiment_name: str
+
+    :param animation: If True, the command will be show a spinner
+                      animation while fetching the status of the runs
+    :type animation: bool
+
+    :return: List of runs
+    :rtype: List[RunOfAnExperiment]
+    """
+
+    def get_status():
+        # Update status of all runs
+        Session = sessionmaker()
+        runs = fetch_runs_of_experiment(Session, experiment_name)
+        for run in runs:
+            if run.runner == "local":
+                execution_handler = LocalMachineExecutionHandler(
+                        sessionmaker, run.id, only_check_status=True)
+            elif run.runner == "htcondor":
+                execution_handler = HTCondorExecutionHandler(
+                        sessionmaker, run.id)
+            try:
+                run.status = execution_handler.check_status()
+                progress = execution_handler.check_progress()
+                if progress is not None:
+                    update_run_progress(Session, run.id, progress)
+
+            except Exception as e:
+                logger.error(e)
+                run.status = "unknown"
+        Session.close()
+
+        # Fetch all runs again
+        Session = sessionmaker()
+        runs = fetch_runs_of_experiment(Session, experiment_name)
+        Session.close()
+
+        # Put running runs at the top
+        runs = sorted(runs, key=lambda x: x.status == "running",
+                      reverse=True)
+
+        return runs
+
+    if animation:
+        console = Console()
+        with console.status(
+                "[bold green]Fetching runs...", spinner="dots"):
+            runs = get_status()
+    else:
+        runs = get_status()
+
+    return runs
+
+
 def command_status(experiment_name: str,
-                   show_run_prompts: bool = False):
+                   live: bool = False):
     """Show information about an experiment.
 
     :param experiment_name: Name of the experiment
     :type experiment_name: str
 
-    :param show_run_prompts: Show prompts for run information
-    :type show_run_prompts: bool
+    :param live: If True, the command will be executed in live mode
+    :type live: bool
     """
     engine, Base, session = open_database('.qanat/database.db')
     Session = session()
@@ -775,84 +908,22 @@ def command_status(experiment_name: str,
 
     # Show runs associated with the experiment as a list
     rich.print(f"\n[bold]{EXPERIMENT_RUNS} Runs[/bold]:")
-    grid = Table.grid(expand=False, padding=(0, 4))
-    grid.add_column(justify="left", header="ID")
-    grid.add_column(justify="left", header="Description")
-    grid.add_column(justify="left", header="Path")
-    grid.add_column(justify="center", header="Runner")
-    grid.add_column(justify="left", header="Launch date")
-    grid.add_column(justify="left", header="Duration")
-    grid.add_column(justify="center", header="Status", no_wrap=True)
-    grid.add_column(justify="left", header="Tags", style="bold")
-    grid.add_column(justify="right", header="Progress")
-    grid.add_row("[bold]ID[/bold]",
-                 "[bold]Description[/bold]",
-                 "[bold]Path[/bold]", "[bold]Runner[/bold]",
-                 "[bold]Launch date[/bold]",
-                 "[bold]Duration[/bold]", "[bold]Status[/bold]",
-                 "[bold]Tags[/bold]", "[bold]Progress[/bold]")
 
-    console = Console()
-    with console.status(
-            "[bold green]Fetching runs...", spinner="dots"):
+    if not live:
+        runs = fetch_status_runs(session, experiment_name)
+        grid = generate_grid_runs(session, runs)
+        rich.print(grid)
 
-        # Update status of all runs
-        runs = fetch_runs_of_experiment(Session, experiment_name)
-        for run in runs:
-            if run.runner == "local":
-                execution_handler = LocalMachineExecutionHandler(
-                        session, run.id)
-            elif run.runner == "htcondor":
-                execution_handler = HTCondorExecutionHandler(
-                        session, run.id)
+    else:
+
+        runs = fetch_status_runs(session, experiment_name)
+        with Live(generate_grid_runs(session, runs),
+                  refresh_per_second=EXPERIMENT_LIVE_REFRESH) as live:
+
             try:
-                run.status = execution_handler.check_status()
-                progress = execution_handler.check_progress()
-                if progress is not None:
-                    update_run_progress(Session, run.id, progress)
-
-            except Exception as e:
-                logger.error(e)
-                run.status = "unknown"
-
-        # Fetch all runs again
-        runs = fetch_runs_of_experiment(Session, experiment_name)
-        for i, run in enumerate(runs):
-
-            tags = fetch_tags_of_run(Session, run.id)
-            Session.close()
-            if len(tags) >= 1:
-                tags = f"{EXPERIMENT_TAGS} " +\
-                    f", {EXPERIMENT_TAGS} ".join(fetch_tags_of_run(
-                                                    Session, run.id))
-            else:
-                tags = ""
-
-            if run.launched is not None:
-                if run.status == "running":
-                    duration = datetime.now() - run.launched
-                elif run.status == "finished" and run.finished is not None:
-                    duration = run.finished - run.launched
-                else:
-                    duration = "N/A"
-            else:
-                duration = "N/A"
-
-            RUN_STATUS = get_run_status_emoji(run.status)
-            grid.add_row(f"{EXPERIMENT_ID} {run.id}",
-                         f"{EXPERIMENT_DESCRIPTION} {run.description}",
-                         f"{EXPERIMENT_PATH} {run.storage_path}",
-                         f"{run.runner}",
-                         f"{RUN_LAUNCH_DATE} {run.launched}",
-                         f"{RUN_DURATION}  {duration}",
-                         f"{RUN_STATUS}",
-                         f"{tags}",
-                         f"{run.progress}")
-
-    rich.print(grid)
-
-    # TODO: add prompt if the option is passed
-    if show_run_prompts:
-        logger.info("Showing run prompts")
-
-    session.close_all()
+                while True:
+                    time.sleep(EXPERIMENT_LIVE_REFRESH)
+                    runs = fetch_status_runs(session, experiment_name)
+                    live.update(generate_grid_runs(session, runs))
+            except KeyboardInterrupt:
+                return

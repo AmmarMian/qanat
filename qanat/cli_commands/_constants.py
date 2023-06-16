@@ -61,6 +61,7 @@ RUN_DURATION = ":stopwatch:"
 RUN_IS_CANCELLED = ":x:"
 RUN_METRIC = ":chart:"
 
+EXPERIMENT_LIVE_REFRESH = 1  # per second
 
 
 def get_run_status_emoji(status):

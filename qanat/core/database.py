@@ -1185,9 +1185,11 @@ def update_run_progress(session: Session, run_id: int,
     :param new_progress: The new progress of the run.
     :type new_progress: float
     """
+    progress_str = "%.2f" % new_progress +\
+                   "%"
     session.query(RunOfAnExperiment).filter(
         RunOfAnExperiment.id == run_id).update(
-        {"progress": f"{new_progress} %"})
+        {"progress": progress_str})
     session.commit()
 
 

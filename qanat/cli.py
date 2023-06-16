@@ -141,10 +141,11 @@ def experiment_new(prompt, file):
 
 @experiment_main.command(name="status")
 @click.argument("name", type=click.STRING, required=True)
-@click.option("--prompt", "-p", is_flag=True, default=False)
-def experiment_show(name, prompt):
+@click.option("--live", is_flag=True, default=False,
+              help="Show live status of runs.")
+def experiment_show(name, live):
     """Show status of all runs."""
-    experiment.command_status(name, prompt)
+    experiment.command_status(name, live)
 
 
 @experiment_main.command(name="delete")
