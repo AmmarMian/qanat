@@ -82,9 +82,35 @@ def get_progress(repertory_path: str) -> float:
     # Total is the sum of all counts
     with open(progress_path, 'r') as f:
         lines = f.readlines()
-        total = int(lines[0].split('count_total=')[1].strip())
-        counts = [int(line.split()[0]) for line in lines[1:]]
-    return sum(counts) / total * 100
+
+        # Fetching type of progress
+        try:
+            progress_type = lines[0].split('=')[1].strip()
+        except NameError:
+            logger.DEBUG(f"Could not parse progress type in {progress_path}")
+            return None
+        if progress_type.lower() == 'count':
+            total = int(lines[0].split('count_total=')[1].strip())
+            counts = [int(line.split()[0]) for line in lines[1:]]
+            percent = sum(counts) / total * 100
+        elif progress_type.lower() == 'tqdm':
+            last_progress_line = 1
+            found = False
+            while not found and last_progress_line < len(lines):
+                try:
+                    percent = float(
+                            lines[-last_progress_line].strip(' ').split(
+                                ' ')[0].split('|')[0][:-1])
+                    found = True
+                except ValueError:
+                    last_progress_line += 1
+            if not found:
+                logger.DEBUG(f"Could not parse progress in {progress_path}")
+                return None
+        else:
+            logger.DEBUG(f"Unknown progress type {progress_type}")
+            return None
+    return percent
 
 
 def parse_executionhandler(executionhandler: str):
