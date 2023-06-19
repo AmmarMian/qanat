@@ -13,6 +13,7 @@ import shutil
 import time
 import os
 import signal
+from filelock import FileLock
 from sqlalchemy.orm import sessionmaker
 import subprocess
 from datetime import datetime
@@ -52,7 +53,7 @@ except ImportError:
                 "pip install htcondor")
 
 
-WAIT_TIME_INTERVAL_CHECK = 5  # seconds
+WAIT_TIME_INTERVAL_CHECK = 10  # seconds
 
 
 def get_progress(repertory_path: str) -> float:
@@ -786,16 +787,18 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                             spinner="dots") as status:
             last_status = self.check_status()
             while last_status in ["running", "unknown",
-                                          "not_started"]:
+                                  "not_started"]:
                 time.sleep(WAIT_TIME_INTERVAL_CHECK)
                 progress = self.check_progress()
                 if progress is not None:
-                    status.update(status=f"Waiting for jobs to finish... Status: "
-                                         f"{last_status}. "
-                                         f"Progress: {progress}%")
+                    status.update(
+                            status=f"Waiting for jobs to finish... Status: "
+                            f"{last_status}. "
+                            f"Progress: {progress}%")
                 else:
-                    status.update(status=f"Waiting for jobs to finish... Status: "
-                                         f"{last_status}.")
+                    status.update(
+                            status=f"Waiting for jobs to finish... Status: "
+                                   f"{last_status}.")
 
                 last_status = self.check_status()
             status.update(status="Jobs finished")
@@ -904,8 +907,17 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         Session.close()
 
         # Update the YAML file
+        # Locking in case other processes want to check the status at
+        # the same time
         info['status'] = global_status
-        self.update_yaml_file(info)
+
+        lock = FileLock(
+                os.path.join(self.run.storage_path, 'info.yaml.lock'))
+        lock.acquire()
+        try:
+            self.update_yaml_file(info)
+        finally:
+            lock.release()
 
         return global_status
 

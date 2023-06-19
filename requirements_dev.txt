@@ -15,6 +15,7 @@ pyyaml
 simple-term-menu
 art
 psutil
+filelock
 
 pytest>=6.2.4
 black>=22.3.0
