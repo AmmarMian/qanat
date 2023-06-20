@@ -6,6 +6,8 @@ Here we showcase some of the features of Qanat.
 Experiment run tracking
 -----------------------
 
+.. image:: ../_static/recordings/experiment_basic.gif
+
 * Automatic creation of experiment results directory
 * Automatic logging of experiment parameters, git commit hash, stdout, stderr, etc.
 * History of experiment runs with date, duration, description, tags, etc.
@@ -13,6 +15,9 @@ Experiment run tracking
 
 Ease of experiment running
 --------------------------
+
+.. image:: ../_static/recordings/experiment_htcondor_container.gif
+
 * Launch experiments with a grid over parameters easily
 * Facilitate run on job submission systems: HTCondor and Slurm
 * Facilitate run on local machine of several parameters in parallel
