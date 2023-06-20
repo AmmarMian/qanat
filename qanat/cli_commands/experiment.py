@@ -35,8 +35,9 @@ from ._constants import (
     EXPERIMENT_NAME, EXPERIMENT_DESCRIPTION, EXPERIMENT_PATH,
     EXPERIMENT_EXECUTABLE, EXPERIMENT_EXECUTE_COMMAND, EXPERIMENT_TAGS,
     EXPERIMENT_DATASETS, EXPERIMENT_RUNS, EXPERIMENT_ID,
-    EXPERIMENT_ACTION, get_run_status_emoji, EXIT,
-    RUN_LAUNCH_DATE, RUN_DURATION, EXPERIMENT_LIVE_REFRESH)
+    EXPERIMENT_ACTION, get_run_status_emoji, EXIT, RUNNER,
+    RUN_LAUNCH_DATE, RUN_DURATION, EXPERIMENT_LIVE_REFRESH, STATUS,
+    PROGRESS)
 from ..core.runs import (
     LocalMachineExecutionHandler,
     HTCondorExecutionHandler
@@ -81,11 +82,14 @@ def command_action(experiment_name: str, action_name: str,
     experiment_actions = fetch_actions_of_experiment(Session, experiment_name)
     action_names = [action.name for action in experiment_actions]
     if action_name not in action_names:
-        logger.error(f"Action '{action_name}' is not associated with the experiment")
+        logger.error(
+                f"Action '{action_name}' is not associated with the experiment")
         return
 
     # Check if run_id is associated with the experiment
-    run_ids = [run.id for run in fetch_runs_of_experiment(Session, experiment_name)]
+    run_ids = [run.id
+               for run in
+               fetch_runs_of_experiment(Session, experiment_name)]
 
     if run_id not in run_ids:
         logger.error("Run is not associated with the experiment: "
@@ -699,32 +703,33 @@ def command_list():
     experiments = Session.query(Base.classes.experiments).all()
 
     rich.print(f"Total number of experiments: [bold]{len(experiments)}[/bold]")
-    grid = Table.grid(expand=False, padding=(0, 4))
+    grid = Table.grid(expand=False, padding=(1, 4))
     grid.add_column(justify="left", header="ID")
     grid.add_column(justify="left", header="Name")
     grid.add_column(justify="left", header="Description")
     grid.add_column(justify="left", header="Path")
     grid.add_column(justify="left", header="Number of runs")
     grid.add_column(justify="right", header="Tags", style="bold")
-    grid.add_row("[bold]ID[/bold]",
-                 "[bold]Name[/bold]", "[bold]Description[/bold]",
-                 "[bold]Path[/bold]", "[bold]Number of runs[/bold]",
-                 "[bold]Tags[/bold]")
+    grid.add_row(f"[bold]{EXPERIMENT_ID} ID[/bold]",
+                 f"[bold]{EXPERIMENT_NAME} Name[/bold]",
+                 f"[bold]{EXPERIMENT_DESCRIPTION} Description[/bold]",
+                 f"[bold]{EXPERIMENT_PATH} Path[/bold]",
+                 f"[bold]{EXPERIMENT_RUNS} Number of runs[/bold]",
+                 f"[bold]{EXPERIMENT_TAGS} Tags[/bold]")
     for experiment in experiments:
         runs_count = count_number_runs_experiment(Session, experiment.name)
         tags = fetch_tags_of_experiment(Session, experiment.name)
         if len(tags) >= 1:
-            tags = f"{EXPERIMENT_TAGS} " +\
-                   f", {EXPERIMENT_TAGS} ".join(fetch_tags_of_experiment(
-                                                Session, experiment.name))
+            tags = ", ".join(fetch_tags_of_experiment(
+                Session, experiment.name))
         else:
             tags = ""
 
-        grid.add_row(f"{EXPERIMENT_ID} {experiment.id}",
-                     f"{EXPERIMENT_NAME} {experiment.name}",
-                     f"{EXPERIMENT_DESCRIPTION} {experiment.description}",
-                     f"{EXPERIMENT_PATH} {experiment.path}",
-                     f"{EXPERIMENT_RUNS} {runs_count}",
+        grid.add_row(f"{experiment.id}",
+                     f"{experiment.name}",
+                     f"{experiment.description}",
+                     f"{experiment.path}",
+                     f"{runs_count}",
                      f"{tags}")
     rich.print(grid)
     session.close_all()
@@ -756,21 +761,22 @@ def generate_grid_runs(sessionmaker: sqlalchemy.orm.sessionmaker,
     grid.add_column(justify="center", header="Status", no_wrap=True)
     grid.add_column(justify="left", header="Tags", style="bold")
     grid.add_column(justify="right", header="Progress")
-    grid.add_row("[bold]ID[/bold]",
-                 "[bold]Description[/bold]",
-                 "[bold]Path[/bold]", "[bold]Runner[/bold]",
-                 "[bold]Launch date[/bold]",
-                 "[bold]Duration[/bold]", "[bold]Status[/bold]",
-                 "[bold]Tags[/bold]", "[bold]Progress[/bold]")
+    grid.add_row(f"[bold]{EXPERIMENT_ID} ID[/bold]",
+                 f"[bold]{EXPERIMENT_DESCRIPTION} Description[/bold]",
+                 f"[bold]{EXPERIMENT_PATH} Path[/bold]",
+                 f"[bold]{RUNNER} Runner[/bold]",
+                 f"[bold]{RUN_LAUNCH_DATE} Launch date[/bold]",
+                 f"[bold]{RUN_DURATION} Duration[/bold]",
+                 f"[bold]{STATUS} Status[/bold]",
+                 f"[bold]{EXPERIMENT_TAGS} Tags[/bold]",
+                 f"[bold]{PROGRESS} Progress[/bold]")
 
     Session = sessionmaker()
     for i, run in enumerate(runs):
 
         tags = fetch_tags_of_run(Session, run.id)
         if len(tags) >= 1:
-            tags = f"{EXPERIMENT_TAGS} " +\
-                f", {EXPERIMENT_TAGS} ".join(fetch_tags_of_run(
-                                                Session, run.id))
+            tags = ", ".join(fetch_tags_of_run(Session, run.id))
         else:
             tags = ""
 
@@ -785,12 +791,12 @@ def generate_grid_runs(sessionmaker: sqlalchemy.orm.sessionmaker,
             duration = "N/A"
 
         RUN_STATUS = get_run_status_emoji(run.status)
-        grid.add_row(f"{EXPERIMENT_ID} {run.id}",
-                     f"{EXPERIMENT_DESCRIPTION} {run.description}",
-                     f"{EXPERIMENT_PATH} {run.storage_path}",
+        grid.add_row(f"{run.id}",
+                     f"{run.description}",
+                     f"{run.storage_path}",
                      f"{run.runner}",
-                     f"{RUN_LAUNCH_DATE} {run.launched}",
-                     f"{RUN_DURATION}  {duration}",
+                     f"{run.launched}",
+                     f"{duration}",
                      f"{RUN_STATUS}",
                      f"{tags}",
                      f"{run.progress}")
@@ -918,7 +924,8 @@ def command_status(experiment_name: str,
 
         runs = fetch_status_runs(session, experiment_name)
         with Live(generate_grid_runs(session, runs),
-                  refresh_per_second=EXPERIMENT_LIVE_REFRESH) as live:
+                  refresh_per_second=EXPERIMENT_LIVE_REFRESH,
+                  screen=True) as live:
 
             try:
                 while True:

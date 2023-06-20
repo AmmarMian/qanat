@@ -319,7 +319,8 @@ class DocumentCompiler:
         Session = self.sessionmaker()
         document = Session.query(Document).filter_by(
             name=self.document_name).first()
-        document.status = 'Compiled'
-        document.compiled = datetime.now()
+        if document is not None:
+            document.status = 'Compiled'
+            document.compiled = datetime.now()
         Session.commit()
         Session.close()
