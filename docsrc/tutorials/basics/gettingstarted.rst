@@ -19,7 +19,7 @@ machine. This will be done using python with numpy library. We assume that pytho
 machine.
 
 .. note::
-   The code for this tutorial is available at: TODO
+   The code for this tutorial is available at: https://github.com/AmmarMian/qanat-tutorials/tree/main/basics/getting_started
 
 Setting up the Qanat project
 ----------------------------
