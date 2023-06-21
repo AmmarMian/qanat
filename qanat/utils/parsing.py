@@ -576,7 +576,7 @@ def parse_document_file(document_file: str) -> dict:
                 document["container"] = None
 
             if "runner_params" not in dependency:
-                dependency["runner_params"] = ""
+                dependency["runner_params"] = None
 
             if 'action_name' not in dependency:
                 dependency['action_name'] = None

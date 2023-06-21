@@ -11,6 +11,7 @@
 import os
 import rich
 import git
+import subprocess
 from ._constants import (
     DOCUMENT, NAME, DESCRIPTION, PATH, TAGS, ID,
     EXEC, VIEW, RUNNER, available_runners, PARAMETERS,
@@ -39,7 +40,39 @@ def command_view(document_name: str):
     :param document_name: Name of the document to view
     :param type: str
     """
-    print("TODO")
+
+    # Open the database
+    engine, Base, Session = open_database('.qanat/database.db')
+    session = Session()
+
+    # Check if the document exists
+    if not check_document_exists(session, document_name):
+        logger.error(f"Document {document_name} does not exist")
+        session.close()
+        return
+
+    # Get the document
+    document = session.query(
+            Document).filter_by(
+                    name=document_name).first()
+
+    # Check if the document is compiled
+    if not document.compiled:
+        logger.error(f"Document {document_name} is not compiled")
+        session.close()
+        return
+
+    # Get the document path, view script and view script command
+    document_path = document.path
+    view_script = document.view_script
+    view_script_command = document.view_script_command
+
+    # Launch the view script
+    subprocess.Popen(
+            [view_script_command, view_script],
+            cwd=document_path)
+
+    session.close()
 
 
 # ========================================

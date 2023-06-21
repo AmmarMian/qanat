@@ -148,7 +148,10 @@ class DocumentCompiler:
                 args_file = experiment_dependency.run_args_file
 
                 task = ['qanat', 'experiment', 'run', experiment.name,
-                        '--runner', runner, runner_params, '--wait', 'True']
+                        '--runner', runner]
+                if runner_params is not None and runner_params != '':
+                    task.extend([runner_params])
+                task.extend(['--wait', 'True'])
                 if experiment_dependency.commit_sha is not None:
                     task.extend(
                             ['--commit_sha',
@@ -207,7 +210,10 @@ class DocumentCompiler:
 
             if not run_exists:
                 raise Exception('Run does not exist. '
-                                'This should not happen.')
+                                'This should not happen.',
+                                'Maybe the run was deleted after or the files'
+                                ' in the dependency were deleted after or not'
+                                'produced by the run as expected.')
 
             for file in files:
                 # Adding the files to be copied to the list of files to be
