@@ -43,7 +43,8 @@ from ..core.database import (
      fetch_tags_of_run,
      fetch_groupofparameters_of_run,
      fetch_runs_of_experiment,
-     fetch_actions_of_experiment
+     fetch_actions_of_experiment,
+     get_last_run_id
     )
 from ..core.runs import (
         parse_executionhandler, RunExecutionHandler,
@@ -1167,7 +1168,7 @@ def rerun_experiment(experiment_name: str,
     # Get the storage_path
     # Get last id of experiments in the database
     storage_path = os.path.dirname(run.storage_path)
-    last_id = session.query(func.max(RunOfAnExperiment.id)).scalar()
+    last_id = get_last_run_id(session)
     if last_id is None:
         last_id = 0
     storage_path = os.path.join(

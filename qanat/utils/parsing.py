@@ -64,6 +64,11 @@ def get_arguments_yaml_file_content(
              or options names.
     :rtype: tuple
     """
+
+    # If empty return empty list
+    if len(parameters_file_content) == 0:
+        return [], [], []
+
     arguments_fixed = []
     if "fixed_args" in parameters_file_content:
         if type_arg in parameters_file_content["fixed_args"]:
@@ -538,10 +543,10 @@ def parse_document_file(document_file: str) -> dict:
     if "compile_script" not in document:
         raise ValueError("Document file must contain a compile_script")
 
-    if "compile_command" not in document:
+    if "compile_script_command" not in document:
         logger.warning("No compile command specified in the document file. "
                        "Defaulted as make")
-        document["compile_command"] = "make"
+        document["compile_script_command"] = "make"
 
     if "experiment_dependencies" in document:
 
@@ -558,8 +563,9 @@ def parse_document_file(document_file: str) -> dict:
             experiment_name = dependency["experiment_name"]
 
             if "run_args_file" not in dependency:
-                raise ValueError(f"Experiment {experiment_name} dependency "
-                                 "must contain a run_args_file")
+                logger.info("No run_args_file specified in the document file "
+                            f"for experiment {experiment_name}")
+                dependency["run_args_file"] = None
 
             if "runner" not in dependency:
                 logger.warning("No runner specified for experiment "
@@ -590,7 +596,7 @@ def parse_document_file(document_file: str) -> dict:
 
     if "view_script" not in document:
         logger.warning("No view_script specified in the document file.")
-        document["view_command"] = None
+        document["view_script"] = None
 
     if "view_script" in document and \
             "view_script_command" not in document:

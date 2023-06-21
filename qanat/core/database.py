@@ -1356,6 +1356,21 @@ def add_dependency_to_document(session: Session, document_name: str,
 # ------------------------------------------------------------
 # Useful lookup functions
 # ------------------------------------------------------------
+def get_last_run_id(session: Session) -> int:
+    """Get the id of the last run in the database
+
+    :param session: The session of the database.
+    :type session: sqlalchemy.orm.session.Session
+
+    :return: The id of the last run.
+    :rtype: int
+    """
+    last_id = session.query(func.max(RunOfAnExperiment.id)).scalar()
+    if last_id is None:
+        last_id = 0
+    return last_id
+
+
 def find_tag_id(session: Session, tag_name: str) -> int:
     """Find the id of a tag in the database.
 

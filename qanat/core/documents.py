@@ -9,7 +9,6 @@
 
 import os
 import glob
-import yaml
 from datetime import datetime
 import subprocess
 import shutil
@@ -18,7 +17,7 @@ from .database import (
         open_database,
         get_document_info_from_name,
         RunOfAnExperiment, Experiment, ExperimentResultFiles,
-        Document
+        Document, get_last_run_id
 )
 from ..utils.logging import setup_logger
 
@@ -48,6 +47,8 @@ def find_run_dependency(runs, file_ids, files, experiment_dependency,
                             os.path.join(
                                 run.storage_path, '*')):
                     all_files_exist = False
+                    logger.info(f'File {file.path} '
+                                f'not found in run {run.id}.')
                     break
 
             # If all files exist, we can use this run
@@ -105,6 +106,12 @@ class DocumentCompiler:
         self.copy_files_tasks = []
         self.action_tasks = []
 
+        # Get the last run_id in case we need to run some experiments
+        # before compiling the document
+        session = self.sessionmaker()
+        self.last_run_id = get_last_run_id(session)
+        session.close()
+
     def setUpPrecompileTasks(self):
         """Set up the tasks to be done before compiling the document."""
 
@@ -139,6 +146,7 @@ class DocumentCompiler:
                 runner_params = experiment_dependency.runner_params
                 container = experiment_dependency.container
                 args_file = experiment_dependency.run_args_file
+
                 task = ['qanat', 'experiment', 'run', experiment.name,
                         '--runner', runner, runner_params, '--wait', 'True']
                 if experiment_dependency.commit_sha is not None:
@@ -149,7 +157,8 @@ class DocumentCompiler:
                 if container is not None:
                     task.extend(['--container', container])
 
-                task.extend(['--param_file', args_file])
+                if args_file is not None:
+                    task.extend(['-f', args_file])
 
                 # Adding tag and description
                 task.extend(['--tag',
@@ -161,11 +170,17 @@ class DocumentCompiler:
                 # Adding the task to the list of tasks to be done
                 self.pre_compile_tasks.append(task)
 
+                run_ID = self.last_run_id + 1
+                self.last_run_id += 1
+
+            else:
+                run_ID = run.id
+
             # Adding the action to be done after the run is done
             # if needed
             if experiment_dependency.action_name is not None:
                 task = ['qanat', 'experiment', 'action', experiment.name,
-                        experiment_dependency.action_name]
+                        experiment_dependency.action_name, str(run_ID)]
                 if experiment_dependency.action_args is not None:
                     task.extend(experiment_dependency.action_args)
                 self.action_tasks.append(task)
@@ -197,14 +212,19 @@ class DocumentCompiler:
             for file in files:
                 # Adding the files to be copied to the list of files to be
                 # copied AFTER the run are done if needed
-                param_file_name = os.path.splitext(os.path.basename(
-                        experiment_dependency.run_args_file))[0]
+                if experiment_dependency.run_args_file is not None:
+                    param_file_name = os.path.splitext(os.path.basename(
+                            experiment_dependency.run_args_file))[0]
+                    folder = param_file_name
+                else:
+                    param_file_name = ''
+                    folder = '.'
                 self.copy_files_tasks.append(
                     {
                         'src': os.path.join(run.storage_path, file.path),
                         'dest': os.path.join(
                             self.document.path, 'exports/'
-                            f'{experiment.name}/{param_file_name}'
+                            f'{experiment.name}/{folder}'
                             ),
                         'param_file_name': param_file_name,
                         'experiment_name': experiment.name,
@@ -241,7 +261,6 @@ class DocumentCompiler:
             for task in self.action_tasks:
                 logger.info(f'Executing task: {task}')
                 process = subprocess.run(task)
-                process.wait()
 
                 if process.returncode != 0:
                     raise Exception(f'Error executing task {task}')

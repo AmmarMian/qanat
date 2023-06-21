@@ -273,23 +273,25 @@ def command_add_dependency_prompt():
             if commit_sha is None:
                 break
 
-    run_args_file = prompt.ask(f"{PARAMETERS} Run args file")
+    run_args_file = prompt.ask(f"{PARAMETERS} Run args file (enter for none)",
+                               default=None)
 
     # Check if the run args file exists at the commit sha
-    if commit_sha is None:
-        if not os.path.isfile(run_args_file):
-            console.print(
-                    f"[bold red]Run args file {run_args_file} "
-                    "does not exist")
-            run_args_file = prompt.ask(f"{PARAMETERS} Run args file")
-    else:
-        repo = git.Repo()
-        commit_tree = repo.commit(commit_sha).tree
-        if run_args_file not in commit_tree:
-            console.print(
-                    f"{PARAMETERS} Run args file {run_args_file} does "
-                    f"not exist at commit {commit_sha}")
-            run_args_file = prompt.ask(f"{PARAMETERS} Run args file")
+    if run_args_file is not None:
+        if commit_sha is None:
+            if not os.path.isfile(run_args_file):
+                console.print(
+                        f"[bold red]Run args file {run_args_file} "
+                        "does not exist")
+                run_args_file = prompt.ask(f"{PARAMETERS} Run args file")
+        else:
+            repo = git.Repo()
+            commit_tree = repo.commit(commit_sha).tree
+            if run_args_file not in commit_tree:
+                console.print(
+                        f"{PARAMETERS} Run args file {run_args_file} does "
+                        f"not exist at commit {commit_sha}")
+                run_args_file = prompt.ask(f"{PARAMETERS} Run args file")
 
     files = prompt.ask(f"{PARAMETERS} Files (separated by a comma)")
     files = files.strip().split(",")
