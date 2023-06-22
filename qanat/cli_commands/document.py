@@ -68,9 +68,13 @@ def command_view(document_name: str):
     view_script_command = document.view_script_command
 
     # Launch the view script
-    subprocess.Popen(
+    logger.info(f"Viewing document {document_name}"
+                f" with {view_script_command} {view_script}"
+                f" in {document_path}")
+    process = subprocess.Popen(
             [view_script_command, view_script],
             cwd=document_path)
+    process.wait()
 
     session.close()
 
@@ -79,7 +83,8 @@ def command_view(document_name: str):
 # Functions relative Document compiling
 # ========================================
 def command_compile(document_name: str,
-                    compile_options: str):
+                    compile_options: str,
+                    view: bool = False):
     """Compile a document.
 
     :param document_name: Name of the document to compile
@@ -87,9 +92,18 @@ def command_compile(document_name: str,
 
     :param compile_options: Options to pass to the compiler
     :param type: str
+
+    :param view: View the document after compiling
+    :param type: bool
     """
     compiler = DocumentCompiler(document_name)
     compiler.compile_document(compile_options)
+
+    logger.info(f"Document {document_name} compiled")
+
+    if view:
+        logger.info(f"Viewing document {document_name}")
+        command_view(document_name)
 
 
 # ========================================
@@ -168,7 +182,7 @@ def command_status(document_name: str):
     console.print(f"{PATH} Path: {document.path}")
     console.print(f"{EXEC} Compile script: {document.compile_script}")
     console.print(
-            f"{EXEC} Compile script command: {document.compile_script_command}")
+        f"{EXEC} Compile script command: {document.compile_script_command}")
     console.print(f"{EXEC} View script: {document.view_script}")
     console.print(
             f"{EXEC} View script command: {document.view_script_command}")
@@ -176,7 +190,7 @@ def command_status(document_name: str):
     console.print(f"{EXEC} Compiled: {document.compiled}")
     console.print(f"{TAGS} Tags: {tags}")
 
-    grid = rich.table.Table.grid(expand=True)
+    grid = rich.table.Table.grid(expand=True, padding=(0, 2))
     grid.add_column("Experiment", justify="left", style="blue")
     grid.add_column("Runner", justify="left", style="cyan")
     grid.add_column("Runner Parameters", justify="left", style="magenta")

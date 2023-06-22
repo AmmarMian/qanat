@@ -343,9 +343,12 @@ def document_view(name):
 @click.argument("name", type=click.STRING, required=True)
 @click.option("--options", type=click.STRING, required=False,
               help="Options to pass to the compiler as str.")
-def document_compile(name, options):
+@click.option("--view", type=click.BOOL, required=False,
+              help="View document after compilation.",
+              default=False, is_flag=True)
+def document_compile(name, options, view):
     """Compile document."""
-    document.command_compile(name, options)
+    document.command_compile(name, options, view)
 
 
 @document_main.command(name="add_dependency")

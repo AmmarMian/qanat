@@ -177,6 +177,11 @@ class DocumentCompiler:
                 self.last_run_id += 1
 
             else:
+                logger.info(f'Run for experiment {experiment.name} '
+                            f'with commit {commit_sha} '
+                            f'and param file '
+                            f'{experiment_dependency.run_args_file} '
+                            f'found. ')
                 run_ID = run.id
 
             # Adding the action to be done after the run is done
@@ -213,7 +218,7 @@ class DocumentCompiler:
                                 'This should not happen.',
                                 'Maybe the run was deleted after or the files'
                                 ' in the dependency were deleted after or not'
-                                'produced by the run as expected.')
+                                ' produced by the run as expected.')
 
             for file in files:
                 # Adding the files to be copied to the list of files to be
@@ -304,11 +309,11 @@ class DocumentCompiler:
                         os.path.basename(file['src'])),
                         'user.qanat.metadata', metadata_text.encode('utf-8'))
 
-            # In casemetadata is not readable we also do a file
+            # In case metadata is not readable we also do a file
             # with the same name but with .qanat.txt extension
             with open(os.path.join(
                 file['dest'],
-                os.path.splitext(os.path.basename(file['src']))[0] +
+                os.path.basename(file['src']) +
                     '.qanat.txt'), 'w') as f:
                 f.write(metadata_text)
 
