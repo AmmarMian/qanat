@@ -8,6 +8,7 @@
 # =========================================
 
 import os
+import sys
 import time
 from datetime import datetime
 import rich
@@ -652,7 +653,7 @@ def command_delete(experiment_name: str):
     if find_experiment_id(Session, experiment_name) == -1:
         logger.error("Experiment does not exist")
         Session.close_all()
-        return
+        sys.exit(1)
 
     # Fetch experiment information
     experiment_id = find_experiment_id(Session, experiment_name)
