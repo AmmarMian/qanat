@@ -313,9 +313,12 @@ class DocumentCompiler:
             # Get content of param_file if not None at the right
             # commit sha
             if file['param_file_name'] != '':
-                param_file_content = subprocess.check_output(
+                try:
+                    param_file_content = subprocess.check_output(
                     ['git', 'show',
                      f'{file["commit_sha"]}:{file["param_file_path"]}'])
+                except subprocess.CalledProcessError:
+                    param_file_content = None
             else:
                 param_file_content = None
 
