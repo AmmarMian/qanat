@@ -9,10 +9,10 @@
 
 import os
 import glob
+import git
 from datetime import datetime
 import subprocess
 import shutil
-import git
 from .database import (
         open_database,
         get_document_info_from_name,
@@ -309,6 +309,15 @@ class DocumentCompiler:
                         os.path.basename(file['src'])),
                         'user.qanat.metadata', metadata_text.encode('utf-8'))
 
+            # Get content of param_file if not None at the right
+            # commit sha
+            if file['param_file_name'] != '':
+                param_file_content = subprocess.check_output(
+                    ['git', 'show',
+                     f'{file["commit_sha"]}:{file["param_file_name"]}'])
+            else:
+                param_file_content = None
+
             # In case metadata is not readable we also do a file
             # with the same name but with .qanat.txt extension
             with open(os.path.join(
@@ -316,6 +325,10 @@ class DocumentCompiler:
                 os.path.basename(file['src']) +
                     '.qanat.txt'), 'w') as f:
                 f.write(metadata_text)
+
+                if param_file_content is not None:
+                    f.write('\n\nParam file content:\n')
+                    f.write(param_file_content.decode('utf-8'))
 
         logger.info("Done.")
 
