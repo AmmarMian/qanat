@@ -180,7 +180,8 @@ def experiment_rerun(name, run_id):
 )
 @click.argument("name", type=click.STRING, required=True)
 @click.option("--runner", "-r", default="local",
-              type=click.Choice(["local", "htcondor"]), show_default=True,
+              type=click.Choice(["local", "htcondor", "slurm"]),
+              show_default=True,
               help="Runner to use for experiment.")
 @click.option("--container", default=None, type=click.STRING,
               help="Container to use for experiment.")

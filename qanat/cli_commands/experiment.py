@@ -41,7 +41,8 @@ from ._constants import (
     PROGRESS)
 from ..core.runs import (
     LocalMachineExecutionHandler,
-    HTCondorExecutionHandler
+    HTCondorExecutionHandler,
+    SlurmExecutionHandler,
 )
 from ..core.actions import ActionExecutionHandler
 
@@ -835,6 +836,9 @@ def fetch_status_runs(sessionmaker: sqlalchemy.orm.sessionmaker,
                         sessionmaker, run.id, only_check_status=True)
             elif run.runner == "htcondor":
                 execution_handler = HTCondorExecutionHandler(
+                        sessionmaker, run.id)
+            elif run.runner == "slurm":
+                execution_handler = SlurmExecutionHandler(
                         sessionmaker, run.id)
             try:
                 run.status = execution_handler.check_status()

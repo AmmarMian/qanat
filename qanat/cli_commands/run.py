@@ -9,6 +9,7 @@
 # =========================================
 
 import sys
+import shutil
 import os
 import pathlib
 import time
@@ -48,7 +49,8 @@ from ..core.database import (
     )
 from ..core.runs import (
         parse_executionhandler, RunExecutionHandler,
-        LocalMachineExecutionHandler, HTCondorExecutionHandler)
+        LocalMachineExecutionHandler, HTCondorExecutionHandler,
+        SlurmExecutionHandler)
 from ..utils.logging import setup_logger
 from ..utils.parsing import (
     parse_args_cli, parse_positional_optional_arguments,
@@ -956,6 +958,12 @@ def launch_run_experiment(experiment_name: str,
                     "Please check your configuration.")
             return -1
 
+    elif runner == 'slurm':
+         if not shutil.which('sbatch'):
+            logger.error(
+                    "You need to install slurm to use the slurm runner.")
+            return -1
+
     if container_path is not None:
         if not os.path.exists(container_path):
             logger.error(f"Container {container_path} not found.")
@@ -1106,6 +1114,47 @@ def launch_run_experiment(experiment_name: str,
                 database_sessionmaker=Session,
                 run_id=run_id,
                 htcondor_submit_options=submit_info,
+                container_path=container_path,
+                commit_sha=commit_sha,
+                wait=wait)
+
+    elif runner == "slurm":
+        # Check whether the submit_template is specified
+        if "--submit_template" not in runner_params:
+            with open(".qanat/config.yaml", "r") as f:
+                config = yaml.safe_load(f)
+            submit_info = config["slurm"]["default"]
+
+        else:
+            # Check if submit_template is a file
+            if os.path.isfile(runner_params["--submit_template"]):
+                # load yaml
+                with open(runner_params["--submit_template"], "r") as f:
+                    submit_info = yaml.safe_load(f)
+            else:
+                # Read from config file
+                with open(".qanat/config.yaml", "r") as f:
+                    config = yaml.safe_load(f)
+                if runner_params["--submit_template"] in \
+                        config['slurm']:
+                    submit_info = config["slurm"][
+                        runner_params["--submit_template"]]
+                else:
+                    raise ValueError("Submit template "
+                                     f"{runner_params['--submit_template']} "
+                                     "not found in config.yaml nor is a file")
+
+        # Wait or not end of execution
+        if "--wait" in runner_params:
+            wait = runner_params["--wait"].lower() in [
+                    "true", "yes", "1", "y"]
+        else:
+            wait = False
+
+        execution_handler = SlurmExecutionHandler(
+                database_sessionmaker=Session,
+                run_id=run_id,
+                slurm_options=submit_info,
                 container_path=container_path,
                 commit_sha=commit_sha,
                 wait=wait)

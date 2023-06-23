@@ -1015,6 +1015,32 @@ class SlurmExecutionHandler(RunExecutionHandler):
             logger.error("Slurm is not available on this machine")
             sys.exit(-1)
 
+        # Creating the executed script in run storage_path
+        script_path = os.path.join(self.run.storage_path,
+                                   'slurm_script.sh')
+        with open(script_path, 'w') as f:
+            f.write('#!/bin/bash\n')
+            f.write("# Slurm execution script for Qanat run"
+                    f" {self.run_id}\n\n")
+
+            # Slurm options
+            if self.slurm_options is not None:
+                for option, value in self.slurm_options.items():
+                    # If -- or -
+                    if option.startswith('-') and not option.startswith('--'):
+                        f.write(f"#SBATCH {option} {value}\n")
+                    else:
+                        f.write(f"#SBATCH {option}={value}\n")
+
+            # Add job name
+            f.write(f"#SBATCH --job-name=qanat_{self.run_id}\n")
+
+            # Add output and error files
+            f.write(
+                f"#SBATCH --output={os.path.join(self.run.storage_path, '%x.%j.stdout.txt')}\n")
+            f.write(
+                f"#SBATCH --error={os.path.join(self.run.storage_path, '%x.%j.error.txt')}\n\n")
+
         # Separating a regular job from an array job
         if len(self.commands) > 1:
 
@@ -1032,32 +1058,12 @@ class SlurmExecutionHandler(RunExecutionHandler):
                 f.write("ArrayTaskId\tCommand\n")
                 for i, command in enumerate(self.commands):
                     str_command = " ".join([str(x) for x in command])
-                    f.write(f"{i}\t{str_command}\n")
+                    f.write(f"{i+1}\t{str_command}\n")
                 f.write("-" * 80)
 
-            # Creating the executed script in run storage_path
-            script_path = os.path.join(self.run.storage_path,
-                                       'slurm_script.sh')
-            with open(script_path, 'w') as f:
-                f.write('#!/bin/bash\n')
-                f.write("# Slurm execution script for Qanat run"
-                        f" {self.run_id}\n\n")
-
-                # Slurm options
-                if self.slurm_options is not None:
-                    for option, value in self.slurm_options.items():
-                        f.write(f"#SBATCH {option}={value}\n")
-
-                # Adding the array option
-                f.write(f"#SBATCH --array=0-{len(self.commands) - 1}\n\n")
-
-                # Some info and moving to the working directory
-                f.write('echo "Running on host: $HOSTNAME"\n')
-                f.write('echo "Starting at: $(date)"\n\n')
-
-                f.write(f'echo "Moving to repertory {self.working_dir}"\n')
-                f.write(f'cd {self.working_dir}\n\n')
-                f.write('pwd\n')
+            with open(script_path, 'a') as f:
+                # Adding the array option to slurm script
+                f.write(f"#SBATCH --array=1-{len(self.commands)}\n\n")
 
                 # Parsing the commands file for the right command
                 # to execute from the SLURM_ARRAY_TASK_ID
@@ -1066,33 +1072,97 @@ class SlurmExecutionHandler(RunExecutionHandler):
                     f'\'$1==ARRAY_TASK_ID {{print substr($0,index($0,$2))}}\' '
                     f'{commands_config_path})\n')
 
-                # Executing the command
-                f.write('echo "Executing command: $COMMAND"\n')
-                f.write('$COMMAND\n\n')
-                f.write('echo "Finished at: $(date)"\n')
+        # Case: only one command
+        else:
 
-            # Submitting the job
-            logger.info(f"Submitting job for run {self.run_id}")
-            logger.info(f"Working directory: {self.working_dir}")
-            logger.info(f"Script path: {script_path}")
-            logger.info(f"Commands config path: {commands_config_path}")
-            logger.info(f"Slurm options: {self.slurm_options}")
-            logger.info(f"Commands: {self.commands}")
+            logger.info(f"Submitting a single job with command "
+                        f"{self.commands[0]}")
+            with open(script_path, 'a') as f:
+                str_command = " ".join([str(x) for x in self.commands[0]])
+                f.write(f'COMMAND="{str_command}"\n')
 
-            # Submitting the job
-            process = subprocess.Popen(
-                    ['sbatch', script_path],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE)
-            stdout, stderr = process.communicate()
+        # Finishing the slurm script
+        with open(script_path, 'a') as f:
 
-            # Getting the job id
-            job_id = stdout.decode('utf-8').split()[-1]
-            logger.info(f"Job submitted with id {job_id}")
+            # Some info and moving to the working directory
+            f.write('echo "Running on host: $HOSTNAME"\n')
+            f.write('echo "Starting at: $(date)"\n\n')
 
-            # Updating the YAML file
-            info = self.parse_yaml_file()
-            info['status'] = 'running'
-            info['cluster_ids'] = [job_id]
-            info['start_time'] = datetime.now()
-            self.update_yaml_file(info)
+            f.write(f'echo "Moving to repertory {self.working_dir}"\n')
+            f.write(f'cd {self.working_dir}\n\n')
+            f.write('pwd\n')
+
+            # Executing the command
+            f.write('echo "Executing command: $COMMAND"\n')
+            f.write('$COMMAND\n\n')
+            f.write('echo "Finished at: $(date)"\n')
+
+        # Submitting the job
+        logger.info(f"Submitting job for run {self.run_id}")
+        logger.info(f"Working directory: {self.working_dir}")
+        logger.info(f"Script path: {script_path}")
+        logger.info(f"Slurm options: {self.slurm_options}")
+        logger.info(f"Commands: {self.commands}")
+
+        # Submitting the job
+        submit = ['sbatch', script_path]
+        if self.wait:
+            submit.append('--wait')
+        output = subprocess.check_output(submit)
+
+        # Getting the job id
+        job_id = output.decode('utf-8').split()[-1]
+        logger.info(f"Job submitted with id {job_id}")
+
+        # Updating the YAML file
+        info = self.parse_yaml_file()
+        info['status'] = 'running'
+        info['job_id'] = job_id
+        info['start_time'] = datetime.now()
+        self.update_yaml_file(info)
+
+    def check_status(self):
+
+        # Read info from YAML file
+        info = self.parse_yaml_file()
+        if info is None:
+            return "unknown"
+        elif info['status'] == 'finished':
+            return "finished"
+        elif info['status'] == 'cancelled':
+            return "cancelled"
+
+        if not self.slurm_available:
+            return "unknown"
+
+        # Getting the job id
+        job_id = info['job_id']
+
+        # Checking the job status
+        output = subprocess.check_output(['squeue', '-j', job_id])
+        output = output.decode('utf-8').split('\n')[1:-1]
+        status_codes = []
+        durations = []
+        for line in output:
+            status_codes.append(line.split()[4])
+            durations.append(line.split()[5])
+
+        # Checking if the job is running
+        if 'R' in status_codes:
+            global_status = 'running'
+        elif 'PD' in status_codes:
+            global_status = 'not_started'
+        elif 'CG' in status_codes:
+            global_status = 'finished'
+        elif 'CA' in status_codes:
+            global_status = 'cancelled'
+        else:
+            global_status = 'unknown'
+
+        # Updating the YAML file
+        info['status'] = global_status
+        self.update_yaml_file(info)
+
+        # TODO: Update launch time and finish time
+
+        return global_status

@@ -185,10 +185,19 @@ class QanatRepertory:
                     '+WishedAcctGroup': 'group_usmb.listic',
                     'getenv': 'true',
                 }
+
+                default_slurm_options = {
+                    "--cpus-per-task": 1,
+                    "--ntasks": 1,
+                    "--time": "1-00:00:00"
+                }
+
                 yaml.dump(
                         {"result_dir": result_path,
                          "logging": "INFO",
-                         "htcondor": {"default": default_htcondor_options}},
+                         "htcondor": {"default": default_htcondor_options},
+                         "slurm": {"default": default_slurm_options},
+                         },
                         f,
                         default_flow_style=False)
         else:
