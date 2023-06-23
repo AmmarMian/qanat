@@ -12,7 +12,7 @@ with open('HISTORY.rst') as history_file:
 
 requirements = ['rich', 'rich_click', 'SQLAlchemy',
                 'GitPython', 'pyyaml', 'psutil',
-                'simple-term-menu', 'art']
+                'simple-term-menu', 'art', 'lockfile']
 
 test_requirements = ['pytest>=3', 'flake8>=3.7.8',
                      'coverage>=4.5.4']
