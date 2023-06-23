@@ -991,7 +991,7 @@ class HTCondorExecutionHandler(RunExecutionHandler):
 class SlurmExecutionHandler(RunExecutionHandler):
     """Execution handler for Slurm."""
 
-    def __init__(self, database_sessionmaker, run_id:int,
+    def __init__(self, database_sessionmaker, run_id: int,
                  slurm_options: dict = None,
                  container_path: str = None,
                  commit_sha: str = None,
@@ -1017,6 +1017,9 @@ class SlurmExecutionHandler(RunExecutionHandler):
 
         # Separating a regular job from an array job
         if len(self.commands) > 1:
+
+            logger.info(f"Submitting an array job with {len(self.commands)} "
+                        f"commands")
 
             # Creating a commands config file to parse thanks to
             # SLURM_ARRAY_TASK_ID
