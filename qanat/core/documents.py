@@ -7,6 +7,7 @@
 # Brief: Document compiling utilities
 # =========================================
 
+import sys
 import os
 import glob
 import git
@@ -79,8 +80,16 @@ def get_info_run_dependency(Session, experiment_dependency,
     # from the git repo
     if experiment_dependency.commit_sha is None:
         git_repo = git.Repo('.', search_parent_directories=True)
-        commit_sha = \
-            git_repo.head.object.hexsha
+        try:
+            commit_sha = \
+                git_repo.head.object.hexsha
+        except ValueError:
+            logger.error('Could not find commit sha of the current '
+                         'git repository. '
+                         'Please make sure that you are in a git '
+                         'repository and that you have committed your '
+                         'work.')
+            sys.exit(-1)
     else:
         commit_sha = experiment_dependency.commit_sha
 
@@ -314,9 +323,12 @@ class DocumentCompiler:
             # commit sha
             if file['param_file_name'] != '':
                 try:
-                    param_file_content = subprocess.check_output(
-                    ['git', 'show',
-                     f'{file["commit_sha"]}:{file["param_file_path"]}'])
+                    param_file_content = \
+                        subprocess.check_output(
+                            ['git',
+                             'show',
+                             f'{file["commit_sha"]}:{file["param_file_path"]}']
+                        )
                 except subprocess.CalledProcessError:
                     param_file_content = None
             else:
