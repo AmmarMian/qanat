@@ -48,10 +48,17 @@ try:
         )
 
 except ImportError:
-    logger.info("HTCondor python bindings not available on system. "
-                "Please install htcondor if available: "
-                "pip install htcondor")
 
+    with open(os.path.join('.qanat/config.yaml'), 'r') as f:
+        config = yaml.safe_load(f)
+    if not config.get('nohtcondorwarning', False):
+        logger.info("HTCondor python bindings not available on system. "
+                    "Please install htcondor if available: "
+                    "pip install htcondor")
+        logger.info("To sikence this message, add the following line "
+                    "to your .qanat/config.yml file:")
+        logger.info("nohtcondorwarning: True")
+    
 
 WAIT_TIME_INTERVAL_CHECK = 10  # seconds
 
@@ -1108,7 +1115,15 @@ class SlurmExecutionHandler(RunExecutionHandler):
         submit = ['sbatch', script_path]
         if self.wait:
             submit.append('--wait')
-        output = subprocess.check_output(submit)
+        try:
+            output = subprocess.check_output(submit)
+        except subprocess.CalledProcessError as e:
+            logger.error("Error while submitting the job")
+            logger.error(e)
+            info = self.parse_yaml_file()
+            info['status'] = 'cancelled'
+            self.update_yaml_file(info)
+            sys.exit(-1)
 
         # Getting the job id
         job_id = output.decode('utf-8').split()[-1]
@@ -1138,31 +1153,94 @@ class SlurmExecutionHandler(RunExecutionHandler):
         # Getting the job id
         job_id = info['job_id']
 
-        # Checking the job status
-        output = subprocess.check_output(['squeue', '-j', job_id])
-        output = output.decode('utf-8').split('\n')[1:-1]
-        status_codes = []
-        durations = []
-        for line in output:
-            status_codes.append(line.split()[4])
-            durations.append(line.split()[5])
+        # Checking the job status with sacct -j <job_id>
+        try:
+            output = subprocess.check_output(['sacct', '-j', job_id,
+                                              '--format=JobIDRaw,Start,State,Elapsed'])
+            output = output.decode('utf-8')
 
-        # Checking if the job is running
-        if 'R' in status_codes:
-            global_status = 'running'
-        elif 'PD' in status_codes:
-            global_status = 'not_started'
-        elif 'CG' in status_codes:
-            global_status = 'finished'
-        elif 'CA' in status_codes:
-            global_status = 'cancelled'
-        else:
+            # Getting the status by parsing the output lines
+            status = []
+            start_times = []
+            elapsed_times = []
+            for line in output.split('\n')[2:]:
+                if line.startswith(job_id) and not line.startswith(f'{job_id}.'):
+                    status.append(line.split()[2])
+                    start_times.append(line.split()[1])
+                    elapsed_times.append(line.split()[3])
+
+            # Getting the global status
+            if len(status) == 0:
+                global_status = 'unknown'
+            elif any(['CANCELLED' in x for x in status]):
+                global_status = 'cancelled'
+            elif any(['FAILED' in x for x in status]):
+                global_status = 'cancelled'
+            elif any(['TIMEOUT' in x for x in status]):
+                global_status = 'cancelled'
+            elif all(['COMPLETED' in x for x in status]):
+                global_status = 'finished'
+            elif any(['RUNNING' in x for x in status]):
+                global_status = 'running'
+            else:
+                global_status = 'unknown'
+
+            # Getting the start time if the job is running
+            if global_status == 'running':
+                start_time = min([datetime.strptime(x, '%Y-%m-%dT%H:%M:%S')
+                                  for x in start_times])
+                elapsed_time = max([datetime.strptime(x, '%H:%M:%S')
+                                    for x in elapsed_times])
+                info['start_time'] = start_time
+
+                # Update database if the start time isn't already set
+                Session = self.session_maker()
+
+                # Getting the start time from the database
+                run = Session.query(RunOfAnExperiment).filter(
+                    RunOfAnExperiment.id == self.run_id).first()
+
+                if run.launched is None:
+                    update_run_start_time(Session, self.run_id,
+                                        start_time)
+                Session.close()
+
+            # Getting the elapsed time if the job is finished, cancelled o
+            if global_status == 'finished' or global_status == 'cancelled':
+                elapsed_time = max([datetime.strptime(x, '%H:%M:%S')
+                                    for x in elapsed_times])
+                info['finish_time'] = elapsed_time
+                Session = self.session_maker()
+                update_run_finish_time(Session, self.run_id,
+                                    elapsed_time)
+                Session.close()
+                
+        except subprocess.CalledProcessError as e:
             global_status = 'unknown'
 
         # Updating the YAML file
         info['status'] = global_status
         self.update_yaml_file(info)
 
-        # TODO: Update launch time and finish time
-
         return global_status
+    
+    def cancel_experiment(self):
+
+        # Read info from YAML file
+        info = self.parse_yaml_file()
+        if info is None:
+            return
+
+        # Getting the job id
+        job_id = info['job_id']
+
+        # Cancelling the job with scancel
+        try:
+            subprocess.check_output(['scancel', job_id])
+        except subprocess.CalledProcessError as e:
+            logger.error("Error while cancelling the job")
+            logger.error(e)
+
+        # Updating the YAML file
+        info['status'] = 'cancelled'
+        self.update_yaml_file(info)
