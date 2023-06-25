@@ -319,10 +319,18 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
         # List subdirectories
         subdirectories = [x for x in os.listdir(storage_path)
                           if os.path.isdir(os.path.join(storage_path,x))]
-        if len(subdirectories) == 0:
-            wildcard = f"{storage_path}/stdout.txt"
+        
+        # locla and htcondor cases
+        if run.runner == 'local' or run.runner == 'htcondor':
+            if len(subdirectories) == 0:
+                wildcard = f"{storage_path}/stdout.txt"
+            else:
+                wildcard = f"{storage_path}/**/stdout.txt"
+        
+        # slurm case
         else:
-            wildcard = f"{storage_path}/**/stdout.txt"
+            wildcard = f"{storage_path}/*.stdout.txt"
+
         subprocess.run(f"less {wildcard}", shell=True)
 
     # Show error(s)
@@ -331,10 +339,15 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
         storage_path = run.storage_path
         subdirectories = [x for x in os.listdir(storage_path)
                           if os.path.isdir(os.path.join(storage_path,x))]
-        if len(subdirectories) == 0:
-            wildcard = f"{storage_path}/stderr.txt"
+        
+        # local and htcondor cases
+        if run.runner == 'local' or run.runner == 'htcondor':
+            if len(subdirectories) == 0:
+                wildcard = f"{storage_path}/*stderr.txt"
+            else:
+                wildcard = f"{storage_path}/**/*stderr.txt"
         else:
-            wildcard = f"{storage_path}/**/stderr.txt"
+            wildcard = f"{storage_path}/*.stderr.txt"
         subprocess.run(f"less {wildcard}", shell=True)
 
     # Show parameters

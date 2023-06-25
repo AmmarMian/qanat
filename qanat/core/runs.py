@@ -1046,7 +1046,7 @@ class SlurmExecutionHandler(RunExecutionHandler):
             f.write(
                 f"#SBATCH --output={os.path.join(self.run.storage_path, '%x.%j.stdout.txt')}\n")
             f.write(
-                f"#SBATCH --error={os.path.join(self.run.storage_path, '%x.%j.error.txt')}\n\n")
+                f"#SBATCH --error={os.path.join(self.run.storage_path, '%x.%j.stderr.txt')}\n\n")
 
         # Separating a regular job from an array job
         if len(self.commands) > 1:
@@ -1101,7 +1101,7 @@ class SlurmExecutionHandler(RunExecutionHandler):
 
             # Executing the command
             f.write('echo "Executing command: $COMMAND"\n')
-            f.write('$COMMAND\n\n')
+            f.write('eval "$COMMAND"\n\n')
             f.write('echo "Finished at: $(date)"\n')
 
         # Submitting the job
