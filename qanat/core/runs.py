@@ -16,7 +16,7 @@ import signal
 from filelock import FileLock
 from sqlalchemy.orm import sessionmaker
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 import psutil
 import rich
 from rich.progress import (
@@ -49,15 +49,16 @@ try:
 
 except ImportError:
 
-    with open(os.path.join('.qanat/config.yaml'), 'r') as f:
-        config = yaml.safe_load(f)
-    if not config.get('nohtcondorwarning', False):
-        logger.info("HTCondor python bindings not available on system. "
-                    "Please install htcondor if available: "
-                    "pip install htcondor")
-        logger.info("To sikence this message, add the following line "
-                    "to your .qanat/config.yml file:")
-        logger.info("nohtcondorwarning: True")
+    if os.path.exists(os.path.join('.qanat/config.yaml')):
+        with open(os.path.join('.qanat/config.yaml'), 'r') as f:
+            config = yaml.safe_load(f)
+        if not config.get('nohtcondorwarning', False):
+            logger.info("HTCondor python bindings not available on system. "
+                        "Please install htcondor if available: "
+                        "pip install htcondor")
+            logger.info("To sikence this message, add the following line "
+                        "to your .qanat/config.yml file:")
+            logger.info("nohtcondorwarning: True")
     
 
 WAIT_TIME_INTERVAL_CHECK = 10  # seconds
@@ -1159,6 +1160,7 @@ class SlurmExecutionHandler(RunExecutionHandler):
                                               '--format=JobIDRaw,Start,State,Elapsed'])
             output = output.decode('utf-8')
 
+
             # Getting the status by parsing the output lines
             status = []
             start_times = []
@@ -1185,12 +1187,18 @@ class SlurmExecutionHandler(RunExecutionHandler):
             else:
                 global_status = 'unknown'
 
-            # Getting the start time if the job is running
-            if global_status == 'running':
+            # Update the database
+            Session = self.session_maker()
+            update_run_status(Session, self.run_id,
+                            global_status)
+            Session.commit()
+            Session.close()
+
+            # Getting the start time if not set
+            if self.run.launched is None:
                 start_time = min([datetime.strptime(x, '%Y-%m-%dT%H:%M:%S')
                                   for x in start_times])
-                elapsed_time = max([datetime.strptime(x, '%H:%M:%S')
-                                    for x in elapsed_times])
+                
                 info['start_time'] = start_time
 
                 # Update database if the start time isn't already set
@@ -1199,23 +1207,30 @@ class SlurmExecutionHandler(RunExecutionHandler):
                 # Getting the start time from the database
                 run = Session.query(RunOfAnExperiment).filter(
                     RunOfAnExperiment.id == self.run_id).first()
-
-                if run.launched is None:
-                    update_run_start_time(Session, self.run_id,
+            
+                update_run_start_time(Session, self.run_id,
                                         start_time)
                 Session.close()
 
-            # Getting the elapsed time if the job is finished, cancelled o
-            if global_status == 'finished' or global_status == 'cancelled':
+            # Getting the elapsed time if the job is finished or cancelled
+            if self.run.finished is None and \
+                global_status == 'finished' or global_status == 'cancelled':
                 elapsed_time = max([datetime.strptime(x, '%H:%M:%S')
                                     for x in elapsed_times])
-                info['finish_time'] = elapsed_time
+                time_delta = timedelta(hours=elapsed_time.hour,
+                                    minutes=elapsed_time.minute,
+                                    seconds=elapsed_time.second)
+
+                info['finish_time'] = info['start_time'] + time_delta
                 Session = self.session_maker()
                 update_run_finish_time(Session, self.run_id,
-                                    elapsed_time)
+                                    info['start_time'] + time_delta)
                 Session.close()
                 
         except subprocess.CalledProcessError as e:
+            logger.error("Error while checking the job status"
+                         f" for run {self.run_id}")
+            logger.error(e)
             global_status = 'unknown'
 
         # Updating the YAML file
@@ -1236,7 +1251,7 @@ class SlurmExecutionHandler(RunExecutionHandler):
 
         # Cancelling the job with scancel
         try:
-            subprocess.check_output(['scancel', job_id])
+            subprocess.run(['scancel', job_id])
         except subprocess.CalledProcessError as e:
             logger.error("Error while cancelling the job")
             logger.error(e)
