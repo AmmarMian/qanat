@@ -96,6 +96,15 @@ def command_compile(document_name: str,
     :param view: View the document after compiling
     :param type: bool
     """
+
+    # Open the database
+    engine, Base, Session = open_database('.qanat/database.db')
+    session = Session()
+    if not check_document_exists(session, document_name):
+        logger.error(f"Document {document_name} does not exist")
+        session.close()
+        return
+
     compiler = DocumentCompiler(document_name)
     compiler.compile_document(compile_options)
 
@@ -119,7 +128,7 @@ def command_list():
     with console.status("[bold green]Loading documents...", spinner="dots"):
         documents = session.query(Document).all()
 
-    grid = rich.table.Table.grid(expand=True)
+    grid = rich.table.Table.grid(expand=True, padding=(1, 2))
     grid.add_column("ID", justify="left", style="blue")
     grid.add_column("Name", justify="left", style="cyan")
     grid.add_column("Description", justify="left", style="magenta")
