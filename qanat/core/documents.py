@@ -315,9 +315,14 @@ class DocumentCompiler:
                              f'with args {file["action_args"]}. '
                              f'Generated on {time_str}.')
 
-            os.setxattr(os.path.join(file['dest'],
+            try:
+                os.setxattr(os.path.join(file['dest'],
                         os.path.basename(file['src'])),
                         'user.qanat.metadata', metadata_text.encode('utf-8'))
+            except OSError:
+                logger.warning('Could not set metadata of file '
+                               f'{os.path.join(file["dest"], os.path.basename(file["src"]))}. '
+                               'Maybe the filesystem does not support it.')
 
             # Get content of param_file if not None at the right
             # commit sha
