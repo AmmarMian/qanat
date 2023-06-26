@@ -56,10 +56,10 @@ except ImportError:
             logger.info("HTCondor python bindings not available on system. "
                         "Please install htcondor if available: "
                         "pip install htcondor")
-            logger.info("To sikence this message, add the following line "
+            logger.info("To silence this message, add the following line "
                         "to your .qanat/config.yml file:")
             logger.info("nohtcondorwarning: True")
-    
+
 
 WAIT_TIME_INTERVAL_CHECK = 10  # seconds
 
@@ -1198,7 +1198,7 @@ class SlurmExecutionHandler(RunExecutionHandler):
             if self.run.launched is None:
                 start_time = min([datetime.strptime(x, '%Y-%m-%dT%H:%M:%S')
                                   for x in start_times])
-                
+
                 info['start_time'] = start_time
 
                 # Update database if the start time isn't already set
@@ -1207,7 +1207,7 @@ class SlurmExecutionHandler(RunExecutionHandler):
                 # Getting the start time from the database
                 run = Session.query(RunOfAnExperiment).filter(
                     RunOfAnExperiment.id == self.run_id).first()
-            
+
                 update_run_start_time(Session, self.run_id,
                                         start_time)
                 Session.close()
@@ -1226,7 +1226,7 @@ class SlurmExecutionHandler(RunExecutionHandler):
                 update_run_finish_time(Session, self.run_id,
                                     info['start_time'] + time_delta)
                 Session.close()
-                
+
         except subprocess.CalledProcessError as e:
             logger.error("Error while checking the job status"
                          f" for run {self.run_id}")
@@ -1238,7 +1238,7 @@ class SlurmExecutionHandler(RunExecutionHandler):
         self.update_yaml_file(info)
 
         return global_status
-    
+
     def cancel_experiment(self):
 
         # Read info from YAML file
