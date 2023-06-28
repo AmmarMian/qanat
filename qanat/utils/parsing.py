@@ -604,3 +604,35 @@ def parse_document_file(document_file: str) -> dict:
                 "View script must be associated with a view_script_command")
 
     return document
+
+
+# Dataset file parsing
+# ====================
+def parse_dataset_file(dataset_file: str) -> dict:
+    """Parse the dataset file specified in YAML format.
+
+    :param dataset_file: The path to the dataset file.
+    :type dataset_file: str
+
+    :return: The dictionary of the dataset file.
+    :rtype: dict
+    """
+
+    with open(dataset_file, "r") as f:
+        dataset = yaml.load(f, Loader=yaml.FullLoader)
+
+    # Check the dataset file is well formatted
+    if "name" not in dataset:
+        raise ValueError("Dataset file must contain a name")
+
+    if "description" not in dataset:
+        raise ValueError("Dataset file must contain a description")
+
+    if "path" not in dataset:
+        raise ValueError("Dataset file must contain a path")
+
+    # Fill the missing fields
+    if "tags" not in dataset:
+        dataset["tags"] = []
+
+    return dataset

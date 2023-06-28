@@ -416,9 +416,17 @@ def dataset_list():
 
 
 @dataset_main.command(name="new")
-def dataset_new():
+@click.argument("description_file", type=click.Path(exists=True),
+                required=False)
+@click.option("--yes", is_flag=True, default=False,
+              help="Skip confirmation prompt.")
+def dataset_new(description_file, yes):
     """Create new dataset."""
-    dataset.command_add_prompt()
+    if description_file is not None:
+        dataset.command_add_from_file(description_file,
+                                      confirm=not yes)
+    else:
+        dataset.command_add_prompt()
 
 
 @dataset_main.command(name="delete")
@@ -429,9 +437,12 @@ def dataset_delete(name):
 
 
 @dataset_main.command(name="update")
-def dataset_update():
+@click.argument("name", type=click.STRING, required=True)
+@click.option("--yes", is_flag=True, default=False,
+              help="Skip confirmation prompt.")
+def dataset_update(name, yes):
     """Update dataset."""
-    click.echo("TODO")
+    dataset.command_update(name, confirm=not yes)
 
 
 # Subcommands: config
@@ -447,10 +458,9 @@ def show():
 def edit(file):
     """Edit configuration with YAML file."""
 
-
     if file is not None:
         # Check whether YAML file
-        if not file.endswith(".yaml"):
+        if not file.endswith(".yaml") or not file.endswith(".yml"):
             rich.print("[bold red]Configuration file must be YAML file.")
             return 1
     config.command_edit(file)

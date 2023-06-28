@@ -61,7 +61,7 @@ Many templates for different types of projects are available
 * etc.
 
 Roadmap
-=======
+--------
 * [ ] Add support for Slurm
 * [ ] Add support for Docker
 * [ ] Add experiment to experiment dependencies

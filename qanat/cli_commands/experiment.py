@@ -279,6 +279,10 @@ def command_add_prompt():
         add_experiment(Session, path, name, description, executable,
                        execute_command, tags, datasets)
         logger.info("Experiment added to database")
+    else:
+        logger.info("Experiment not added to database")
+        session.close_all()
+        return
 
     # Add actions
     add_actions = prompt.Confirm.ask(

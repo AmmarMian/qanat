@@ -8,6 +8,9 @@ Getting Started
     you have Qanat installed and working (see `installation <../../installation.html>`_
     for installation instructions).
 
+.. note::
+   The code for this tutorial is available at: https://github.com/AmmarMian/qanat-tutorials/tree/main/basics/getting_started
+
 Objectives
 ----------
 
@@ -16,10 +19,15 @@ randomly generated array of numbers. We can define the seed of the random number
 generator as a parameter of the experiment, and we can also define the number of
 bins in the histogram as a parameter. The experiment will be run on a single
 machine. This will be done using python with numpy library. We assume that python is installed on your
-machine.
+machine and available thanks to the `python` command.
 
 .. note::
-   The code for this tutorial is available at: https://github.com/AmmarMian/qanat-tutorials/tree/main/basics/getting_started
+   Depending on your python installation, you may need to use ``python3`` instead of ``python``. Or alternatively, you can use an alias to your python executable:
+
+   .. code-block:: console
+
+        alias python=your/python/executable
+
 
 Setting up the Qanat project
 ----------------------------
@@ -108,7 +116,7 @@ To run the script without qanat, we can use the following command:
 
    python histogram.py --seed 0 --nbins 10 --storage_path .
 
-This will generate a file ``result.npz`` in the current directory that contains the histogram and the bins. This is nice but we wanat Qanat to track the run of the experiment and save the parameters used for us.
+This will generate a file ``result.npz`` in the current directory that contains the histogram and the bins. This is nice but we want Qanat to track the run of the experiment and save the parameters used for us.
 
 Adding the experiment to the project
 ------------------------------------
@@ -150,7 +158,7 @@ which will output:
 Running the experiment
 ----------------------
 
-Let us run the experiment agin with the same parameters but by using qanat thanks to
+Let us run the experiment again with the same parameters but by using Qanat thanks to
 the ``qanat experiment run`` command:
 
 .. code-block:: bash
@@ -240,7 +248,7 @@ This will show a prompt that will allow to change actions. You will have somethi
 .. note::
    Note that we have added a description to the action. This is optional but it is good practice to add a description as it will help you to remember what the action is about.
 
-Now we can execute the action thanks to qanat using the command ``qanat experiment action``:
+Now we can execute the action thanks to Qanat using the command ``qanat experiment action``:
 
 .. code-block:: bash
 
@@ -263,7 +271,7 @@ This will run the action and store the results in the ``results/histogram/run_1`
 Playing with the parameters
 ---------------------------
 
-Now let's play with the parameters of the experiment. We can do that by using the ``qanat experiment run`` command. A special option allows to run the same experiment with deiferent values of parameters. This is called a Group. For exmaple let's play on the number of bins:
+Now let's play with the parameters of the experiment. We can do that by using the ``qanat experiment run`` command. A special option allows to run the same experiment with different values of parameters. This is called a Group. For example let's play on the number of bins:
 
 .. code-block:: bash
 
@@ -379,6 +387,6 @@ By pressing enter on a run, there are a few commands available:
 Conclusion
 ----------
 
-This tutorial has shown how to use qanat to run an experiment and to analyse the results. We have seen how to add actions to the experiment and how to run the experiment with different parameters. We have also seen how to explore the results of the experiment.
+This tutorial has shown how to use Qanat to run an experiment and to analyse the results. We have seen how to add actions to the experiment and how to run the experiment with different parameters. We have also seen how to explore the results of the experiment.
 
-There are many more features in qanat that are not covered in this tutorial. Please refer to the documentation for more information.
+There are many more features in Qanat that are not covered in this tutorial. Please refer to the documentation for more information.

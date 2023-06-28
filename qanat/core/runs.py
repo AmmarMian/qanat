@@ -269,6 +269,9 @@ class RunExecutionHandler:
                 raise FileNotFoundError(f"Container path {self.container_path}"
                                         " does not exist")
 
+        # Managing datasets paths to add to the commands
+        self.add_datasets_to_commands()
+
         # Saving info about the run in a yaml file
         # To be able to resume the run later or check
         # the status of the run
@@ -293,6 +296,18 @@ class RunExecutionHandler:
                                'info.yaml'), 'w') as f:
             yaml.dump(info, f)
         Session.close()
+
+    def add_datasets_to_commands(self):
+        """Add dataset paths to commands"""
+
+        Session = self.session_maker()
+        datasets = fetch_datasets_of_experiment(
+                Session, self.experiment.name)
+        Session.close()
+
+        for command, repertory in zip(self.commands, self.repertories):
+            for dataset in datasets:
+                command += ['--dataset_path', get_absolute_path(dataset.path)]
 
     def write_groups_info(self):
         """Write group information in the repertory"""
