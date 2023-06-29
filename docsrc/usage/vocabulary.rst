@@ -72,10 +72,6 @@ Runner
 
 The ter **runner** refers to a specific way to execute your experiment run script. Either on the machine launching the execution (runner = 'local') or through a job scheduling system (runner = 'htcondor' or runner = 'slurm'). It is associated with parameters. See (todo) for more details on parameters for specific runners.
 
-.. warning::
-    slurm is not implemented yet.
-
-
 .. _container:
 
 Container

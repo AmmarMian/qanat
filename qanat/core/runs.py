@@ -826,7 +826,9 @@ class HTCondorExecutionHandler(RunExecutionHandler):
 
         self.cluster_ids = cluster_ids
 
-        logger.info("Jobs submitted to clusters " + " ".join(str(cluster_ids)))
+        logger.info("Jobs submitted to clusters: ")
+        for cluster_id in cluster_ids:
+            logger.info(f"  - {cluster_id}")
 
         if self.wait:
             self.wait_end()
@@ -1060,9 +1062,12 @@ class SlurmExecutionHandler(RunExecutionHandler):
 
             # Add output and error files
             f.write(
-                f"#SBATCH --output={os.path.join(self.run.storage_path, '%x.%j.stdout.txt')}\n")
+                "#SBATCH --output="
+                f"{os.path.join(self.run.storage_path, '%x.%j.stdout.txt')}\n")
             f.write(
-                f"#SBATCH --error={os.path.join(self.run.storage_path, '%x.%j.stderr.txt')}\n\n")
+                "#SBATCH --error="
+                f"{os.path.join(self.run.storage_path, '%x.%j.stderr.txt')}\n"
+                "\n")
 
         # Separating a regular job from an array job
         if len(self.commands) > 1:
@@ -1175,7 +1180,6 @@ class SlurmExecutionHandler(RunExecutionHandler):
                                               '--format=JobIDRaw,Start,State,Elapsed'])
             output = output.decode('utf-8')
 
-
             # Getting the status by parsing the output lines
             status = []
             start_times = []
@@ -1205,7 +1209,7 @@ class SlurmExecutionHandler(RunExecutionHandler):
             # Update the database
             Session = self.session_maker()
             update_run_status(Session, self.run_id,
-                            global_status)
+                              global_status)
             Session.commit()
             Session.close()
 
@@ -1223,8 +1227,9 @@ class SlurmExecutionHandler(RunExecutionHandler):
                 run = Session.query(RunOfAnExperiment).filter(
                     RunOfAnExperiment.id == self.run_id).first()
 
-                update_run_start_time(Session, self.run_id,
-                                        start_time)
+                if run.launched is None:
+                    update_run_start_time(Session, self.run_id,
+                                          start_time)
                 Session.close()
 
             # Getting the elapsed time if the job is finished or cancelled
@@ -1233,13 +1238,13 @@ class SlurmExecutionHandler(RunExecutionHandler):
                 elapsed_time = max([datetime.strptime(x, '%H:%M:%S')
                                     for x in elapsed_times])
                 time_delta = timedelta(hours=elapsed_time.hour,
-                                    minutes=elapsed_time.minute,
-                                    seconds=elapsed_time.second)
+                                       minutes=elapsed_time.minute,
+                                       seconds=elapsed_time.second)
 
                 info['finish_time'] = info['start_time'] + time_delta
                 Session = self.session_maker()
                 update_run_finish_time(Session, self.run_id,
-                                    info['start_time'] + time_delta)
+                                       info['start_time'] + time_delta)
                 Session.close()
 
         except subprocess.CalledProcessError as e:
