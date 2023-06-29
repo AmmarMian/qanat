@@ -103,8 +103,9 @@ html_theme_options = {
     "light_css_variables": {
         "font-stack": "Roboto, sans-serif",
         "font-stack--monospace": "Open Sans, monospace",
-        # "color-brand-primary": "",
-        # "color-background-secondary": "#24038F"
+        # "color-brand-primary": "black",
+        # "color-background-secondary": "#FF7518",
+        # "color-highlighted-background": "black"
     },
     "announcement":
         "<em>Qanat is currently in alpha. Use at your own risk.</em>",
