@@ -795,60 +795,25 @@ class HTCondorExecutionHandler(RunExecutionHandler):
             # Make executable file executable
             os.chmod(executable, 0o755)
 
-            # Somehow requirements aren't always accepted through
-            # htcondor python biondings so for now we just write the
-            # submit file ourselves
-            submit_file = os.path.join(repertory, 'job.submit')
-            with open(submit_file, 'w') as f:
-                f.write(f'executable = {executable}\n')
-                f.write(f'output = {os.path.join(repertory, "stdout.txt")}\n')
-                f.write(f'error = {os.path.join(repertory, "stderr.txt")}\n')
-                f.write(f'log = {os.path.join(repertory, "log.txt")}\n')
-                f.write('should_transfer_files = YES\n')
-                f.write('when_to_transfer_output = ON_EXIT\n')
-                f.write(f'batch_name = {self.experiment.name}_{self.run_id}\n')
-                if self.htcondor_submit_options is not None:
-                    for key, value in self.htcondor_submit_options.items():
-                        f.write(f'{key} = {value}\n')
-                f.write('queue\n')
-
-                submit_dicts.append({
-                    "executable": executable,
-                    "output": os.path.join(repertory, "stdout.txt"),
-                    "error": os.path.join(repertory, "stderr.txt"),
-                    "log": os.path.join(repertory, "log.txt"),
-                    "should_transfer_files": "YES",
-                    "when_to_transfer_output": "ON_EXIT",
-                    "batch_name": f"{self.experiment.name}_{self.run_id}"
-                })
-                if self.htcondor_submit_options is not None:
-                    submit_dicts[-1].update(self.htcondor_submit_options)
-
-            # # TODO: Maybe not hardcode some stuff...
-            # submit_dict = {
-                # 'executable': executable,
-                # 'output': os.path.join(repertory, 'stdout.txt'),
-                # 'error': os.path.join(repertory, 'stderr.txt'),
-                # 'log': os.path.join(repertory, 'log.txt'),
-                # 'should_transfer_files': 'YES',
-                # 'when_to_transfer_output': 'ON_EXIT',
-                # 'batch_name': f"{self.experiment.name}_{self.run_id}"
-            # }
-            # if self.htcondor_submit_options is not None:
-                # submit_dict.update(self.htcondor_submit_options)
-
-            # Submit the job
-            # logger.info(f"Submitting job for command {str_command}")
-            # job = htcondor.Submit(submit_dict)
-            # submit_result = schedd.submit(job)
-            # cluster_ids.append(submit_result.cluster())
-            # submit_dicts.append(submit_dict)
+            # TODO: Maybe not hardcode some stuff...
+            submit_dict = {
+                'executable': executable,
+                'output': os.path.join(repertory, 'stdout.txt'),
+                'error': os.path.join(repertory, 'stderr.txt'),
+                'log': os.path.join(repertory, 'log.txt'),
+                'should_transfer_files': 'YES',
+                'when_to_transfer_output': 'ON_EXIT',
+                'batch_name': f"{self.experiment.name}_{self.run_id}"
+            }
+            if self.htcondor_submit_options is not None:
+                submit_dict.update(self.htcondor_submit_options)
 
             # Submit the job
             logger.info(f"Submitting job for command {str_command}")
-            submit_result = subprocess.check_output(
-                ['condor_submit', submit_file]).decode('utf-8')
-            cluster_ids.append(int(submit_result.split()[-1][:-1]))
+            job = htcondor.Submit(submit_dict)
+            submit_result = schedd.submit(job)
+            cluster_ids.append(submit_result.cluster())
+            submit_dicts.append(submit_dict)
 
         # Update the database
         Session = self.session_maker()
