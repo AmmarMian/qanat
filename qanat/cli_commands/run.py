@@ -974,7 +974,7 @@ def launch_run_experiment(experiment_name: str,
             return -1
 
     elif runner == 'slurm':
-         if not shutil.which('sbatch'):
+        if not shutil.which('sbatch'):
             logger.error(
                     "You need to install slurm to use the slurm runner.")
             return -1
@@ -1079,6 +1079,13 @@ def launch_run_experiment(experiment_name: str,
     run_id = run.id
     logger.info(f"Run {run_id} created.")
 
+    # GPU to container or not
+    if "--gpu" in runner_params:
+        gpu = runner_params["--gpu"].lower() in [
+                "true", "yes", "1", "y"]
+    else:
+        gpu = False
+
     # Create the execution handler
     if runner == "local":
         if "--n_threads" not in runner_params:
@@ -1088,7 +1095,8 @@ def launch_run_experiment(experiment_name: str,
                 run_id=run_id,
                 n_threads=int(runner_params['--n_threads']),
                 container_path=container_path,
-                commit_sha=commit_sha
+                commit_sha=commit_sha,
+                gpu=gpu
         )
 
     elif runner == "htcondor":
@@ -1131,7 +1139,8 @@ def launch_run_experiment(experiment_name: str,
                 htcondor_submit_options=submit_info,
                 container_path=container_path,
                 commit_sha=commit_sha,
-                wait=wait)
+                wait=wait,
+                gpu=gpu)
 
     elif runner == "slurm":
         # Check whether the submit_template is specified
@@ -1172,7 +1181,8 @@ def launch_run_experiment(experiment_name: str,
                 slurm_options=submit_info,
                 container_path=container_path,
                 commit_sha=commit_sha,
-                wait=wait)
+                wait=wait,
+                gpu=gpu)
 
     else:
         raise NotImplementedError(f"Runner {runner} is not implemented yet.")

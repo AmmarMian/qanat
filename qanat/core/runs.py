@@ -150,13 +150,15 @@ class RunExecutionHandler:
     def __init__(self, database_sessionmaker: sessionmaker,
                  run_id: int,
                  container_path: str = None,
-                 commit_sha: str = None):
+                 commit_sha: str = None,
+                 gpu: bool = False):
         self.session_maker = database_sessionmaker
         self.run_id = run_id
         self.commit_sha = commit_sha
         self.experiment = get_experiment_of_run(self.session_maker(),
                                                 run_id)
         self.container_path = container_path
+        self.gpu = gpu
         Session = self.session_maker()
         self.run = Session.query(
                 RunOfAnExperiment).get(run_id)
@@ -263,7 +265,7 @@ class RunExecutionHandler:
 
                 self.commands = [get_container_run_command(
                     get_absolute_path(self.container_path),
-                    command, bind_paths)
+                    command, bind_paths, self.gpu)
                     for command in self.commands]
             else:
                 raise FileNotFoundError(f"Container path {self.container_path}"
@@ -408,9 +410,9 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
     def __init__(self, database_sessionmaker: sessionmaker,
                  run_id: int, n_threads: int = 1, container_path: str = None,
                  commit_sha: str = None,
-                 only_check_status: bool = False):
+                 only_check_status: bool = False, gpu: bool = False):
         super().__init__(database_sessionmaker, run_id, container_path,
-                         commit_sha)
+                         commit_sha, gpu)
         self.n_threads = n_threads
         self.process_pid = os.getpid()
         if not only_check_status:
@@ -742,9 +744,10 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                  htcondor_submit_options=None,
                  container_path: str = None,
                  commit_sha: str = None,
-                 wait: bool = False):
+                 wait: bool = False,
+                 gpu: bool = False):
         super().__init__(database_sessionmaker, run_id, container_path,
-                         commit_sha)
+                         commit_sha, gpu)
 
         # Check wheter htcondor is available on system
         if not shutil.which('condor_submit'):
@@ -788,6 +791,9 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                 f.write(f'echo "Running command: {str_command}"\n')
                 f.write(str_command + '\n\n')
                 f.write('echo "Done."')
+
+            # Make executable file executable
+            os.chmod(executable, 0o755)
 
             # TODO: Maybe not hardcode some stuff...
             submit_dict = {
@@ -1020,9 +1026,9 @@ class SlurmExecutionHandler(RunExecutionHandler):
                  slurm_options: dict = None,
                  container_path: str = None,
                  commit_sha: str = None,
-                 wait: bool = False):
+                 wait: bool = False, gpu: bool = False):
         super().__init__(database_sessionmaker, run_id, container_path,
-                         commit_sha)
+                         commit_sha, gpu)
 
         # Check that slurm is available
         if not shutil.which('sbatch'):

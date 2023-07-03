@@ -63,7 +63,8 @@ def get_container_technology(container_path: str):
 
 def get_container_run_command(container_path: str,
                               command: list,
-                              bind_paths: dict = {}) -> list:
+                              bind_paths: dict = {},
+                              gpu: bool = False) -> list:
     """Get the command to run a container.
 
     :param container_path: Path to the container
@@ -78,13 +79,18 @@ def get_container_run_command(container_path: str,
     :param rel_path_offset: Relative path offset to the bind_paths
     :type rel_path_offset: str
 
+    :param gpu: Use GPU
+    :type gpu: bool
+
     :return: The command to run the container
     :rtype: list
     """
 
     container_technology = get_container_technology(container_path)
     if container_technology in ["apptainer", "singularity"]:
-        run_command = [container_technology, 'run']
+        run_command = [container_technology, "run"]
+        if gpu:
+            run_command += ["--nv"]
         for bind_path in bind_paths:
             run_command += ["--bind",
                             f"{bind_path}:{bind_paths[bind_path]}"]
