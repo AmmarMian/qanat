@@ -86,7 +86,7 @@ Another approach to have several templates without having different templates fi
     default_editor: vim
     htcondor:
       default:
-        +WishedAcctGroup: group_usmb.listic
+        +WishedAcctGroup: '"group_usmb.listic"'
         getenv: 'true'
         request_cpus: 1
         request_disk: 1GB
@@ -107,7 +107,7 @@ You can edit the file to add your own templates. For example, if you want to add
 
     htcondor:
       default:
-        +WishedAcctGroup: group_usmb.listic
+        +WishedAcctGroup: '"group_usmb.listic"'
         getenv: 'true'
         request_cpus: 1
         request_disk: 1GB
@@ -115,7 +115,7 @@ You can edit the file to add your own templates. For example, if you want to add
         request_memory: 1GB
         universe: vanilla
       two_cpus:
-        +WishedAcctGroup: group_usmb.listic
+        +WishedAcctGroup: '"group_usmb.listic'"
         getenv: 'true'
         request_cpus: 2
         request_disk: 1GB
@@ -125,6 +125,8 @@ You can edit the file to add your own templates. For example, if you want to add
 
 .. note::
    The `getenv` option is used to make sure that the environment variables are forwarded to the job execution server. This allows to use the python environment that is setup on the job submission server on the job execution server.
+
+   Notice also the '""' around the group name. This is because the group name is a string and the `+WishedAcctGroup` option is a string. If you do not put the '""', the group name will not be interpreted correctly.
 
 Then you can run the experiment with the following command:
 
