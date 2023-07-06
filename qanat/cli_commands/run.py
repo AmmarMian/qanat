@@ -1015,9 +1015,6 @@ def launch_run_experiment(experiment_name: str,
             else:
                 should_commit = True
 
-        print(should_commit)
-        print(should_quit)
-
         if should_commit:
             logger.error(
                     "The repository is not clean. Please commit your changes.")
@@ -1035,7 +1032,7 @@ def launch_run_experiment(experiment_name: str,
                     "Do you want me to commit the changes "
                     "for you?",
                     default=False)
-            should_quit = should_commit
+            should_quit = not should_commit
 
         if not should_quit:
             if should_commit:
