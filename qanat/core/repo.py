@@ -222,6 +222,8 @@ class QanatRepertory:
         # Add results directory to git if needed
         if self.result_dir_path.startswith(self.path):
             should_add_results = True
+        else:
+            should_add_results = False
 
         # Add .qanat/ to .gitignore except .qanat/config.yaml
         if should_gitignore:
