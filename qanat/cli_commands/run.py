@@ -997,7 +997,28 @@ def launch_run_experiment(experiment_name: str,
     # Check whether cwd is a git repository and committed
     repo = git.Repo('.')
     if commit_sha is None:
+        should_quit = False
+        should_commit = False
         if repo.is_dirty() or len(repo.untracked_files) > 0:
+
+            # Check if changes are not submodules in which case we don't care
+            # about them
+            if len(repo.submodules) > 0:
+                diff_and_untracked = repo.git.diff(None, name_only=True).split(
+                        "\n") + repo.untracked_files
+                for file in diff_and_untracked:
+                    if not any(
+                            [file.startswith(submodule.path) for submodule in
+                             repo.submodules]):
+                        should_commit = True
+                        break
+            else:
+                should_commit = True
+
+        print(should_commit)
+        print(should_quit)
+
+        if should_commit:
             logger.error(
                     "The repository is not clean. Please commit your changes.")
             # Show the changes in the repository
@@ -1010,17 +1031,22 @@ def launch_run_experiment(experiment_name: str,
             for file in repo.untracked_files:
                 logger.info(file)
 
-            if rich.prompt.Confirm.ask("Do you want me to commit the changes "
-                                       "for you?",
-                                       default=False):
+            should_commit = rich.prompt.Confirm.ask(
+                    "Do you want me to commit the changes "
+                    "for you?",
+                    default=False)
+            should_quit = should_commit
+
+        if not should_quit:
+            if should_commit:
                 repo.git.add(".")
                 commit_description = rich.prompt.Prompt.ask(
                         "Please enter a description for the commit")
                 repo.git.commit("-m",
                                 "Automatic commit before running experiment "
                                 f"{experiment_name}: {commit_description}")
-            else:
-                sys.exit(-1)
+        else:
+            sys.exit(-1)
 
         commit_sha_dB = repo.head.commit.hexsha
 
