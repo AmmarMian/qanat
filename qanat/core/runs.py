@@ -165,6 +165,7 @@ class RunExecutionHandler:
         Session.close()
 
         #  Transfrom run storage_path to absolute path
+        self.relative_storage_path = self.run.storage_path
         self.run.storage_path = get_absolute_path(self.run.storage_path)
         self.working_dir = os.getcwd()
 
@@ -213,6 +214,7 @@ class RunExecutionHandler:
             if not os.path.exists(self.run.storage_path):
                 os.makedirs(self.run.storage_path)
             self.repertories = [self.run.storage_path]
+            self.relative_repertories = [self.relative_storage_path]
         else:
             logger.info("Multiple groups of parameters detected:"
                         f" {len(groups_of_parameters)}")
@@ -222,11 +224,15 @@ class RunExecutionHandler:
                 os.makedirs(self.run.storage_path)
 
             self.repertories = []
+            self.relative_repertories = []
             for i in range(len(groups_of_parameters)):
                 path = os.path.join(self.run.storage_path,
                                     'group_'+str(i))
                 if not os.path.exists(path):
                     os.makedirs(path)
+                self.relative_repertories.append(os.path.join(
+                    self.relative_storage_path, 'group_'+str(i))
+                )
                 self.repertories.append(path)
 
         # Constructing the commands to run
@@ -283,11 +289,11 @@ class RunExecutionHandler:
                 'experiment_id': self.experiment.id,
                 'executable': self.experiment.executable,
                 'executable_command': self.experiment.executable_command,
-                'storage_path': self.run.storage_path,
+                'storage_path': self.relative_storage_path,
                 'commands': [" ".join([str(c) for c in command])
                              for command in self.commands],
                 'groups_of_parameters': self.groups_of_parameters,
-                'repertories': self.repertories,
+                'repertories': self.relative_repertories,
                 'working_directory': self.working_dir}
         if self.commit_sha is not None:
             info['commit_sha'] = self.commit_sha
