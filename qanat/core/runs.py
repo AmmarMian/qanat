@@ -904,6 +904,10 @@ class HTCondorExecutionHandler(RunExecutionHandler):
         elif info['status'] == 'cancelled':
             return "cancelled"
 
+        # Check if htcondor is available
+        if not self.htcondor_available:
+            return "unknown"
+
         # Get the log files events for
         # each job
         status_list = ['unknown' for _ in info['cluster_ids']]
