@@ -871,6 +871,23 @@ class HTCondorExecutionHandler(RunExecutionHandler):
 
         # Read info from YAML file
         info = self.parse_yaml_file()
+
+        # Read info from database
+        Session = self.session_maker()
+        run = Session.query(
+                RunOfAnExperiment).filter(
+                        RunOfAnExperiment.id == self.run_id).first()
+        Session.close()
+
+        if run is None:
+            return "unknown"
+        elif run.status == 'finished' and run.finished is not None:
+            if info is not None and info['status'] != 'finished':
+                info['status'] = 'finished'
+                info['finish_time'] = run.finished
+                self.update_yaml_file(info)
+            return "finished"
+
         if info is None:
             return "unknown"
         elif info['status'] == 'finished':
@@ -1182,8 +1199,9 @@ class SlurmExecutionHandler(RunExecutionHandler):
 
         # Checking the job status with sacct -j <job_id>
         try:
-            output = subprocess.check_output(['sacct', '-j', job_id,
-                                              '--format=JobIDRaw,Start,State,Elapsed'])
+            output = subprocess.check_output(
+                    ['sacct', '-j', job_id,
+                     '--format=JobIDRaw,Start,State,Elapsed'])
             output = output.decode('utf-8')
 
             # Getting the status by parsing the output lines
@@ -1240,7 +1258,7 @@ class SlurmExecutionHandler(RunExecutionHandler):
 
             # Getting the elapsed time if the job is finished or cancelled
             if self.run.finished is None and \
-                global_status == 'finished' or global_status == 'cancelled':
+               global_status == 'finished' or global_status == 'cancelled':
                 elapsed_time = max([datetime.strptime(x, '%H:%M:%S')
                                     for x in elapsed_times])
                 time_delta = timedelta(hours=elapsed_time.hour,
