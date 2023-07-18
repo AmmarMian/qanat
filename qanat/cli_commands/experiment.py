@@ -834,6 +834,7 @@ def fetch_status_runs(sessionmaker: sqlalchemy.orm.sessionmaker,
         # Update status of all runs
         Session = sessionmaker()
         runs = fetch_runs_of_experiment(Session, experiment_name)
+        Session.close()
         for run in runs:
             if run.runner == "local":
                 execution_handler = LocalMachineExecutionHandler(
@@ -846,14 +847,14 @@ def fetch_status_runs(sessionmaker: sqlalchemy.orm.sessionmaker,
                         sessionmaker, run.id)
             try:
                 run.status = execution_handler.check_status()
-                progress = execution_handler.check_progress()
-                if progress is not None:
-                    update_run_progress(Session, run.id, progress)
+                if "100" not in run.progress.strip():
+                    progress = execution_handler.check_progress()
+                    if progress is not None:
+                        update_run_progress(Session, run.id, progress)
 
             except Exception as e:
                 logger.error(e)
                 run.status = "unknown"
-        Session.close()
 
         # Fetch all runs again
         Session = sessionmaker()

@@ -750,8 +750,11 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                          commit_sha, gpu)
 
         # Check wheter htcondor is available on system
+        with open('.qanat/config.yaml', 'r') as f:
+            config = yaml.load(f, Loader=yaml.FullLoader)
         if not shutil.which('condor_submit'):
-            logger.warning("HTCondor not available on system.")
+            if not config['nohtcondorwarning']:
+                logger.warning("HTCondor not available on system.")
             self.htcondor_available = False
         else:
             self.htcondor_available = True
