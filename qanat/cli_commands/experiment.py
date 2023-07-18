@@ -850,7 +850,10 @@ def fetch_status_runs(sessionmaker: sqlalchemy.orm.sessionmaker,
                 if "100" not in run.progress.strip():
                     progress = execution_handler.check_progress()
                     if progress is not None:
+                        logger.debug(f"Progress of run {run.id}: {progress}")
+                        Session = sessionmaker()
                         update_run_progress(Session, run.id, progress)
+                        Session.close()
 
             except Exception as e:
                 logger.error(e)
