@@ -405,7 +405,8 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
         logger.info(f"Show HTCondor log(s) of run {run.id}")
         storage_path = run.storage_path
         subdirectories = [x for x in os.listdir(storage_path)
-                          if os.path.isdir(os.path.join(storage_path, x))]
+                          if os.path.isdir(os.path.join(storage_path, x))
+                          and x.startswith("group_")]
         if len(subdirectories) == 0:
             wildcard = f"{storage_path}/log.txt"
         else:
