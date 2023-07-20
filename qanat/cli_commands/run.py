@@ -235,6 +235,19 @@ def run_explore_menu(session: sqlalchemy.orm.Session, experiment_name: str,
         menu_entries.append(
                 f"[{chr(ord('a')+len(menu_entries))}] Show HTCondor log(s)")
 
+    # If there are parameters files we can show them
+    # Look for parameters_files directory in run directories
+    parameters_files_dirs = []
+    for root, dirs, files in os.walk(run.storage_path):
+        for directory in dirs:
+            if directory == "parameters_files":
+                parameters_files_dirs.append(root)
+
+    if len(parameters_files_dirs) > 0:
+        menu_entries.append(
+                f"[{chr(ord('a')+len(menu_entries))}] Show parameters file(s)")
+
+
     # Fetch actions of experiment
     actions = fetch_actions_of_experiment(session, experiment_name)
 
@@ -260,6 +273,8 @@ def run_explore_menu(session: sqlalchemy.orm.Session, experiment_name: str,
             return 'Explore run directory contents'
         elif menu_entry == "Show HTCondor log(s)":
             return 'Show HTCondor log(s) of the run with less'
+        elif menu_entry == "Show parameters file(s)":
+            return 'Show parameters file(s) of the run with less'
         elif menu_entry == "Delete run":
             return 'Delete the run'
         elif menu_entry.startswith("Action:"):
@@ -369,7 +384,14 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
             else:
                 repertory = os.path.join(run.storage_path, f"group_{i}")
             for key, value in group.values.items():
-                string_parameters += f"{key} {value} "
+                if isinstance(value, list):
+                    for v in value:
+                        string_parameters += f"{key} {v} "
+                else:
+                    if key.startswith("pos"):
+                        string_parameters += f"{value} "
+                    else:
+                        string_parameters += f"{key} {value} "
             grid.add_row(f"{i}", string_parameters, repertory)
         rich.print(f"  - {PARAMETERS} Parameters:")
         rich.print(grid)
@@ -411,6 +433,19 @@ def parse_choice_explore_menu(session: sqlalchemy.orm.Session,
             wildcard = f"{storage_path}/log.txt"
         else:
             wildcard = f"{storage_path}/**/log.txt"
+        subprocess.run(f"less {wildcard}", shell=True)
+
+    # Show parameters files
+    elif menu_entry == "Show parameters file(s)":
+        logger.info(f"Show parameters file(s) of run {run.id}")
+        storage_path = run.storage_path
+        subdirectories = [x for x in os.listdir(storage_path)
+                          if os.path.isdir(os.path.join(storage_path, x))
+                          and x.startswith("group_")]
+        if len(subdirectories) == 0:
+            wildcard = f"{storage_path}/parameters_files/*"
+        else:
+            wildcard = f"{storage_path}/**/parameters_files/*"
         subprocess.run(f"less {wildcard}", shell=True)
 
     # Delete run

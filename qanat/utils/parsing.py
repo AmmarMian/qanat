@@ -383,7 +383,11 @@ def parse_group_parameters(group_parameters: dict) -> list:
         if not key.startswith('--'):
             list_pos_arguments.append(value)
         else:
-            list_options += [key, value]
+            if isinstance(value, list):
+                for v in value:
+                    list_options += [key, v]
+            else:
+                list_options += [key, value]
 
     return list_pos_arguments + list_options
 
@@ -410,7 +414,14 @@ def parse_positional_optional_arguments(
     result = {}
     while i < len(parameters):
         if parameters[i].startswith("--"):
-            result[parameters[i]] = parameters[i+1]
+            if parameters[i] not in result:
+                result[parameters[i]] = parameters[i+1]
+            else:
+                if isinstance(result[parameters[i]], list):
+                    result[parameters[i]].append(parameters[i+1])
+                else:
+                    result[parameters[i]] = [result[parameters[i]],
+                                             parameters[i+1]]
             i += 2
         else:
             result[f"pos_{pos_number}"] = parameters[i]

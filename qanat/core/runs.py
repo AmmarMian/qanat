@@ -240,6 +240,8 @@ class RunExecutionHandler:
                                      parameters in
                                      fetch_groupofparameters_of_run(
                                          Session, self.run_id)]
+        # Copying parameter files
+        self.copy_parameter_files()
 
         self.commands = []
         for i, group_of_parameters in enumerate(self.groups_of_parameters):
@@ -304,6 +306,30 @@ class RunExecutionHandler:
                                'info.yaml'), 'w') as f:
             yaml.dump(info, f)
         Session.close()
+
+    def copy_parameter_files(self):
+        """If there are parameters files in the arguments,
+        we do a copy in the storage directory"""
+
+        logger.info("Copying parameter files if they exist")
+        for group_of_parameters, repertory in zip(
+                self.groups_of_parameters, self.repertories):
+            if "--parameters_file" in group_of_parameters:
+                if isinstance(group_of_parameters["--parameters_file"], str):
+                    parameters_files = [group_of_parameters["--parameters_file"]]
+                else:
+                    parameters_files = group_of_parameters["--parameters_file"]
+
+                for file in parameters_files:
+                    try:
+                        logger.info(f"Copying parameter file {file}")
+                        param_file_dir = os.path.join(
+                            repertory, 'parameters_files')
+                        if not os.path.exists(param_file_dir):
+                            os.makedirs(param_file_dir)
+                        shutil.copy(file, param_file_dir)
+                    except FileNotFoundError:
+                        logger.error(f"Parameter file File {file} not found")
 
     def add_datasets_to_commands(self):
         """Add dataset paths to commands"""
