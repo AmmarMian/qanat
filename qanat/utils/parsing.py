@@ -446,7 +446,6 @@ def parse_positional_optional_arguments(
             pos_number += 1
             i += 1
 
-
     return result
 
 
@@ -498,7 +497,7 @@ def parse_args_cli(ctx: click.Context, groups_of_parameters: list = [],
 
             # Parse the string of the group by splitting
             # it with the space character
-            group = shlex.split(group)
+            group = shlex.split(group, posix=False)
             varying_parameters = \
                 parse_positional_optional_arguments(
                     group,
