@@ -94,7 +94,7 @@ We can then create a file ``histogram.py`` in ``experiments`` with the following
          parser = argparse.ArgumentParser()
          parser.add_argument("--seed", type=int, default=0)
          parser.add_argument("--nbins", type=int, default=10)
-         paser.add_argument("--storage_path", type=str, required=True)
+         parser.add_argument("--storage_path", type=str, required=True)
          args = parser.parse_args()
 
          rng = np.random.RandomState(args.seed)

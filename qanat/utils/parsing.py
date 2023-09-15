@@ -1,4 +1,5 @@
 import sys
+import shlex
 import os
 import yaml
 import itertools
@@ -414,19 +415,37 @@ def parse_positional_optional_arguments(
     result = {}
     while i < len(parameters):
         if parameters[i].startswith("--"):
+
+            isflag = False
+            if i == len(parameters)-1:
+                isflag = True
+            else:
+                isflag = parameters[i+1].startswith("--")
+
+            # check if a flag
+            if isflag:
+                isflag = True
+                value = ""
+            else:
+                value = parameters[i+1]
+
             if parameters[i] not in result:
-                result[parameters[i]] = parameters[i+1]
+                result[parameters[i]] = value
             else:
                 if isinstance(result[parameters[i]], list):
-                    result[parameters[i]].append(parameters[i+1])
+                    result[parameters[i]].append(value)
                 else:
                     result[parameters[i]] = [result[parameters[i]],
-                                             parameters[i+1]]
-            i += 2
+                                             value]
+            if isflag:
+                i += 1
+            else:
+                i += 2
         else:
             result[f"pos_{pos_number}"] = parameters[i]
             pos_number += 1
             i += 1
+
 
     return result
 
@@ -479,7 +498,7 @@ def parse_args_cli(ctx: click.Context, groups_of_parameters: list = [],
 
             # Parse the string of the group by splitting
             # it with the space character
-            group = group.split(" ")
+            group = shlex.split(group)
             varying_parameters = \
                 parse_positional_optional_arguments(
                     group,
