@@ -58,7 +58,8 @@ def setup_logger(path='.qanat'):
         format="%(message)s",
         datefmt="[%X]",
         handlers=[RichHandler(rich_tracebacks=True,
-                              tracebacks_suppress=[sqlite3])]
+                              tracebacks_suppress=[sqlite3],
+                              markup=True)]
     )
 
     logger = logging.getLogger("rich")

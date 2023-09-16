@@ -199,6 +199,8 @@ def experiment_rerun(name, run_id):
               help="Description of this run.")
 @click.option("--commit_sha", default=None, type=click.STRING,
               help="Commit sha to use for this run.")
+@click.option("--dry_run", is_flag=True, default=False,
+              help="Dry run, do not run experiment but show parameters.")
 @click.pass_context
 # TODO: Debug this
 # fetched from:
@@ -206,7 +208,7 @@ def experiment_rerun(name, run_id):
 # add-unspecified-options-to-cli-command-using-python-click
 def experiment_run(ctx, name, runner, group_param, range_param,
                    storage_path, tag, description, container,
-                   commit_sha, param_file):
+                   commit_sha, param_file, dry_run):
     """Run an experiment with additional positional and option args.\n
     [bold red]WARNING: The following options are not available
     for your executable command:[/bold red]\n
@@ -235,7 +237,8 @@ def experiment_run(ctx, name, runner, group_param, range_param,
     """
     run.launch_run_experiment(
             name, ctx, group_param, range_param, runner,
-            storage_path, description, tag, container, commit_sha, param_file)
+            storage_path, dry_run, description, tag, container,
+            commit_sha, param_file)
 
 
 @experiment_main.command(
@@ -312,16 +315,16 @@ def document_list():
 
 
 @document_main.command(name="new")
-@click.argument("description_file", type=click.Path(exists=True),
-                required=False)
-def document_new(description_file):
+@click.option("--file", '-f', type=click.Path(exists=True),
+              help="Path to a YAML file containing the document definition.")
+def document_new(file):
     """Create new document.
 
     DESCRIPTION_FILE is a file containing the description of the document. If
     not provided, a prompt will ask for the description.
     """
-    if description_file is not None:
-        document.command_add_from_file(description_file)
+    if file is not None:
+        document.command_add_from_file(file)
         return
     document.command_add_prompt()
 
@@ -416,14 +419,14 @@ def dataset_list():
 
 
 @dataset_main.command(name="new")
-@click.argument("description_file", type=click.Path(exists=True),
-                required=False)
+@click.option("--file", "-f", type=click.Path(exists=True),
+              help="Path to a YAML file containing the dataset definition.")
 @click.option("--yes", is_flag=True, default=False,
               help="Skip confirmation prompt.")
-def dataset_new(description_file, yes):
+def dataset_new(file, yes):
     """Create new dataset."""
-    if description_file is not None:
-        dataset.command_add_from_file(description_file,
+    if file is not None:
+        dataset.command_add_from_file(file,
                                       confirm=not yes)
     else:
         dataset.command_add_prompt()

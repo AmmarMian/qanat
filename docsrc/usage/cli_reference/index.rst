@@ -9,5 +9,6 @@ Here you can find the reference documentation for the CLI commands with a short 
 
    init
    cache
+   dataset
 
 

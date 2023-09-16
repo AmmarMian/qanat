@@ -62,9 +62,9 @@ Many templates for different types of projects are available
 
 Roadmap
 --------
-* [ ] Add support for Slurm
 * [ ] Add support for Docker
 * [ ] Add experiment to experiment dependencies
 * [ ] Add hosts functionality to track different running machines
 * [ ] Update document, experiments, dataset as an edit of YAML file
+* [ ] Edit database directly in case of problems
 

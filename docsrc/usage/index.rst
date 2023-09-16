@@ -45,3 +45,10 @@ CLI reference
     :maxdepth: 2
 
     cli_reference/index
+
+Description files
+=================
+.. toctree::
+    :maxdepth: 2
+
+    description_files/index

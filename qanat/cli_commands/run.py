@@ -934,6 +934,7 @@ def launch_run_experiment(experiment_name: str,
                           range_of_parameters: list,
                           runner: str,
                           storage_path: str,
+                          dry_run: bool,
                           description: str = "",
                           tags: list = [],
                           container_path: str = None,
@@ -984,10 +985,12 @@ def launch_run_experiment(experiment_name: str,
     :param runner_params: The runner parameters for a rerun.
     :type runner_params: dict
 
+    :param dry_run: Whether to do a dry run or not: Showing the parsed parameters without running the experiment.
+    :type dry_run: bool
+
     :return: The id of the run.
     :rtype: int
     """
-
     if runner == 'htcondor':
         try:
             import warnings
@@ -1028,7 +1031,33 @@ def launch_run_experiment(experiment_name: str,
     experiment_id = find_experiment_id(session, experiment_name)
     if experiment_id == -1:
         logger.error(f"Experiment {experiment_name} does not exist.")
+        session.close()
         return -1
+    
+    # Get the parsed parameters
+    if ctx is not None and \
+            ((parsed_parameters is None) or (runner_params is None)):
+        parsed_parameters, runner_params = \
+            parse_args_cli(ctx, groups_of_parameters,
+                           range_of_parameters)
+
+    # Deal with param_file which override the parsed parameters
+    # For rerun no need as alredy parsed: we check ctx is None to know
+    # if it is a rerun
+    if (ctx is not None) and (param_file is not None):
+        parsed_parameters = parse_yaml_command_file(param_file)
+
+    if dry_run:
+        logger.info("Dry run: Showing parsed parameters without running the "
+                    "experiment.")
+        string = "Parsed parameters:\n"
+        for i, group in enumerate(parsed_parameters):
+            string += f" - Group {i}:\n"
+            for key, value in group.items():
+                string += f"    :black_medium_square: {key}: {value}\n"
+        logger.info(string)
+        session.close()
+        sys.exit(1)
 
     # Check whether cwd is a git repository and committed
     repo = git.Repo('.')
@@ -1090,18 +1119,6 @@ def launch_run_experiment(experiment_name: str,
             return -1
         commit_sha_dB = commit_sha
 
-    # Get the parsed parameters
-    if ctx is not None and \
-            ((parsed_parameters is None) or (runner_params is None)):
-        parsed_parameters, runner_params = \
-            parse_args_cli(ctx, groups_of_parameters,
-                           range_of_parameters)
-
-    # Deal with param_file which override the parsed parameters
-    # For rerun no need as alredy parsed: we check ctx is None to know
-    # if it is a rerun
-    if (ctx is not None) and (param_file is not None):
-        parsed_parameters = parse_yaml_command_file(param_file)
 
     # Check whether storage_path is not None
     if storage_path is None:
