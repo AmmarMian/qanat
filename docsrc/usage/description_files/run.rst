@@ -64,7 +64,8 @@ where there are two parts:
 
 * **varying_args**: the parameters that vary over the executions.
 
-    * **range**: the parameters that vary over a range of values **(only works for options)**. The keys are the names of the options and the values are the ranges of the options. The ranges are defined as a list of values or a dictionary with the keys ``start``, ``stop`` and ``step``.
+    * **range**: the parameters that vary over a range of values. The keys are the names of the options and the values are the ranges of the options. The ranges are defined as a list of values or a dictionary with the keys ``start``, ``stop`` and ``step``. The yielded parameters correspond to a cartesian product of all the ranges.
+
 
     .. warning::
 
@@ -75,6 +76,8 @@ where there are two parts:
         * **options**: the options of the experiment. The keys are the names of the options and the values are the values of the options.
 
         * **positional**: the positional arguments of the experiment. The keys are the weights (relative position in the construction of the final command) of the arguments and the values are the values of the arguments.
+
+        For groups, the positional and optional arguments are specified for each group.
 
 
     The constructed commands are the cartesian product of the different groups and the range of the options.
