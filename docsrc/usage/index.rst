@@ -38,6 +38,15 @@ Qanat is based on a few concepts that are important to understand in order to us
 
     vocabulary
 
+Running an experiment
+=======================
+
+.. toctree::
+    :maxdepth: 2
+
+    running/index
+
+
 
 CLI reference
 =============
