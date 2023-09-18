@@ -80,7 +80,6 @@ def get_arguments_yaml_file_content(
     arguments_range = []
     if "varying_args" in parameters_file_content:
         if "groups" in parameters_file_content["varying_args"]:
-            arguments_groups = []
             for group in parameters_file_content["varying_args"][
                     "groups"]:
                 if type_arg in group:
@@ -188,6 +187,7 @@ def parse_yaml_command_file(param_file: str) -> list:
     with open(param_file, "r") as f:
         param_file_content = yaml.safe_load(f)
 
+
     if not check_arguments_yaml_file(param_file_content):
         logger.error("The arguments are not given in correct format"
                      " in the parameters file content:\n"
@@ -206,109 +206,105 @@ def parse_yaml_command_file(param_file: str) -> list:
                      f" {param_file_content}")
         sys.exit(1)
 
-    # Deal with positional arguments
-    # --------------------------------
-    fixed_pos_args, groups_pos_args, range_pos_args = \
-        get_arguments_yaml_file_content(param_file_content, "positional")
+    # Starting with fixed arguments to construct command base
+    fixed_args = {}
+    if 'fixed_args' in param_file_content:
 
-    # Transform range positional arguments to groups positional arguments
-    if len(range_pos_args) > 0:
-        for pos, pos_range in range_pos_args:
-            if len(pos_range) != 3:
-                logger.error("The range positional argument"
-                             f" {pos} {pos_range} is not valid.")
-                sys.exit(1)
 
-        # Each combination of group and range added to the list
-        # of groups positional arguments
-        if len(groups_pos_args) == 0:
-            for pos, pos_range in range_pos_args:
-                for value in float_range(*pos_range):
-                    groups_pos_args.append([(pos, value)])
+        # Positional arguments
+        if 'positional' in param_file_content['fixed_args']:
+            for pos, value in param_file_content['fixed_args']['positional'].items():
+                fixed_args[f'pos_{pos}'] = value
+
+        # Options arguments
+        if 'options' in param_file_content['fixed_args']:
+            for opt, value in param_file_content['fixed_args']['options'].items():
+                fixed_args[opt] = value
+
+    # Now we have to deal with varying arguments
+    final_commands = []
+    if 'varying_args' in param_file_content:
+
+        # Transforming range into groups
+        groups_range = []
+        if 'range' in param_file_content['varying_args']:
+
+            # Positional arguments
+            if 'positional' in param_file_content['varying_args']['range']:
+                for pos, range_list in \
+                    param_file_content['varying_args']['range']['positional'].items():
+                    if len(range_list) != 3:
+                        logger.error("The range positional argument"
+                                     f" {pos} {range_list} is not valid.")
+                        sys.exit(1)
+
+                    groups_range += [{f'pos_{pos}': value}
+                               for value in float_range(*range_list)]
+
+            # Options arguments
+            if 'options' in param_file_content['varying_args']['range']:
+
+                for opt, range_list in \
+                    param_file_content['varying_args']['range']['options'].items():
+                    if len(range_list) != 3:
+                        logger.error("The range option"
+                                     f" {opt} {range_list} is not valid.")
+                        sys.exit(1)
+
+                    if len(groups_range) == 0:
+                        groups_range += [{opt: value}
+                               for value in float_range(*range_list)]
+                    else:
+                        new_groups_range = []
+                        for value in float_range(*range_list):
+                            for group in groups_range:
+                                new_group = {opti: value_group for opti, value_group
+                                             in group.items()}
+                                new_group[opt] = value
+                                new_groups_range.append(new_group)
+                        groups_range = new_groups_range
+
+        # Taking care of groups
+        groups_groups = []
+        if 'groups' in param_file_content['varying_args']:
+
+            for group in param_file_content['varying_args']['groups']:
+
+                thisgroup = {}
+                # Positional arguments
+                if 'positional' in group:
+                    for pos, value in group['positional'].items():
+                        thisgroup[f'pos_{pos}'] = value
+
+                # Options arguments
+                if 'options' in group:
+                    for opt, value in group['options'].items():
+                        thisgroup[opt] = value
+
+                groups_groups.append(thisgroup)
+
+
+        # Now we have to do a Cartesian product of everything: range groups and
+        # groups groups
+        if len(groups_range) == 0:
+            final_commands = [{**fixed_args, **group_group}
+                              for group_group in groups_groups]
+
+        elif len(groups_groups) == 0:
+            final_commands = [{**fixed_args, **range_group}
+                              for range_group in groups_range]
+
         else:
-            new_groups_pos_args = []
-            for pos, pos_range in range_pos_args:
-                for value in float_range(*pos_range):
-                    for group in groups_pos_args:
-                        # group is a dict_items object
-                        new_group = {posi: value_group for posi, value_group
-                                     in group}
-                        new_group[pos] = value
-                        new_groups_pos_args.append(new_group.items())
-        groups_pos_args = new_groups_pos_args
+            cartesian_product = itertools.product(groups_range, groups_groups)
+            for range_group, group_group in cartesian_product:
+                final_commands.append({**fixed_args, **range_group, **group_group})
 
-    # Transform groups positional arguments to fixed positional arguments
-    # By concatenating all the possible values of the groups positional
-    # arguments using a Cartesian product
-    if len(groups_pos_args) > 0:
-        pos_args = []
-        for group in groups_pos_args:
-            args_dict = {f'pos_{pos}': value for pos, value in
-                         fixed_pos_args}
-            args_dict.update({f'pos_{pos}': value for pos, value in
-                              group})
-            pos_args.append(args_dict)
-    else:
-        pos_args = [{f'pos_{pos}': value
-                     for pos, value in fixed_pos_args}]
-
-    # Deal with options
-    # --------------------------------
-    fixed_opt_args, groups_opt_args, range_opt_args = \
-        get_arguments_yaml_file_content(param_file_content, "options")
-
-    # Transform range options to groups options
-    if len(range_opt_args) > 0:
-        for opt, opt_range in range_opt_args:
-            if len(opt_range) != 3:
-                logger.error("The range option"
-                             f" {opt} {opt_range} is not valid.")
-                sys.exit(1)
-
-        # Each combination of group and range added to the list
-        # of groups options. Same as positional arguments
-        if len(groups_opt_args) == 0:
-            for opt, opt_range in range_opt_args:
-                for value in float_range(*opt_range):
-                    groups_opt_args.append([(opt, value)])
-        else:
-            new_groups_opt_args = []
-            for opt, opt_range in range_opt_args:
-                for value in float_range(*opt_range):
-                    for group in groups_opt_args:
-                        new_group = {opti: value_group for opti, value_group
-                                     in group}
-                        new_group[opt] = value
-                        new_groups_opt_args.append(new_group.items())
-            groups_opt_args = new_groups_opt_args
-
-    # Transform groups options to fixed options by concatenating all the
-    # possible values of the groups options using a Cartesian product
-    if len(groups_opt_args) > 0:
-
-        opt_args = []
-        for group in groups_opt_args:
-            args_dict = {opt: value for opt, value in fixed_opt_args}
-            args_dict.update({opt: value for opt, value in group})
-            opt_args.append(args_dict)
 
     else:
-        opt_args = [{opt: value
-                     for opt, value in fixed_opt_args}]
+        # No varying arguments
+        final_commands = [fixed_args]
 
-    # Deal with both positional and options
-    # We use a Cartesian product to get all the possible combinations
-    # of the positional and options arguments
-    # ----------------------------------------------------------------
-
-    # Get the Cartesian product of all the possible values of the
-    # positional and options arguments
-    cartesian_product_pos_opt = itertools.product(pos_args, opt_args)
-    params_final = []
-    for pos_values, opt_values in cartesian_product_pos_opt:
-        params_final.append({**pos_values, **opt_values})
-
-    return params_final
+    return final_commands
 
 
 def parse_args_string(args: str) -> list:
