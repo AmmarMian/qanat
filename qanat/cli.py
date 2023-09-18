@@ -210,30 +210,20 @@ def experiment_run(ctx, name, runner, group_param, range_param,
                    storage_path, tag, description, container,
                    commit_sha, param_file, dry_run):
     """Run an experiment with additional positional and option args.\n
-    [bold red]WARNING: The following options are not available
-    for your executable command:[/bold red]\n
-    * [bold yellow]--runner[/bold yellow] to specify runner\n
-    * [bold yellow]--container[/bold yellow] to specify container\n
-    * [bold yellow]--n_threads[/bold yellow] for local runner, number of
-    threads to use when several groups of parameters.\n
-    * [bold yellow]--submit_template[/bold yellow] for htcondor runner,
-    path to the submit template to use or name of the submit template in the
-    config file.\n
-    * [bold yellow]--wait[/bold yellow] for htcondor runner, wait for the
-    experiment to finish.\n
-    * [bold yellow]--param_file[/bold yellow] to specify a file containing
-    parameters to run as a single run.\n
-    * [bold yellow]--group_param[/bold yellow] to specify group of parameters
-    to run as the same run.\n
-    * [bold yellow]--range_param[/bold yellow] to specify to create groups of
-    parameters as a range. Syntax is: -r '--param start end step'.\n
-    * [bold yellow]--storage_path[/bold yellow] to override storage path for
-    the run of the experiment.\n
-    * [bold yellow]--tag[/bold yellow] to add tag to the run of the
-    experiment.\n
-    * [bold yellow]--description[/bold yellow] to add description to the run of
-    the experiment.\n
-    * [bold yellow]--commit_sha[/bold yellow] to run at a specific commit.\n
+    WARNING: The following options are not available for your executable command:\n
+    * --runner to specify runner\n
+    * --container to specify container\n
+    * --n_threads for local runner, number of threads to use when several groups of parameters.\n
+    * --submit_template for htcondor runner, path to the submit template to use or name of the submit template in the config file.\n
+    * --wait for htcondor runner, wait for the experiment to finish.\n
+    * --param_file to specify a file containing parameters to run as a single run.\n
+    * --group_param to specify group of parameters to run as the same run.\n
+    * --range_param to specify to create groups of parameters as a range. Syntax is: -r '--param start end step'.\n
+    * --storage_path to override storage path for the run of the experiment.\n
+    * --tag to add tag to the run of the experiment.\n
+    * --description to add description to the run of the experiment.\n
+    * --commit_sha to run at a specific commit.\n
+    * --dry_run to show parameters without running the experiment.\n
     """
     run.launch_run_experiment(
             name, ctx, group_param, range_param, runner,

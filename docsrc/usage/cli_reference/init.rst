@@ -6,7 +6,7 @@ Command information
 ----------------------
 
 .. click:: qanat.cli:init
-   :prog: qanat
+   :prog: qanat init
    :nested: full
 
 

@@ -6,7 +6,7 @@ Command information
 ----------------------
 
 .. click:: qanat.cli:cache_main
-   :prog: qanat
+   :prog: qanat cache
    :nested: full
 
 
