@@ -2,7 +2,7 @@
 Running through a job system
 ================================================================
 
-One of Qanat's strength relies on the fact that an experiment can be run locally or through a job system without too much hassle to change between the two options. To do that, Qanat has a concept of a `runner` that is a value equals to either `local`, `htcondor` or `slurm`.
+One of Qanat's strength relies on the fact that an experiment can be run locally or through a job system without too much hassle to change between the two options. To do that, Qanat has a concept of a :code:`runner` that is a value equals to either :code:`local`, :code:`htcondor` or :code:`slurm`.
 When running an experiment you can use the special option :code:`--runner` to specify hwo to run the experiment. For example:
 
 .. code:: console
@@ -21,13 +21,13 @@ Two options:
 * The **submit_template** is a name of a template precised in the `.qanat/config.yaml` file
 * The **submit_template** is the path to a YAML file precising the ressources and needed variables.
 
-If none is provided, a default (`default` name in the config file)
+If none is provided, a default (:code:`default` name in the config file)
 
-To have an idea how to write a template, you can take inspiration from the templates in the `.qanat/config.yaml` file:
+To have an idea how to write a template, you can take inspiration from the templates in the :code:`.qanat/config.yaml` file:
 
 .. code:: yaml
 
-   htcondor:
+    htcondor:
       default:
         +WishedAcctGroup: group_usmb.listic
         getenv: 'true'
@@ -48,13 +48,13 @@ The variaables are the usual that are expected for each job system.
 How does it work behind the scene ?
 ------------------------------------
 
-An **execute.sh** file is produced in the results direcotry. It is an executable where soem commands are written to get back to the working directory, add containers, data binding, etc
+An **execute.sh** file is produced in the results directory. It is an executable where some commands are written to get back to the working directory, add containers, data binding, etc. This file is stored in the :code:`storage_path` results directory.
 
 Then depending on the job system:
 
-* `htcondor`: a job is submitted thanks to the htcondor python bindings (need to be installed)
+* `htcondor`: a job is submitted thanks to the htcondor python bindings (need to be installed: :code:`pip install htcondor`)
 * `slurm`: a job is submitted thanks to the `sbatch` command and the ressources are written in the header of the executable in the slurm style.
 
-When fetching the status of a run thanks to :code:`qanat experiment status <experiment_name>`, Qanat takes charge to read the log files and give to the best of its capabilities the status of the run.
-A limitation is that you need to run the status command from the machine that launched the job since it is the only one capable of tracking the job. Regardless of the status, you can execute actions from any machine that is mounted on the Qanat project directory.
+When fetching the status of a run thanks to :code:`qanat experiment status <experiment_name>`, Qanat takes charge to read the log files and query the scheduler and give to the best of its capabilities the status of the run.
+A limitation is that you need to run the status command from the machine that launched the job since it is the only one having access to the scheduler. Regardless of the status, you can execute actions from any machine that is mounted on the Qanat project directory.
 

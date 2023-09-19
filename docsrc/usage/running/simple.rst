@@ -28,4 +28,4 @@ Additionally, depending on your configuration, experiment result files should be
     Reminder: It is your responsibily when creating the executable for the experiment to parse the option :code:`--storage_path` and store the files there.
 
 
-The execution will block the terminal until it is done so do not quit if you want the experiment to run until its end.
+The run will block the terminal until the executable is done so do not quit if you want the experiment to run until its end.

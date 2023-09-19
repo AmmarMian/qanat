@@ -13,7 +13,7 @@ To run inside a container, use the :code:`--container` option when running:
 
    qanat experiment run <experiment_name> [POSITIONAL ARGUMENTS] [OPTIONS] --container <container_path.sif> [--gpu True|False]
 
-This will automatically add a prefix to the command(s) executed that do the following:
+This will automatically add a prefix to the command(s) executed that will do the following:
 
 * precise that the command(s) should be executed inside the container precised by the path
 * bind the current working directory in the container and execute from there seamlessly
