@@ -47,6 +47,15 @@ Running an experiment
     running/index
 
 
+Exploring the results
+========================
+
+.. toctree::
+    :maxdepth: 2
+
+    exploring_runs
+    progress
+
 
 CLI reference
 =============
