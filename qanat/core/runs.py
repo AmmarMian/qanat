@@ -824,6 +824,11 @@ class HTCondorExecutionHandler(RunExecutionHandler):
                 f.write('pwd\n')
 
                 f.write(f'echo "Running command: {str_command}"\n')
+
+                # Add pipe to redirect output and error
+                output_path = os.path.join(repertory, 'stdout.txt')
+                error_path = os.path.join(repertory, 'stderr.txt')
+                str_command += f" > {output_path} 2> {error_path}"
                 f.write(str_command + '\n\n')
                 f.write('echo "Done."')
 
@@ -833,8 +838,8 @@ class HTCondorExecutionHandler(RunExecutionHandler):
             # TODO: Maybe not hardcode some stuff...
             submit_dict = {
                 'executable': executable,
-                'output': os.path.join(repertory, 'stdout.txt'),
-                'error': os.path.join(repertory, 'stderr.txt'),
+                'output': os.path.join(repertory, 'stdout_htcondor.txt'),
+                'error': os.path.join(repertory, 'stderr_htcondor.txt'),
                 'log': os.path.join(repertory, 'log.txt'),
                 'should_transfer_files': 'YES',
                 'when_to_transfer_output': 'ON_EXIT',
