@@ -17,5 +17,7 @@ art
 psutil
 filelock
 
+htcondor==10.7.0
+
 pytest>=6.2.4
 black>=22.3.0
