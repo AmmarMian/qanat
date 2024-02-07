@@ -112,8 +112,9 @@ html_theme_options = {
     "source_repository": "https://github.com/AmmarMian/qanat",
     "source_branch": "main",
     "source_directory": "docsrc/",
-    "light_logo": "qanat_logo_light.svg",
-    "dark_logo": "qanat_logo_dark.svg",
+    "logo": "qanat.png",
+    # "light_logo": "qanat_logo_light.svg",
+    # "dark_logo": "qanat_logo_dark.svg",
 }
 
 # -- Options for HTMLHelp output ---------------------------------------
