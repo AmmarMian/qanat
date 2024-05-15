@@ -1033,7 +1033,7 @@ def launch_run_experiment(experiment_name: str,
         logger.error(f"Experiment {experiment_name} does not exist.")
         session.close()
         return -1
-    
+
     # Get the parsed parameters
     if ctx is not None and \
             ((parsed_parameters is None) or (runner_params is None)):
@@ -1337,6 +1337,12 @@ def rerun_experiment(experiment_name: str,
     tags += [f"rerun id {run_id}"]
 
     # Launch the experiment
-    launch_run_experiment(experiment_name, None, None, None, runner,
-                          storage_path, description, tags, container_path,
-                          commit_sha, None, parsed_parameters, runner_params)
+    launch_run_experiment(experiment_name=experiment_name, ctx=None,
+                          groups_of_parameters=None, range_of_parameters=None,
+                          runner=runner,
+                          storage_path=storage_path, description=description,
+                          tags=tags, container_path=container_path,
+                          commit_sha=commit_sha, param_file=None,
+                          dry_run=False,
+                          parsed_parameters=parsed_parameters,
+                          runner_params=runner_params)
