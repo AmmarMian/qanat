@@ -63,6 +63,7 @@ def get_container_technology(container_path: str):
 
 def get_container_run_command(container_path: str,
                               command: list,
+                              working_dir: str = "./",
                               bind_paths: dict = {},
                               gpu: bool = False) -> list:
     """Get the command to run a container.
@@ -73,11 +74,11 @@ def get_container_run_command(container_path: str,
     :param command: Command to run inside the container
     :type command: list
 
+    :param working_dir: Working directory path
+    :type working_dir: str
+
     :param bind_paths: Paths to bind inside the container
     :type bind_paths: dict
-
-    :param rel_path_offset: Relative path offset to the bind_paths
-    :type rel_path_offset: str
 
     :param gpu: Use GPU
     :type gpu: bool
@@ -94,6 +95,7 @@ def get_container_run_command(container_path: str,
         for bind_path in bind_paths:
             run_command += ["--bind",
                             f"{bind_path}:{bind_paths[bind_path]}"]
+        run_command += ["--cwd", working_dir]
         run_command += [container_path]
         run_command += command
     else:

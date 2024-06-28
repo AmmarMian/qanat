@@ -273,7 +273,7 @@ class RunExecutionHandler:
 
                 self.commands = [get_container_run_command(
                     get_absolute_path(self.container_path),
-                    command, bind_paths, self.gpu)
+                    command, self.working_dir, bind_paths, self.gpu)
                     for command in self.commands]
             else:
                 raise FileNotFoundError(f"Container path {self.container_path}"
@@ -533,6 +533,7 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
                                                         'stderr.txt'), 'w')
                         stdout_list.append(stdout_file)
                         stderr_list.append(stderr_file)
+
                         process = subprocess.Popen(command,
                                                    stdout=stdout_file,
                                                    stderr=stderr_file,
