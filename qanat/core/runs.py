@@ -296,7 +296,8 @@ class RunExecutionHandler:
                              for command in self.commands],
                 'groups_of_parameters': self.groups_of_parameters,
                 'repertories': self.relative_repertories,
-                'working_directory': self.working_dir}
+                'working_directory': self.working_dir,
+                'datasets': self.datasets}
         if self.commit_sha is not None:
             info['commit_sha'] = self.commit_sha
         else:
@@ -339,9 +340,11 @@ class RunExecutionHandler:
                 Session, self.experiment.name)
         Session.close()
 
+        self.datasets = {}
         for command, repertory in zip(self.commands, self.repertories):
             for dataset in datasets:
                 command += ['--dataset_path', get_absolute_path(dataset.path)]
+                self.datasets[dataset.name] = get_absolute_path(dataset.path)
 
     def write_groups_info(self):
         """Write group information in the repertory"""
