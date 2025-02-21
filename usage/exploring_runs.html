@@ -1,0 +1,466 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Showing progress of a run in qanat experiment status" href="progress.html" /><link rel="prev" title="Re-run a previous run of an experiment" href="running/rerun.html" />
+
+    <!-- Generated with Sphinx 8.2.0 and Furo 2024.08.06 -->
+        <title>Exploring runs of experiments - Qanat 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=cfdaff8d" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #2E3440;
+  --color-code-foreground: #d8dee9;
+  --font-stack: Roboto, sans-serif;
+  --font-stack--monospace: Open Sans, monospace;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+<div class="announcement">
+  <aside class="announcement-content">
+     <em>Qanat is currently in alpha. Use at your own risk.</em> 
+  </aside>
+</div>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">Qanat 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  
+  <span class="sidebar-brand-text">Qanat 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../features/index.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Usage</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Usage</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="vocabulary.html">Concepts and vocabulary</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="running/index.html">Running an experiment</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Running an experiment</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="running/simple.html">Running a simple experiment with command-line arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="running/parameters_file.html">Running with a file containing parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="running/container.html">Running inside a container</a></li>
+<li class="toctree-l3"><a class="reference internal" href="running/runner.html">Running through a job system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="running/groups.html">Running several groups of parameters in a single run</a></li>
+<li class="toctree-l3"><a class="reference internal" href="running/commit.html">Running a run at a previous commit of the repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="running/rerun.html">Re-run a previous run of an experiment</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Exploring runs of experiments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="progress.html">Showing progress of a run in <code class="code docutils literal notranslate"><span class="pre">qanat</span> <span class="pre">experiment</span> <span class="pre">status</span></code></a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="cli_reference/index.html">CLI Reference</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of CLI Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="cli_reference/init.html">qanat init</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cli_reference/config.html">qanat config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cli_reference/cache.html">qanat cache</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cli_reference/dataset.html">qanat dataset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cli_reference/document.html">qanat document</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cli_reference/experiment.html">qanat experiment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cli_reference/status.html">qanat status</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="description_files/index.html">Description files</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Description files</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="description_files/dataset.html">Dataset description file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="description_files/experiment.html">Experiment description file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="description_files/run.html">Run launching description file</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tutorials/index.html">Tutorials</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Tutorials</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../tutorials/basics/index.html">Basics</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of Basics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basics/gettingstarted.html"><span class="sectnum">1 </span>Getting Started</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basics/experiment_dataset_yaml.html"><span class="sectnum">2 </span>Experiments, Datasets and description files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/basics/run_job_cluster.html"><span class="sectnum">3 </span>Running experiments through a job system</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/advanced/index.html">Advanced tutorials</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../modules.html">qanat</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of qanat</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../qanat.html">qanat package</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of qanat package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../qanat.cli_commands.html">qanat.cli_commands package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../qanat.core.html">qanat.core package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../qanat.utils.html">qanat.utils package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../history.html">History</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/AmmarMian/qanat/blob/main/docsrc/usage/exploring_runs.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/AmmarMian/qanat/edit/main/docsrc/usage/exploring_runs.rst" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="exploring-runs-of-experiments">
+<h1>Exploring runs of experiments<a class="headerlink" href="#exploring-runs-of-experiments" title="Link to this heading">¶</a></h1>
+<section id="the-qanat-experiment-status-command">
+<h2>The <code class="code docutils literal notranslate"><span class="pre">qanat</span> <span class="pre">experiment</span> <span class="pre">status</span></code> command<a class="headerlink" href="#the-qanat-experiment-status-command" title="Link to this heading">¶</a></h2>
+<p>This commands allows to have a list of the runs that have been done for an experiment. For example:</p>
+<img alt="../_images/experiment_status.png" class="align-center" src="../_images/experiment_status.png" />
+<p>A flag <code class="code docutils literal notranslate"><span class="pre">--live</span></code> can be appended to the command to see a refreshing status of the runs. This is useful when you are running a lot of experiments and want to see the status of the runs.</p>
+</section>
+<section id="the-run-explore-command">
+<h2>The <code class="code docutils literal notranslate"><span class="pre">run_explore</span></code> command<a class="headerlink" href="#the-run-explore-command" title="Link to this heading">¶</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This functionality only work on linux and maxcosx machines since it use <code class="code docutils literal notranslate"><span class="pre">sime-term-menu</span></code> that is not available on windows. One workaround is to use WSL2 on windows.</p>
+</div>
+<p>After an experiment has ben executed, possibly many times with different parameters or by improving the code, it is time to explore the results. This is done with the <cite>run_explore</cite> command.  This will lanch a prompt:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">qanat experiment run_explore &lt;experiment_name&gt;</span>
+
+<span class="go">Experiment &lt;experiment_name&gt; has XX runs.</span>
+<span class="go">How do you want to explore the runs?</span>
+
+<span class="go">&gt; Search</span>
+<span class="go">  Menu</span>
+</pre></div>
+</div>
+<p>where <code class="code docutils literal notranslate"><span class="pre">&lt;experiment_name&gt;</span></code> is the name of the experiment you want to explore and <code class="code docutils literal notranslate"><span class="pre">XX</span></code> should be the number of runs of this experiments. You can then choose to search for a specific run or to explore the runs with a menu by either selecting or searching.</p>
+<p>Alternatively you can run the command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">qanat experiment run_explore &lt;experiment_name&gt; &lt;run_id&gt;</span>
+</pre></div>
+</div>
+<p>to directly jump to a run that you want to see.</p>
+</section>
+<section id="exploring-runs-from-the-menu">
+<h2>Exploring runs from the menu<a class="headerlink" href="#exploring-runs-from-the-menu" title="Link to this heading">¶</a></h2>
+<p>Two options:</p>
+<ul class="simple">
+<li><p>using the search function:</p></li>
+</ul>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Experiment develop_autoencoder has 20 runs.</span>
+<span class="go"> Search runs prompt</span>
+<span class="go"> &gt; [a] Tag</span>
+<span class="go">   [b] Description</span>
+<span class="go">   [c] Status</span>
+<span class="go">   [d] Runner</span>
+<span class="go">   [e] Commit</span>
+<span class="go">   [f] Parameters</span>
+<span class="go">   [g] Menu with remaining runs</span>
+<span class="go">   [h] Reset filters</span>
+<span class="go">   [q] Exit</span>
+</pre></div>
+</div>
+<p>that allows to search over the run information.</p>
+<ul>
+<li><p>using the menu function:</p>
+<blockquote>
+<div><img alt="../_images/run_explore_menu1.png" class="align-center" src="../_images/run_explore_menu1.png" />
+</div></blockquote>
+</li>
+</ul>
+<p>which allows to select a run and see the information about it.</p>
+</section>
+<section id="exploring-a-specific-run">
+<h2>Exploring a specific run<a class="headerlink" href="#exploring-a-specific-run" title="Link to this heading">¶</a></h2>
+<p>Once that you have selected a <strong>run_id</strong> for your experiment (either by the menu or by specifying in the command), you have access to the following menu:</p>
+<img alt="../_images/specific_run_menu.png" class="align-center" src="../_images/specific_run_menu.png" />
+<p>where you have access to the following options:</p>
+<ul class="simple">
+<li><p><strong>Show output(s)</strong>: show the standard ouput(s) of the run with the <code class="code docutils literal notranslate"><span class="pre">less</span></code> command (see <a class="reference external" href="https://man7.org/linux/man-pages/man1/less.1.html">mean page</a>). If several groups had been executed, you can iterate over all those outputs thanks to the <code class="code docutils literal notranslate"><span class="pre">:n</span></code> command in the less.</p></li>
+<li><p><strong>Show error(s)</strong>: show the standard error(s) of the runs with less same as outputs.</p></li>
+<li><p><strong>Show parameters</strong>: show the parameters of the run.</p></li>
+<li><p><strong>Show comment</strong>: show the comment of the run. This is markdown file that is used to keep some information about the run (analysis, contecxt, etc). If it doesn’t exist, you will be asked if you want to create it.</p></li>
+<li><p><strong>Explore run directory</strong>: Will show a tree of the run directory. This is useful to see what has been saved during the run.</p></li>
+<li><p><strong>Show HTCondor log(s)</strong>: show the HTCondor log(s) of the run. This is useful when the run has been executed on a cluster with HTCondor. The option is only availabl when the runner is <code class="code docutils literal notranslate"><span class="pre">htcondor</span></code>. For Slurm, there is unfortunately no way to see the logs.</p></li>
+<li><p><strong>Delete run</strong>: delete the run from the database and from the disk. This is useful when you want to remove a run that you don’t want to keep anymore. This allows delete all the files so be careful.</p></li>
+<li><p><strong>Action: &lt;action_name&gt;</strong>: If some actions have been defined for the experiment, you can run the action from the menu. In the example, an action allowing to launch tensorboard for all the groups had been set up. You can also run the action from the command line with the <code class="code docutils literal notranslate"><span class="pre">qanat</span> <span class="pre">experiment</span> <span class="pre">action</span> <span class="pre">&lt;experiment_name&gt;</span> <span class="pre">&lt;action_name&gt;</span> <span class="pre">&lt;run_id&gt;</span></code> command.</p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="progress.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Showing progress of a run in <code class="code docutils literal notranslate"><span class="pre">qanat</span> <span class="pre">experiment</span> <span class="pre">status</span></code></div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="running/rerun.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Re-run a previous run of an experiment</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Ammar Mian
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Exploring runs of experiments</a><ul>
+<li><a class="reference internal" href="#the-qanat-experiment-status-command">The <code class="code docutils literal notranslate"><span class="pre">qanat</span> <span class="pre">experiment</span> <span class="pre">status</span></code> command</a></li>
+<li><a class="reference internal" href="#the-run-explore-command">The <code class="code docutils literal notranslate"><span class="pre">run_explore</span></code> command</a></li>
+<li><a class="reference internal" href="#exploring-runs-from-the-menu">Exploring runs from the menu</a></li>
+<li><a class="reference internal" href="#exploring-a-specific-run">Exploring a specific run</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    </body>
+</html>
