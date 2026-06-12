@@ -13,6 +13,7 @@ import shutil
 import time
 import os
 import signal
+import threading
 from filelock import FileLock
 from sqlalchemy.orm import sessionmaker
 import subprocess
@@ -582,8 +583,6 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
         else:
             logger.info(
                     f"Running {len(self.commands)} executions sequentially")
-            logger.info("The output of the executions will be "
-                        f"redirected to {self.run.storage_path}")
 
             update_run_status(Session, self.run_id,
                               "running")
@@ -594,62 +593,99 @@ class LocalMachineExecutionHandler(RunExecutionHandler):
             start_time_list = ['' for _ in self.commands]
             end_time_list = ['' for _ in self.commands]
 
-            self.progress = Progress(
-                 SpinnerColumn(),
-                 TextColumn("[bold blue]{task.description}"),
-                 BarColumn(bar_width=None),
-                 "[progress.percentage]{task.percentage:>3.0f}%")
-            with self.progress as progress:
-                task = progress.add_task("Running..", total=len(self.commands))
+            single_run = len(self.commands) == 1
+
+            def _run_commands(progress=None, task=None):
                 for i, command in enumerate(self.commands):
                     command_str = " ".join([str(x) for x in command])
                     logger.info(f"Running '{command_str}'")
                     logger.warning("Do not close the terminal window. "
                                    "It will cancel the execution of the run.")
 
-                    # Redirect stdout and stderr of the subprocess
-                    # to a file
-                    stdout_file = os.path.join(self.repertories[i],
+                    stdout_path = os.path.join(self.repertories[i],
                                                'stdout.txt')
-                    stderr_file = os.path.join(self.repertories[i],
+                    stderr_path = os.path.join(self.repertories[i],
                                                'stderr.txt')
-                    stdout = open(stdout_file, 'w')
-                    stderr = open(stderr_file, 'w')
                     command = [str(x) for x in command]
-                    process = subprocess.Popen(command, stdout=stdout,
-                                               stderr=stderr,
-                                               cwd=self.working_dir)
+
+                    if single_run:
+                        stdout_f = open(stdout_path, 'w')
+                        stderr_f = open(stderr_path, 'w')
+                        process = subprocess.Popen(command,
+                                                   stdout=subprocess.PIPE,
+                                                   stderr=subprocess.PIPE,
+                                                   cwd=self.working_dir)
+
+                        def _tee(src, text_file, stream):
+                            for line in iter(src.readline, b''):
+                                decoded = line.decode(errors='replace')
+                                text_file.write(decoded)
+                                text_file.flush()
+                                stream.write(decoded)
+                                stream.flush()
+                            src.close()
+
+                        t_out = threading.Thread(
+                            target=_tee,
+                            args=(process.stdout, stdout_f, sys.stdout))
+                        t_err = threading.Thread(
+                            target=_tee,
+                            args=(process.stderr, stderr_f, sys.stderr))
+                        t_out.start()
+                        t_err.start()
+                    else:
+                        logger.info("The output of the executions will be "
+                                    f"redirected to {self.run.storage_path}")
+                        stdout_f = open(stdout_path, 'w')
+                        stderr_f = open(stderr_path, 'w')
+                        process = subprocess.Popen(command,
+                                                   stdout=stdout_f,
+                                                   stderr=stderr_f,
+                                                   cwd=self.working_dir)
 
                     pid = process.pid
                     status_list[i] = 'running'
                     pid_list[i] = str(pid)
                     start_time_list[i] = datetime.now()
-                    # Add info in the yaml file
                     info = self.parse_yaml_file()
                     info['start_time'] = start_time_list
                     info['status'] = status_list
                     info['pids'] = pid_list
                     self.update_yaml_file(info)
 
-                    # Wait for the process to finish
                     process.wait()
 
-                    # Close the files
-                    stdout.close()
-                    stderr.close()
+                    if single_run:
+                        t_out.join()
+                        t_err.join()
+                    stdout_f.close()
+                    stderr_f.close()
 
-                    # Command finished
                     status_list[i] = 'finished'
                     end_time_list[i] = datetime.now()
                     logger.info(f"Finished {command}\n")
 
-                    # Add info in the yaml file
                     info = self.parse_yaml_file()
                     info['end_time'] = end_time_list
                     info['status'] = status_list
                     self.update_yaml_file(info)
 
-                    progress.update(task, advance=1)
+                    if progress is not None:
+                        progress.update(task, advance=1)
+
+            if single_run:
+                self.progress = None
+                _run_commands()
+            else:
+                self.progress = Progress(
+                     SpinnerColumn(),
+                     TextColumn("[bold blue]{task.description}"),
+                     BarColumn(bar_width=None),
+                     "[progress.percentage]{task.percentage:>3.0f}%")
+                with self.progress as progress:
+                    task = progress.add_task(
+                        "Running..", total=len(self.commands))
+                    _run_commands(progress, task)
 
         logger.info("Updating database with finished time")
         Session = self.session_maker()
