@@ -189,7 +189,7 @@ def experiment_rerun(name, run_id):
               help="File containing params to run experiment (one per line).")
 @click.option("--group_param", "-g", default=None, type=click.STRING,
               help="Group of parameters to run.", multiple=True)
-@click.option("--range_param", "-r", default=None, type=click.STRING,
+@click.option("--range_param", "-R", default=None, type=click.STRING,
               help="Range for a single parameter.", multiple=True)
 @click.option("--storage_path", default=None, type=click.STRING,
               help="Path to store results.")
