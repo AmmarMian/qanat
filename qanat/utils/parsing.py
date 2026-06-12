@@ -382,9 +382,9 @@ def parse_group_parameters(group_parameters: dict) -> list:
         else:
             if isinstance(value, list):
                 for v in value:
-                    list_options += [key, v]
+                    list_options += [key, v] if v != "" else [key]
             else:
-                list_options += [key, value]
+                list_options += [key, value] if value != "" else [key]
 
     return list_pos_arguments + list_options
 
